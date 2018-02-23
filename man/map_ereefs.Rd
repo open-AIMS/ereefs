@@ -6,7 +6,7 @@
 \usage{
 map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
   layer = "surface", Google_map_underlay = TRUE,
-  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
+  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_",
   input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
   NA), zoom = 6, box_bounds = c(NA, NA, NA, NA))
 }

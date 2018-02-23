@@ -3,7 +3,7 @@
 #' The ereefs package provides several functions:
 #'    map_ereefs() Produces surface maps of model variables downloaded directly from NCI servers
 #'                 or other EMS netcdf output files.
-#'    map_ereefs_animate() Produces an animation of surface maps similar to those produced by map_ereefs,
+#'    map_ereefs_movie() Produces an animation of surface maps similar to those produced by map_ereefs,
 #'                 except that it currently only works for GBR4 model output.
 #'    plume_class() Calculates plume optical classes. Mostly intended as a helper function for the above
 #'                 two functions, but can be accessed directly.

@@ -4,12 +4,12 @@
 \alias{map_ereefs_movie}
 \title{Create a series of map image files for an animation of eReefs model output.}
 \usage{
-map_ereefs_movie(var_name = "true_colour", start_date = c(2011, 1, 31),
-  end_date = c(2011, 3, 30), layer = "surface", output_dir = "ToAnimate",
+map_ereefs_movie(var_name = "true_colour", start_date = c(2015, 12, 1),
+  end_date = c(2016, 3, 31), layer = "surface", output_dir = "ToAnimate",
   Google_map_underlay = TRUE,
   input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
-  input_grid = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc",
-  scale_col = c("ivory", "coral4"), zoom = 6)
+  input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
+  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA))
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -23,7 +23,7 @@ and Baird et al. (2017). Defaults to true_colour.}
 
 \item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2011,1,31).}
+     formatted for input to as.Date(). Defaults to c(2015,2,1).}
 
 \item{layer}{Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.}
 
@@ -39,16 +39,24 @@ of the file name (i.e. the start of the filename without the date or file extens
 Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_".,}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
-coordinates for the cell corners (x_grid and y_grid). This is usually the eReefs hydrodynamic model
-output file corresponding to the biogeochemical model output file being used. 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
+x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
+of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load appropriate 
+x and y grids from data files stored in this package. Alternatively, you can provide the location of a full 
+(not simple-format) ereefs netcdf output file such as 
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
 
 \item{zoom}{Value of zoom passed to ggmap::ggmap(). Set to 5 if you want to show the entire extent 
 of eReefs models. Defaults to 6. Higher values will zoom in further.}
 
+\item{box_bounds}{Minimum and maximum latitude and longitude coordinates to map. Defaults to the
+entire extent of the model output (though modified by the value of zoom). 
+Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
+also specify an appropriate value for zoom if specifying box_bounds.}
+
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2011,3,30).}
+     formatted for input to as.Date(). Defaults to c(2016,3,31).}
 
 \item{ggplot2::scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
 from the ggplot2::ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
@@ -59,28 +67,10 @@ Creates and saves to disk a sequential series of colour map images showing conce
 eReefs model output variable at a specified model layer (by default, the surface layer). The map is optionally 
 (and by default) overlain on a Google Earth map of the region. The function should work under Linux or MacOS. 
 The R netcdf4 library doesn't handle opendap served files under Windows, unfortunately, but can be used under 
-Windows for locally-stored model output files. More efficient than calling map_ereefs multiple times if you 
-want to produce an animation because it loads a month at a time. By Barbara Robson (AIMS).
-}
-\details{
-References:
-
-Baird, M.E., Cherukuru, N., Jones, E., Margvelashvili, N., Mongin, M., Oubelkheir, K., 
-  Ralph, P.J., Rizwi, F., Robson, B.J., Schroeder, T. and Skerratt, J., 2016. Remote-sensing 
-  reflectance and true colour produced by a coupled hydrodynamic, optical, sediment, 
-  biogeochemical model of the Great Barrier Reef, Australia: comparison with satellite data. 
-  Environmental Modelling & Software, 78, pp.79-96.
-
-Baird, M.E., Andrewartha, J., Herzfeld, M., Jones, E.M., Margvelashvili, N., Mongin, M., Rizwi, 
-  F.,  Skerratt, J., Soja-Wozniak, M., Wild-Allen, K., Schroe der, T., Robson, B.J., da Silva, E. 
-  and Devlin, M., 2017. River plumes of the Great Barrier Reef: freshwater , sediment and optical 
-  footprints quantified by the eReefs modelling system  In Syme, G., Hatton MacDonald, D., Fulton, 
-  B. and Piantadosi, J. (eds) MODSIM2017, 22nd International Congress on Modelling and Simulation. 
-  Modelling and Simulation Society of Australia and New Zealand, December 2017, pp. 894–900
-
-Devlin, M.J., McKinna, L.W., Álvarez-Romero, J.G., Petus, C., Abott, B., Harkness, P. and 
-  Brodie, J., 2012. Mapping the pollutants in surface riverine flood plume waters in the Great 
-  Barrier Reef, Australia. Marine Pollution Bulletin, 65(4-9), pp.224-235.
+Windows for locally-stored model output files. Can be more efficient than calling map_ereefs multiple times if you 
+want to produce an animation because it loads a month at a time for GBR4 runs. 
+To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
+or imageJ.  Barbara Robson (AIMS).
 }
 \examples{
 map_ereefs_movie()
