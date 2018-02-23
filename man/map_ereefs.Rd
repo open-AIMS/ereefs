@@ -4,11 +4,11 @@
 \alias{map_ereefs}
 \title{Create a surface map of eReefs model output.}
 \usage{
-map_ereefs(var_name = "true_colour", target_date = c(2011, 1, 30),
+map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
   layer = "surface", Google_map_underlay = TRUE,
-  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
-  input_grid = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc",
-  scale_col = c("ivory", "coral4"), zoom = 6)
+  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_",
+  input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
+  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA))
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -22,7 +22,10 @@ and Baird et al. (2017). Defaults to true_colour.}
 
 \item{target_date}{Date to map. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2011,1,30).}
+     formatted for input to as.Date(). Defaults to c(2018,1,30). Be careful to choose the right
+     input file, as the function will plot the closest date in the file to the target date without
+     complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
+     relative to 1990-01-01 (this is not checked).}
 
 \item{layer}{Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.}
 
@@ -30,20 +33,31 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 an underlay for the model output plot. Requires the ggmap librray.}
 
 \item{input_stem}{Path to the locally-stored or opendap-served netcdf file, including the stem
-of the file name (i.e. the start of the filename without the date or file extension).
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_".,}
+of the file name (i.e. the start of the filename without the date or file extension) if the filename
+ contains 'gbr1' or 'gbr4', or the full filename otherwise.  Defaults to 
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_".,}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
-coordinates for the cell corners (x_grid and y_grid). This is usually the eReefs hydrodynamic model
-output file corresponding to the biogeochemical model output file being used. 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
+x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
+of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load appropriate 
+x and y grids from data files stored in this package. Alternatively, you can provide the location of a full 
+(not simple-format) ereefs netcdf output file such as 
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
 
 \item{scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
 from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
 Defaults to c('ivory', 'coral4').}
 
+\item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.
+Ignored for true_colour plots.}
+
 \item{zoom}{Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
 of eReefs models. Defaults to 6. Higher values will zoom in further.}
+
+\item{box_bounds}{Minimum and maximum latitude and longitude coordinates to map. Defaults to the
+entire extent of the model output (though modified by the value of zoom). 
+Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
 }
 \value{
 a ggplot object
@@ -79,5 +93,6 @@ Devlin, M.J., McKinna, L.W., Álvarez-Romero, J.G., Petus, C., Abott, B., Harkne
 map_ereefs()
 map_ereefs('TN')
 map_ereefs('plume', target_date=c(2011, 1, 30))
-map_ereefs('Chl_a_sum', target_date='2016-07-15',, scale_col=c('ivory', 'green4'))
+map_ereefs('Chl_a_sum', target_date='2016-07-15', scale_col=c('ivory', 'green4'))
+map_ereefs('salt', box_bounds=c(145,150,-20,-15), zoom=7, scale_lim=c(32,35))
 }

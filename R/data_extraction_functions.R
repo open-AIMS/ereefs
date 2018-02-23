@@ -21,7 +21,7 @@
 #'      formatted for input to as.Date(). Defaults to c(2010,12,31).
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2016,12,31).
+#'      formatted for input to as.Date(). Defaults to c(2016,10,31).
 #' @param input_stem is the URI or file location of the eReefs output files, ommitting the year and month parts of the filenames and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local filename stem.
 #' @export
 #' @examples
@@ -31,16 +31,20 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           location_latlon=c(-23.39189, 150.88852), 
                           layer='surface', 
 		          start_date = c(2010,12,31), 
-		          end_date = c(2016,12,31), 
-                          input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_") 
+		          end_date = c(2016,10,31), 
+                          input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_")
 {
 
-  # Get the model grid
-  inputfile <- paste0(input_stem, '2011-10.nc?latitude,longitude')
-  nc <- ncdf4::nc_open(inputfile)
-  latitude <- ncdf4::ncvar_get(nc, "latitude")
-  longitude <- ncdf4::ncvar_get(nc, "longitude")
-  ncdf4::nc_close(nc)
+  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
+  ereefs_case <- 0
+
+  if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
+	ereefs_case <- 4
+  } else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
+	ereefs_case <- 1
+  } else {
+	stop("Not yet implemented for other than GBR4 GBR1 and files")
+  }
 
   # Dates to plot
   if (is.vector(start_date)) {
@@ -62,7 +66,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   end_year <- as.integer(format(end_date, '%Y'))
   
   if (start_date > end_date) {
-    stop('start_date must precede end_date')
+    stop('start_date must preceed end_date')
   }
 
   if (start_year==end_year) {
@@ -74,18 +78,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
       mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
       years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep(start_year + 1 : end_year - 1, each=12),
+                 rep((start_year + 1) : (end_year - 1), each=12),
                  rep(end_year, end_month))
-  }
-
-
-  # Find the nearest grid-points to the sampling location
-  if (is.integer(location_latlon)) {
-      location_grid <- location_latlon
-  } else { 
-      tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
-      tmp <- which.min(tmp) 
-      location_grid <- c( floor(tmp / dim(latitude)[1]) + 1, tmp%%dim(latitude)[1])
   }
 
   var_list <- paste(var_names, collapse=",")
@@ -94,6 +88,27 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   blanks <- rep(NA, end_date - start_date + 1)
   ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
   names(ts_frame) <- c("date", var_names)
+  if (ereefs_case == 4) {
+      inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
+			  '.nc?latitude,longitude')
+  } else {
+      inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
+			  '.nc?latitude,longitude')
+  }
+
+  # Find the nearest grid-points to the sampling location
+  nc <- ncdf4::nc_open(inputfile)
+  latitude <- ncdf4::ncvar_get(nc, "latitude")
+  longitude <- ncdf4::ncvar_get(nc, "longitude")
+  ncdf4::nc_close(nc)
+
+  if (is.integer(location_latlon)) {
+     location_grid <- location_latlon
+  } else { 
+    tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
+    tmp <- which.min(tmp) 
+    location_grid <- c( floor(tmp / dim(latitude)[1]) + 1, tmp%%dim(latitude)[1])
+  }
 
   # Loop through monthly eReefs files to extract the data
   ndims <- rep(NA, length(var_names))
@@ -114,36 +129,48 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     } else if ((start_year==end_year)&&(start_month==end_month)) {
        day_count <- end_day - start_day
     } else {
-       day_count <- -1
+       day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
     }
-
-    inputfile <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep='-')), '%Y-%m'), 
-			  '.nc?time,', paste0(var_names, collapse=',')) 
-    nc <- ncdf4::nc_open(inputfile)
-    d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
-    im1 = i+1
-    i <- i + length(d)
-    for (j in 1:length(var_names)) {
-        if (is.na(ndims[j])) {
-           # We don't yet know the dimensions of the variable, so let's get them
-            dims <- nc$var[[var_names[j]]][['size']]
-            ndims[j] <- length(dims)
-            if (layer == 'surface') {
-             layer_actual[j] <- dims[3]
-            } else {
-             layer_actual[j] <- layer
-            }
-         }
-        ts_frame$date[im1:i] <- as.Date(d, origin = as.Date("1990-01-01"))
-        if (ndims[j] == 4) {
-           ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
-        } else {
-           ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
-        }
+    if (ereefs_case == 4) { 
+       fileslist <- 1
+       filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+    } else {
+	    fileslist <- from_day:(from_day+day_count-1)
+	    from_day <- 1
+	    day_count <- 1
+    }
+    for (dcount in fileslist) {
+      if (ereefs_case == 1) {
+	    filename <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
       }
-
+      inputfile <- paste0(filename, '?', var_list, ',time')
+      nc <- ncdf4::nc_open(inputfile)
+      d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
+      im1 = i+1
+      i <- i + length(d)
+      for (j in 1:length(var_names)) {
+          if (is.na(ndims[j])) {
+             # We don't yet know the dimensions of the variable, so let's get them
+              dims <- nc$var[[var_names[j]]][['size']]
+              ndims[j] <- length(dims)
+              if (layer == 'surface') {
+               layer_actual[j] <- dims[3]
+            } else {
+               layer_actual[j] <- layer
+            }
+           }
+          ts_frame$date[im1:i] <- as.Date(d, origin = as.Date("1990-01-01"))
+          if (ndims[j] == 4) {
+             fred <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+             ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+          } else {
+             fred <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+             ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
+          }
+      }
       ncdf4::nc_close(nc)
       setTxtProgressBar(pb,mcount)
+    }
   }
   close(pb)
   return(ts_frame)
@@ -222,7 +249,7 @@ ncdf4::nc_close(nc)
   } else {
       mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
       years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep(start_year + 1 : end_year - 1, each=12),
+                 rep((start_year + 1) : (end_year - 1), each=12),
                  rep(end_year, end_month))
   }
 
@@ -386,7 +413,7 @@ ncdf4::nc_close(nc)
   } else {
       mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
       years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep(start_year + 1 : end_year - 1, each=12),
+                 rep((start_year + 1) : (end_year - 1), each=12),
                  rep(end_year, end_month))
   }
 
