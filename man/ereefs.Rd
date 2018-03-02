@@ -14,7 +14,7 @@ The ereefs package provides several functions:
    plume_class() Calculates plume optical classes. Mostly intended as a helper function for the above
                 two functions, but can be accessed directly.
    get_ereefs_ts() Extracts a time-series at any arbitrary location from GBR4 output
-   get_ereefs_z_integrated_ts() Extracts a vertically integrated time-series at any arbitrary location
+   get_ereefs_depth_integrated_ts() Extracts a vertically integrated time-series at any arbitrary location
                 from GBR4 output
    get_ereefs_depth_specified_ts() Extracts a time-series from a specified depth below the surface at
                 any arbitrary location within the GBR4 model domain.

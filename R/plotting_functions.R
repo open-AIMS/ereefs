@@ -175,11 +175,14 @@ if (ereefs_case == 4) {
 	day <- 1
 	filename <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
 } else {
-	day <- NA
-	filename <- input_stem
-        inputfile <- paste0(filename, '?time')
-	nc <- ncdf4::nc_open(inputfile)
-        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	filename <- paste0(input_stem, '.nc')
+	nc <- ncdf4::nc_open(filename)
+        ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
+	if (class(ds)=="try-error") {
+	  # We may be dealing with an old EMS file
+          print('time not found in netcdf file. Looking for t instead (in case it is an old EMS file).')
+	  ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
 }
@@ -196,9 +199,9 @@ if ((Google_map_underlay)&&(!requireNamespace("ggmap", quietly = TRUE))) {
   Google_map_underlay = FALSE
 }
 
-
 if (var_name=="plume") {
-    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+    #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+    inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(1,1,day), count=c(-1,-1,1))
     R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(1,1,day), count=c(-1,-1,1))
@@ -212,7 +215,8 @@ if (var_name=="plume") {
     dims <- dim(ems_var)
 
 } else if (var_name=="true_colour") {
-    inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
+    #inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
+    inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     TCbright <- 10
     R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(1,1,day), count=c(-1,-1,1)) * TCbright
@@ -237,10 +241,12 @@ if (var_name=="plume") {
     ems_var <-array(as.character(ems_var), dim=dim(R_645))
     dims <- dim(ems_var)
 } else { 
-    inputfile <- paste0(filename, '?', var_name)
+    #inputfile <- paste0(filename, '?', var_name)
+    inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
       # We don't yet know the dimensions of the variable, so let's get them
       dims <- nc$var[[var_name]][['size']]
+      if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
       ndims <- length(dims)
       if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
 }
@@ -251,21 +257,26 @@ if (!is.na(input_grid)) {
   x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
   y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
   ncdf4::nc_close(nc2)
-} else { 
-  if (!is.null(nc$var[['x_grid']])) { 
-      x_grid <- ncdf4::ncvar_get(nc, "x_grid") 
-      y_grid <- ncdf4::ncvar_get(nc, "y_grid")
-  } else if ((dims[1]==600)&&(dims[2]==180)) { 
+} else if ((dims[1]==600)&&(dims[2]==180)) { 
      # This looks like GBR4 
      x_grid <- gbr4_x_grid
      y_grid <- gbr4_y_grid
-  } else if ((dims[1]==510)&&(dims[2]==2389)) { 
+} else if ((dims[1]==510)&&(dims[2]==2389)) { 
      # This looks like GBR1 
      x_grid <- gbr1_x_grid
      y_grid <- gbr1_y_grid
-  } else { 
-     stop("Unfamiliar netcdf file variable dimensions. Please specify a file for input_grid.")
-  }
+} else { 
+     # Look for x_grid and y_grid in the main input file
+     nc2 <- ncdf4::nc_open(filename)
+     x_grid <- try(ncdf4::ncvar_get(nc2, "x_grid"), TRUE)
+     if (class(x_grid) == "try-error") {
+       ncdf4::nc_close(nc2)
+       stop(paste("Unfamiliar netcdf file variable dimensions:", filename, 
+		  "doesn't look like a GBR1 or GBR4 grid and x_grid and y_grid were not found in this file.",
+		  "Please specify a filename for input_grid."))
+     } 
+     y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
+     ncdf4::nc_close(nc2)
 }
 
 outOfBox <- array(FALSE, dim=dim(x_grid))
@@ -386,11 +397,11 @@ if (Google_map_underlay) {
   }
 } else {
   if (var_name=="true_colour") {
-    p <- ggplot() +
+    p <- ggplot2::ggplot() +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
 	ggplot2::scale_fill_identity() 
   } else {
-    p <- ggplot() +
+    p <- ggplot2::ggplot() +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
         ggplot2::scale_fill_gradient(low=scale_col[1], 
 				     high=scale_col[2], 
@@ -471,159 +482,162 @@ map_ereefs_movie <- function(var_name = "true_colour",
 		       
                       
 {
-# Check whether this is a GBR1 or GBR4 ereefs file, or something else
-ereefs_case <- 0
+  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
+  ereefs_case <- 0
 
-if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
+  if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
 	ereefs_case <- 4
-} else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
+  } else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
 	ereefs_case <- 1
-} else {
-	stop("Not yet implemented for other than GBR1 and GBR4 files")
-}
-
-# Dates to map:
-if (is.vector(start_date)) {
-	start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
-} else if (is.character(start_date)) {
-	start_date <- as.Date(start_date)
-}
-start_day <- as.integer(format(start_date, '%d'))
-start_month <- as.integer(format(start_date, '%m'))
-start_year <- as.integer(format(start_date, '%Y'))
-
-if (is.vector(end_date)) {
-	end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
-} else if (is.character(end_date)) {
-	end_date <- as.Date(end_date)
-}
-end_day <- as.integer(format(end_date, '%d'))
-end_month <- as.integer(format(end_date, '%m'))
-end_year <- as.integer(format(end_date, '%Y'))
-
-if (start_date > end_date) {
-  stop('start_date must preceed end_date')
-}
-
-# Check for ggmap::ggmap()
-if ((Google_map_underlay)&&(!requireNamespace("ggmap", quietly = TRUE))) {
-  warning('Package ggmap::ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
-  print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
-  Google_map_underlay = FALSE
-}
-
-if (start_year==end_year) {
-    mths <- start_month:end_month
-    years <- rep(start_year, length(mths))
-} else if ((start_year + 1) == end_year) {
-    mths <- c(start_month:12, 1:end_month)
-    years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-} else {
-    mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-    years <- c(rep(start_year, 12 - start_month + 1), 
-               rep(start_year + 1 : end_year - 1, each=12),
-               rep(end_year, end_month))
-}
-
-
-# Allow for US English:
-if (var_name == "true_color") {
-	var_name <- "true_colour"
-}
-
-# Get cell grid corners for the full domain of the netcdf file
-if (!is.na(input_grid)) {
-  nc2 <- ncdf4::nc_open(input_grid)
-  x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
-  y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
-  ncdf4::nc_close(nc2)
-} else { 
-  if (!is.null(nc$var[['x_grid']])) { 
-      x_grid <- ncdf4::ncvar_get(nc, "x_grid") 
-      y_grid <- ncdf4::ncvar_get(nc, "y_grid")
-  } else if (ereefs_case == 4) { 
-     x_grid <- gbr4_x_grid
-     y_grid <- gbr4_y_grid
-  } else if (ereefs_case == 1) { 
-     x_grid <- gbr1_x_grid
-     y_grid <- gbr1_y_grid
-  } else { 
-     stop("Not recognised as GBR1 or GBR4. Please specify a file for input_grid.")
   }
-}
-dims <- dim(x_grid) - 1
 
-# Work out which parts of the grid are within box_bounds and which are outside
-outOfBox <- array(FALSE, dim=dim(x_grid))
-if (!is.na(box_bounds[1])) {
-  outOfBox <- apply(x_grid,2,function(x){ (x<box_bounds[1]|is.na(x)) } )
-}
-if (!is.na(box_bounds[2])) {
-  outOfBox <- outOfBox | apply(x_grid,2,function(x){(x>box_bounds[2]|is.na(x))})
-}
-if (!is.na(box_bounds[3])) {
-  outOfBox <- outOfBox | apply(y_grid,2,function(x){(x<box_bounds[3]|is.na(x))})
-}
-if (!is.na(box_bounds[4])) {
-  outOfBox <- outOfBox | apply(y_grid,2,function(x){(x>box_bounds[4]|is.na(x))})
-}
-       
-# Find the subset of x_grid and y_grid that is inside the box and crop the grids
-# to the box_bounds
-if (is.na(box_bounds[1])) { 
+  # Dates to map:
+  if (is.vector(start_date)) {
+	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
+  } else if (is.character(start_date)) {
+	  start_date <- as.Date(start_date)
+  }
+  start_day <- as.integer(format(start_date, '%d'))
+  start_month <- as.integer(format(start_date, '%m'))
+  start_year <- as.integer(format(start_date, '%Y'))
+  
+  if (is.vector(end_date)) {
+	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
+  } else if (is.character(end_date)) {
+	end_date <- as.Date(end_date)
+  }
+  end_day <- as.integer(format(end_date, '%d'))
+  end_month <- as.integer(format(end_date, '%m'))
+  end_year <- as.integer(format(end_date, '%Y'))
+
+  if (start_date > end_date) {
+    stop('start_date must preceed end_date')
+  }
+
+  # Check for ggmap::ggmap()
+  if ((Google_map_underlay)&&(!requireNamespace("ggmap", quietly = TRUE))) {
+    warning('Package ggmap::ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
+    print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
+    Google_map_underlay = FALSE
+  }
+  
+  if (start_year==end_year) {
+      mths <- start_month:end_month
+      years <- rep(start_year, length(mths))
+  } else if ((start_year + 1) == end_year) {
+        mths <- c(start_month:12, 1:end_month)
+      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
+  } else {
+      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
+      years <- c(rep(start_year, 12 - start_month + 1), 
+                 rep(start_year + 1 : end_year - 1, each=12),
+                 rep(end_year, end_month))
+  }
+
+
+  # Allow for US English:
+  if (var_name == "true_color") {
+	var_name <- "true_colour"
+  }
+  
+  # Get cell grid corners for the full domain of the netcdf file
+  if (!is.na(input_grid)) {
+    nc2 <- ncdf4::nc_open(input_grid)
+    x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
+    y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
+    ncdf4::nc_close(nc2)
+  } else if (ereefs_case == 4) { 
+       x_grid <- gbr4_x_grid
+       y_grid <- gbr4_y_grid 
+  } else if (ereefs_case == 1) { 
+       x_grid <- gbr1_x_grid
+       y_grid <- gbr1_y_grid 
+  } else { 
+       # Look for x_grid and y_grid in the main input file
+       nc2 <- ncdf4::nc_open(paste0(input_stem, '.nc'))
+       if (!is.null(nc2$var[['x_grid']])) { 
+         x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
+         y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
+         ncdf4::nc_close(nc2)
+       } else {
+         ncdf4::nc_close(nc2)
+         stop(paste("Unfamiliar netcdf file variable dimensions:", paste0(input_stem, '.nc'),
+		    "doesn't look like a GBR1 or GBR4 grid and x_grid and y_grid were not found in this file.",
+		    "Please specify a filename for input_grid."))
+       } 
+  }
+  dims <- dim(x_grid) - 1
+
+  # Work out which parts of the grid are within box_bounds and which are outside
+  outOfBox <- array(FALSE, dim=dim(x_grid))
+  if (!is.na(box_bounds[1])) {
+    outOfBox <- apply(x_grid,2,function(x){ (x<box_bounds[1]|is.na(x)) } )
+  }
+  if (!is.na(box_bounds[2])) {
+    outOfBox <- outOfBox | apply(x_grid,2,function(x){(x>box_bounds[2]|is.na(x))})
+  }
+  if (!is.na(box_bounds[3])) {
+    outOfBox <- outOfBox | apply(y_grid,2,function(x){(x<box_bounds[3]|is.na(x))})
+  }
+  if (!is.na(box_bounds[4])) {
+    outOfBox <- outOfBox | apply(y_grid,2,function(x){(x>box_bounds[4]|is.na(x))})
+  }
+         
+  # Find the subset of x_grid and y_grid that is inside the box and crop the grids
+  # to the box_bounds
+  if (is.na(box_bounds[1])) { 
   xmin <- 1
-} else {
+  } else {
   xmin <- which(apply(!outOfBox, 1, any))[1]
-  if (length(xmin)==0) xmin <- 1
-}
-if (is.na(box_bounds[2])) {
+    if (length(xmin)==0) xmin <- 1
+  }
+  if (is.na(box_bounds[2])) {
   xmax <- dims[1]
-} else {
-  xmax <- which(apply(!outOfBox, 1, any))
-  xmax <- xmax[length(xmax)]
-  if ((length(xmax)==0)|(xmax > dims[1])) xmax <- dims[1]
-}
-if (is.na(box_bounds[3])) { 
-  ymin <- 1
-} else {
-  ymin <- which(apply(!outOfBox, 2, any))[1]
-  if (length(ymin)==0) ymin <- 1
-}
-if (is.na(box_bounds[4])) {
-  ymax <- dims[2]
-} else {
-  ymax <- which(apply(!outOfBox, 2, any))
-  ymax <- ymax[length(ymax)]
-  if ((length(ymax)==0)|(ymax > dims[2])) ymax <- dims[2]
-}
+  } else {
+    xmax <- which(apply(!outOfBox, 1, any))
+    xmax <- xmax[length(xmax)]
+    if ((length(xmax)==0)|(xmax > dims[1])) xmax <- dims[1]
+  }
+  if (is.na(box_bounds[3])) { 
+    ymin <- 1
+  } else {
+    ymin <- which(apply(!outOfBox, 2, any))[1]
+    if (length(ymin)==0) ymin <- 1
+  }
+  if (is.na(box_bounds[4])) {
+    ymax <- dims[2]
+  } else {
+    ymax <- which(apply(!outOfBox, 2, any))
+    ymax <- ymax[length(ymax)]
+    if ((length(ymax)==0)|(ymax > dims[2])) ymax <- dims[2]
+  }
 
-x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
-y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
+  x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
+  y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
-# Set up the polygon corners. 4 per polygon.
-a <- xmax - xmin
-b <- ymax - ymin
+  # Set up the polygon corners. 4 per polygon.
+  a <- xmax - xmin
+  b <- ymax - ymin
 
-gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
-gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
-gx <- array(gx, dim=c(a*b,4))
-gy <- array(gy, dim=c(a*b,4))
+  gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
+  gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
+  gx <- array(gx, dim=c(a*b,4))
+  gy <- array(gy, dim=c(a*b,4))
 
-# Find and exclude points where not all corners are defined
-gx_ok <- !apply(is.na(gx),1, any)
-gy_ok <- !apply(is.na(gy),1, any)
-gx <- c(t(gx[gx_ok&gy_ok,]))
-gy <- c(t(gy[gx_ok&gy_ok,]))
-if (Google_map_underlay) { 
-	MapLocation<-c(min(x_grid, na.rm=TRUE)-0.5, 
- 	  min(y_grid, na.rm=TRUE)-0.5, 
- 	  max(x_grid, na.rm=TRUE)+0.5, 
-	  max(y_grid, na.rm=TRUE)+0.5)
-  myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", crop=TRUE, zoom=zoom))
-}
+  # Find and exclude points where not all corners are defined
+  gx_ok <- !apply(is.na(gx),1, any)
+  gy_ok <- !apply(is.na(gy),1, any)
+  gx <- c(t(gx[gx_ok&gy_ok,]))
+  gy <- c(t(gy[gx_ok&gy_ok,]))
+  if (Google_map_underlay) { 
+	  MapLocation<-c(min(x_grid, na.rm=TRUE)-0.5, 
+ 	    min(y_grid, na.rm=TRUE)-0.5, 
+ 	    max(x_grid, na.rm=TRUE)+0.5, 
+	    max(y_grid, na.rm=TRUE)+0.5)
+    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", crop=TRUE, zoom=zoom))
+  }
 
-# Main routine
-if (ereefs_case > 0) {
+  # Main routine
   ndims <- 0
   icount <- 0
   mcount <- 0
@@ -633,11 +647,23 @@ if (ereefs_case > 0) {
 
     if (mcount == 1) {
        from_day <- start_day
+       if (ereefs_case == 0) {
+	    nc <- ncdf4::nc_open(filename)
+	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
+	    if (class(ds)=="try-error") {
+	      # We may be dealing with an old EMS file
+	      print('time not found in netcdf file. Looking for t instead (in case it is an old EMS file).')
+	      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    }
+	    ncdf4::nc_close(nc)
+       }
     } else {
        from_day <- 1
     }
     if (mcount == (length(mths))) {
        day_count <- end_day
+    } else if (mcount == 1) {
+       day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
     } else if ((start_year==end_year)&&(start_month==end_month)) {
        day_count <- end_day - start_day
     } else {
@@ -649,19 +675,26 @@ if (ereefs_case > 0) {
             count_array <- c(xmax-xmin, ymax-ymin, day_count)
 	    fileslist <- 1
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-    } else {
+    } else if (ereefs_case == 1) {
             start_array <- c(xmin, ymin, 1)
             count_array <- c(xmax-xmin, ymax-ymin, 1)
 	    fileslist <- from_day:(from_day+day_count-1)
+    } else {
+	    # Everything is in one file but we are only going to read a month at a time
+	    # filename <- paste0(input_stem, '.nc') # filename has been set previously
+            from_day <- as.integer(as.Date(paste(year, month, from_day, sep="-")) - ds[1]) + 1
+	    start_array <- c(xmin, ymin, from_day)
+	    count_array <- c(xmax-xmin, ymax-ymin, day_count)
+	    fileslist <- 1
     }
 
     for (i in fileslist) {
       if (ereefs_case == 1) {
-	      print(as.Date(paste(year, month, i, sep="-")))
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc')
       }
       if (var_name=="plume") {
-        inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+        #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+        inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
         R_412 <- ncdf4::ncvar_get(nc, "R_412", start=start_array, count=count_array)
         R_443 <- ncdf4::ncvar_get(nc, "R_443", start=start_array, count=count_array)
@@ -682,7 +715,8 @@ if (ereefs_case > 0) {
         }
         dims <- dim(ems_var)
       } else if (var_name=="true_colour") {
-        inputfile <- paste0(filename, '?R_470,R_555,R_645,time')
+        #inputfile <- paste0(filename, '?R_470,R_555,R_645,time')
+        inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
         TCbright <- 10
         R_470 <- ncdf4::ncvar_get(nc, "R_470", start=start_array, count=count_array) * TCbright
@@ -708,11 +742,13 @@ if (ereefs_case > 0) {
         dims <- dim(ems_var)
     
       } else { 
-        inputfile <- paste0(filename, '?time,', var_name)
+        #inputfile <- paste0(filename, '?time,', var_name)
+        inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
         if (ndims == 0) {
           # We don't yet know the dimensions of the variable, so let's get them
           dims <- nc$var[[var_name]][['size']]
+          if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
           ndims <- length(dims)
           if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
         }
@@ -785,7 +821,4 @@ if (ereefs_case > 0) {
       } 
     }
   }
-} else {
- stop ("Not yet implemented for files other than GBR1 or GBR4")
-}
 }

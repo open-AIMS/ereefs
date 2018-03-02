@@ -1,6 +1,6 @@
 Package: ereefs
 Title: Useful Functions to Handle eReefs and EMS model Output
-Version: 1.2.0
+Version: 1.3.0
 Authors@R: c(person("Barbara", "Robson", email="B.Robson@aims.gov.au",
                    role = c("aut", "cre")),
              person("Mark", "Baird", email="Mark.Baird@csiro.au",
@@ -12,7 +12,7 @@ Description: A few useful functions to make accessing eReefs and other
     OPeNDAP-served netcdf files under Linux or MacOS. 
     Functions to extract time-series from eReefs netcdf files:
       get_ereefs_ts()
-      get_ereefs_z_integrated_ts ()
+      get_ereefs_depth_integrated_ts ()
       get_ereefs_depth_specified_ts()
     Functions to produce maps or animations of eReefs model outputs:
       map_ereefs()

@@ -9,7 +9,7 @@ get_ereefs_depth_specified_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), depth = 1,
   start_date = c(2010, 12, 31), end_date = c(2016, 12, 31),
   input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
-  grid_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc")
+  input_grid = NA, eta_stem = NA)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
@@ -26,10 +26,19 @@ return values from the bottom of the water column.}
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
-\item{input_stem}{is the URI or file location of the eReefs output files, ommitting the year and month parts of the filenames and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local filename stem.}
+\item{input_stem}{is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.}
 
-\item{grid_file}{is the location of the netcdf file that contains the vertical grid information -- likely an output file
-from the hydrodynamic model used to drive the BGC model. Defaults to"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+\item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
+coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
+z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
+of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
+z grid from data files stored in this package. Alternatively, you can provide the location of a full 
+(not simple-format) ereefs netcdf output file such as 
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+
+\item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
+date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
+only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
@@ -42,9 +51,9 @@ a data frame containing the dates and values of extracted variables
 Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
 not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
 Under Windows, you can still use it for locally-saved files. See also get_ereefs_ts() to extract from a specified 
-layer instead of a depth-integrated value and get_ereefs_z_integrated_ts() to calculate depth-integrated values.
+layer instead of a depth-integrated value and get_ereefs_depth_integrated_ts() to calculate depth-integrated values.
 By Barbara Robson (AIMS).
 }
 \examples{
-get_ereefs_z_integrated_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')
+get_ereefs_depth_specified_ts('Chl_a_sum', c(-23.39189, 150.88852), depth=2.5)
 }

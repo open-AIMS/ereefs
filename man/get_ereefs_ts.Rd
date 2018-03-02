@@ -23,7 +23,7 @@ is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
-\item{input_stem}{is the URI or file location of the eReefs output files, ommitting the year and month parts of the filenames and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local filename stem.}
+\item{input_stem}{is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
@@ -35,7 +35,7 @@ a data frame containing the dates and values of extracted variables.
 \description{
 Create a time-series of values of one or more selected model output variables in a specified layer of the
 water column or sediment store (by default, the surface layer), aat a specified geographic location within 
-the model domain.  See also get_ereefs_z_integrated_ts() to extract depth-integrated values and 
+the model domain.  See also get_ereefs_depth_integrated_ts() to extract depth-integrated values and 
 get_ereefs_depth_specified_ts() to extract values at a specified depth below the free (tidally moving) 
 surface. Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
 not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
