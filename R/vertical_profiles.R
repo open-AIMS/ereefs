@@ -331,9 +331,13 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   close(pb)
 
-  if (squeeze&(dim(values)[3] == 1)) values <- array(values, dim=dim(values)[c(1,2)])
-  if (squeeze&(dim(values)[2] == 1)&(length(dim(values))==3)) values <- array(values, dim=dim(values)[c(1,3)])
-  if (squeeze&(dim(values)[2] == 1)) values <- array(values, dim=dim(values)[1])
+  if (squeeze&(dim(values)[3] == 1)) {                          # Only one time-step
+	  values <- array(values, dim=dim(values)[c(1,2)])
+	  colnames(values) <- var_names
+  }
+  if (squeeze&(dim(values)[2] == 1)&(length(dim(values))==3)) { # Only one variable, but multiple time-steps
+	  values <- array(values, dim=dim(values)[c(1,3)])
+  }
   return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   return(return_list)
 }
