@@ -7,7 +7,7 @@
 map_ereefs_movie(var_name = "true_colour", start_date = c(2015, 12, 1),
   end_date = c(2016, 3, 31), layer = "surface", output_dir = "ToAnimate",
   Google_map_underlay = TRUE,
-  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
+  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
   input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
   NA), zoom = 6, box_bounds = c(NA, NA, NA, NA))
 }
@@ -34,9 +34,9 @@ followed by an underscore and then sequential numbers beginning with 100001.}
 \item{Google_map_underlay}{Set to TRUE (the default) to use ggmap::ggmap to show a Google Map as
 an underlay for the model output plot. Requires the ggmap::ggmap librray.}
 
-\item{input_stem}{Path to the locally-stored or opendap-served netcdf file, including the stem
-of the file name (i.e. the start of the filename without the date or file extension).
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_".,}
+\item{input_file}{is the URI or file location of any of the EMS output files, 
+Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for

@@ -7,7 +7,7 @@
 get_ereefs_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), layer = "surface",
   start_date = c(2010, 12, 31), end_date = c(2016, 10, 31),
-  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_")
+  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc")
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
@@ -23,7 +23,9 @@ is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
-\item{input_stem}{is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.}
+\item{input_file}{is the URI or file location of any of the EMS output files, 
+Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 

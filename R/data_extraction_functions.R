@@ -1,3 +1,84 @@
+#' Determines whether the file provided looks like an example of daily (e.g. GBR1), monthly (e.g. GBR4) or other (e.g. RECOM) output
+#'
+#' @param filename Name of the file to examine
+#' @return 1 for daily, 4 for monthly, 0 for other
+get_ereefs_case <- function(filename) {
+  ext <- stringi::stri_locate_last(filename, regex='.nc')[1]
+  lastfew <- substr(filename, start=ext-10, stop=ext-1)
+  dashcount <- stringi::stri_count_fixed(lastfew, '-')
+  if (dashcount==2) {
+	  ereefs_case <- 1
+  } else if (dashcount==1) {
+	  ereefs_case <- 4
+  } else {
+	  ereefs_case <- 0
+  }
+  return(ereefs_case)
+}
+
+#' Returns an appropriate x_grid, y_grid and z_grid
+#'
+#' @param filename Name of the file to examine
+#' @param input_grid Optional alternative file from which to load x_grid, y_grid and z_grid
+#' @return a list containing x_grid, y_grid and z_grid
+get_ereefs_grids <- function(filename, input_grid=NA) {
+	if (!is.na(input_grid)) {
+		nc <- ncdf4::nc_open(input_grid)
+		x_grid <- ncdf4::ncvar_get(nc, 'x_grid')
+		y_grid <- ncdf4::ncvar_get(nc, 'y_grid')
+		z_grid <- ncdf4::ncvar_get(nc, 'z_grid')
+		ncdf4::nc_close(nc)
+	} else {
+		nc <- ncdf4::nc_open(filename)
+		if (!is.null(nc$var[['x_grid']])) { 
+		  x_grid <- ncdf4::ncvar_get(nc, 'x_grid')
+		  y_grid <- ncdf4::ncvar_get(nc, 'y_grid')
+		  z_grid <- ncdf4::ncvar_get(nc, 'z_grid')
+                } else {
+		  if (!is.null(nc$dim[['i']])) {
+		    ilen <- nc$dim[['i']][['len']]
+		    jlen <- nc$dim[['j']][['len']]
+		    klen <- nc$dim[['k']][['len']]
+                  } else {
+		    ilen <- nc$dim[['i_grid']][['len']]
+		    jlen <- nc$dim[['j_grid']][['len']]
+		    klen <- nc$dim[['k_grid']][['len']]
+                  }
+		  if ((ilen==510)&(jlen==2389)) {
+		    x_grid <- gbr1_x_grid
+		    y_grid <- gbr1_y_grid
+		    z_grid <- gbr1_z_grid
+		  } else if ((ilen==600)&(jlen==180)) {
+		    x_grid <- gbr4_x_grid
+		    y_grid <- gbr4_y_grid
+		    z_grid <- gbr4_z_grid
+		  } else {
+		    stop('x_grid, y_grid and z_grid not found and grid size not recognised as GBR1 or GBR4. Please specifiy input_grid.')
+		  }
+                }
+		ncdf4::nc_close(nc)
+	} 
+	return(list(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid))
+}
+
+#' Returns the 'stem' of a filename (i.e. the filename with the date and extension cut off the end)
+#'
+#' Utility function for ereefs package
+#'
+#' @param filename A netcdf filename from an EMS model run
+#' @return a character string
+get_file_stem <- function(filename) {
+	case <- get_ereefs_case(filename)
+	if (case==0) {
+		file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-1)
+	} else if (case==1) {
+		file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-11)
+	} else {
+		file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-8)
+	}
+	return(file_stem)
+}
+
 #' Extracts time series at a specified location from eReefs model output files
 #'
 #' Create a time-series of values of one or more selected model output variables in a specified layer of the
@@ -22,7 +103,9 @@
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,10,31).
-#' @param input_stem is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.
+#' @param input_file is the URI or file location of any of the EMS output files, 
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @export
 #' @examples
 #' get_ereefs_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')
@@ -32,17 +115,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           layer='surface', 
 		          start_date = c(2010,12,31), 
 		          end_date = c(2016,10,31), 
-                          input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_")
+                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc")
 {
 
-  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- 0
-
-  if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
-	ereefs_case <- 4
-  } else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
-	ereefs_case <- 1
-  }
+  # Check whether output is daily (case 1), monthly (case 4) or something else (case 0)
+  ereefs_case <- get_ereefs_case(input_file)
+  input_stem <- get_file_stem(input_file)
 
   # Dates to plot
   if (is.vector(start_date)) {
@@ -82,40 +160,51 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
 
-  # Initialise the data frame with the right number of NAs
-  blanks <- rep(NA, end_date - start_date + 1)
-  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  names(ts_frame) <- c("date", var_names)
-
   if (ereefs_case == 4) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
+      blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
+      blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else {
-      inputfile <- paste0(input_stem, '.nc')
+      inputfile <- input_file
+      nc <- ncdf4::nc_open(inputfile)
+      if (!is.null(nc$var[['t']])) {
+        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+      } else {
+        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+      }
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+      ncdf4::nc_close(nc)
   }
+
+  # Initialise
+  blanks <- rep(NA, blank_length)
+  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
+  names(ts_frame) <- c("date", var_names)
+
 
   if (is.integer(location_latlon)) {
      location_grid <- location_latlon
   } else { 
     # Find the nearest grid-points to the sampling location
     nc <- ncdf4::nc_open(inputfile)
-    latitude <- try(ncdf4::ncvar_get(nc, "latitude"), TRUE)
-    if (class(latitude) == 'try-error') {
-      print('latitude not found in the netcdf file. Checking for x_centre in case this is an old EMS file.')
+    if (is.null(nc$var[['latitude']])) {
       latitude <- ncdf4::ncvar_get(nc, "y_centre")
       longitude <- ncdf4::ncvar_get(nc, "x_centre")
     } else { 
+      latitude <- ncdf4::ncvar_get(nc, "latitude")
       longitude <- ncdf4::ncvar_get(nc, "longitude")
     }
     ncdf4::nc_close(nc)
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
-    location_grid <- c( floor(tmp / dim(latitude)[1]) + 1, tmp%%dim(latitude)[1])
+    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
 
   # Loop through monthly eReefs files to extract the data
@@ -129,16 +218,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     year <- years[mcount]
     if (mcount == 1) {
        from_day <- start_day
-       if (ereefs_case == 0) {
-	    nc <- ncdf4::nc_open(inputfile)
-	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
-	    if (class(ds)=="try-error") {
-	      # We may be dealing with an old EMS file
-	      print('time not found in netcdf file. Looking for t instead in case it is an old EMS file.')
-	      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-	    }
-	    ncdf4::nc_close(nc)
-       }
     } else {
        from_day <- 1
     }
@@ -154,19 +233,19 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     if (ereefs_case == 4) { 
        fileslist <- 1
        inputfile <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
     } else if (ereefs_case == 1) {
 	    fileslist <- from_day:(from_day+day_count-1)
 	    from_day <- 1
 	    day_count <- 1
     } else {
-            from_day <- as.integer(as.Date(paste(year, month, from_day, sep="-"))) - as.integer(ds[1]) + 1
+            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+	    if (from_day<1) from_day <-1
+	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
     }
     for (dcount in fileslist) {
       if (ereefs_case == 1) {
 	    inputfile <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
-            if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
       }
       #inputfile <- paste0(inputfile, '?', var_list, ',time')
       nc <- ncdf4::nc_open(inputfile)
@@ -225,7 +304,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
-#' @param input_stem is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.
+#' @param input_file is the URI or file location of any of the EMS output files, 
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -233,6 +314,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
@@ -243,19 +325,15 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           location_latlon=c(-23.39189, 150.88852), 
 		          start_date = c(2010,12,31), 
 		          end_date = c(2016,12,31), 
-                          input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
+                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
 			  input_grid = NA,
 			  eta_stem = NA)
 {
 
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- 0
-
-  if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
-	ereefs_case <- 4
-  } else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
-	ereefs_case <- 1
-  }
+  ereefs_case <- get_ereefs_case(input_file)
+  input_stem <- get_file_stem(input_file)
+  z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
   if (is.vector(start_date)) {
@@ -295,61 +373,56 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
 
-  # Initialise the data frame with the right number of NAs
-  blanks <- rep(NA, end_date - start_date + 1)
-  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  names(ts_frame) <- c("date", var_names)
-
   if (ereefs_case == 4) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
+      blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
+      blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else {
-      inputfile <- paste0(input_stem, '.nc')
+      inputfile <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
+      nc <- ncdf4::nc_open(inputfile)
+      if (!is.null(nc$var[['t']])) {
+        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+      } else {
+        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+      }
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+      ncdf4::nc_close(nc)
   }
+
+  # Initialise
+  blanks <- rep(NA, blank_length)
+  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
+  names(ts_frame) <- c("date", var_names)
 
   nc <- ncdf4::nc_open(inputfile)
   if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
 
-  if (!is.na(input_grid)) {
-    nc2 <- ncdf4::nc_open(input_grid)
-    z_grid <- ncdf4::ncvar_get(nc2, "z_grid")
-    ncdf4::nc_close(nc2)
-  } else { 
-    if (!is.null(nc$var[['z_grid']])) { 
-       z_grid <- ncdf4::ncvar_get(nc, "z_grid") 
-    } else if (ereefs_case == 4) { 
-       z_grid <- gbr4_z_grid
-    } else if (ereefs_case == 1) { 
-       z_grid <- gbr1_z_grid
-    } else { 
-       stop("Not recognised as GBR1 or GBR4, and z_grid not found in main input file. Please specify a file for input_grid.")
-    }
-  }
   if (is.integer(location_latlon)) {
      location_grid <- location_latlon
   } else { 
     # Find the nearest grid-points to the sampling location
-    latitude <- try(ncdf4::ncvar_get(nc, "latitude"), TRUE)
-    if (class(latitude) == 'try-error') {
-      print('latitude not found in the netcdf file. Checking for x_centre in case this is an old EMS file.')
+    if (is.null(nc$var[['latitude']])) {
       latitude <- ncdf4::ncvar_get(nc, "y_centre")
       longitude <- ncdf4::ncvar_get(nc, "x_centre")
     } else { 
+      latitude <- ncdf4::ncvar_get(nc, "latitude")
       longitude <- ncdf4::ncvar_get(nc, "longitude")
     }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
-    location_grid <- c( floor(tmp / dim(latitude)[1]) + 1, tmp%%dim(latitude)[1])
+    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
   botz <- as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
@@ -363,16 +436,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      year <- years[mcount]
      if (mcount == 1) {
         from_day <- start_day
-         if (ereefs_case == 0) {
-	    nc <- ncdf4::nc_open(inputfile)
-	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
-	    if (class(ds)=="try-error") {
-	      # We may be dealing with an old EMS file
-	      print('time not found in netcdf file. Looking for t instead in case it is an old EMS file.')
-	      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-	    }
-	    ncdf4::nc_close(nc)
-	 }
      } else {
         from_day <- 1
      }
@@ -394,7 +457,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
      } else {
-            from_day <- as.integer(as.Date(paste(year, month, from_day, sep="-"))) - as.integer(ds[1]) + 1
+            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+	    if (from_day<1) from_day <-1
+	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
      }
      for (dcount in fileslist) {
@@ -406,8 +471,11 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         nc <- ncdf4::nc_open(inputfile)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case > 0) {
-          d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
-          d <- as.Date(d, origin = as.Date("1990-01-01"))
+          if (!is.null(nc$var[['t']])) {
+            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+          } else {
+            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+          }
         } else {
 	  d <- ds[from_day:(from_day + day_count - 1)]
         }
@@ -477,7 +545,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
-#' @param input_stem is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.
+#' @param input_file is the URI or file location of any of the EMS output files, 
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -496,19 +566,15 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           depth = 1.0,
 		          start_date = c(2010,12,31), 
 		          end_date = c(2016,12,31), 
-                          input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
+                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
 		          input_grid = NA,
 			  eta_stem = NA)
 {
 
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- 0
-
-  if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
-	ereefs_case <- 4
-  } else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
-	ereefs_case <- 1
-  }
+  ereefs_case <- get_ereefs_case(input_file)
+  input_stem <- get_file_stem(input_file)
+  z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
   if (is.vector(start_date)) {
@@ -548,60 +614,55 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
 
-  # Initialise the data frame with the right number of NAs
-  blanks <- rep(NA, end_date - start_date + 1)
-  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  names(ts_frame) <- c("date", var_names)
-
   if (ereefs_case == 4) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
+      blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
+      blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else {
-      inputfile <- paste0(input_stem, '.nc')
+      inputfile <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
+      nc <- ncdf4::nc_open(inputfile)
+      if (!is.null(nc$var[['t']])) {
+        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+      } else {
+        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+      }
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+      ncdf4::nc_close(nc)
   }
 
+  # Initialise
+  blanks <- rep(NA, blank_length)
+  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
+  names(ts_frame) <- c("date", var_names)
+
   nc <- ncdf4::nc_open(inputfile)
-  if (!is.na(input_grid)) {
-    nc2 <- ncdf4::nc_open(input_grid)
-    z_grid <- ncdf4::ncvar_get(nc2, "z_grid")
-    ncdf4::nc_close(nc2)
-  } else { 
-    if (!is.null(nc$var[['z_grid']])) { 
-       z_grid <- ncdf4::ncvar_get(nc, "z_grid") 
-    } else if (ereefs_case == 4) { 
-       z_grid <- gbr4_z_grid
-    } else if (ereefs_case == 1) { 
-       z_grid <- gbr1_z_grid
-    } else { 
-       stop("Not recognised as GBR1 or GBR4, and z_grid not found in main input file. Please specify a file for input_grid.")
-    }
-  }
 
   if (is.integer(location_latlon)) {
      location_grid <- location_latlon
   } else { 
     # Find the nearest grid-points to the sampling location
-    latitude <- try(ncdf4::ncvar_get(nc, "latitude"), TRUE)
-    if (class(latitude) == 'try-error') {
-      print('latitude not found in the netcdf file. Checking for x_centre in case this is an old EMS file.')
+    if (is.null(nc$var[['latitude']])) {
       latitude <- ncdf4::ncvar_get(nc, "y_centre")
       longitude <- ncdf4::ncvar_get(nc, "x_centre")
     } else { 
+      latitude <- ncdf4::ncvar_get(nc, "latitude")
       longitude <- ncdf4::ncvar_get(nc, "longitude")
     }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
-    location_grid <- c( floor(tmp / dim(latitude)[1]) + 1, tmp%%dim(latitude)[1])
+    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
   botz <- as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
@@ -615,16 +676,6 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      year <- years[mcount]
      if (mcount == 1) {
         from_day <- start_day
-         if (ereefs_case == 0) {
-	    nc <- ncdf4::nc_open(inputfile)
-	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
-	    if (class(ds)=="try-error") {
-	      # We may be dealing with an old EMS file
-	      print('time not found in netcdf file. Looking for t instead in case it is an old EMS file.')
-	      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-	    }
-	    ncdf4::nc_close(nc)
-	 }
      } else {
         from_day <- 1
      }
@@ -645,7 +696,9 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
      } else {
-            from_day <- as.integer(as.Date(paste(year, month, from_day, sep="-"))) - as.integer(ds[1]) + 1
+            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+	    if (from_day<1) from_day <-1
+	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
      }
      for (dcount in fileslist) {

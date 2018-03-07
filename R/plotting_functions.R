@@ -109,10 +109,9 @@ plume_class <- function(rsr) {
 #' @param layer Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.
 #' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
 #'      an underlay for the model output plot. Requires the ggmap librray.
-#' @param input_stem Path to the locally-stored or opendap-served netcdf file, including the stem
-#'      of the file name (i.e. the start of the filename without the date or file extension) if the filename
-#'       contains 'gbr1' or 'gbr4', or the full filename otherwise.  Defaults to 
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_".,
+#' @param input_file is the URI or file location of any of the EMS output files, 
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -130,6 +129,8 @@ plume_class <- function(rsr) {
 #' @param box_bounds Minimum and maximum latitude and longitude coordinates to map. Defaults to the
 #'        entire extent of the model output (though modified by the value of zoom). 
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max).
+#' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
+#'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
 #' @export
 #' @examples
 #' map_ereefs()
@@ -141,26 +142,23 @@ map_ereefs <- function(var_name = "true_colour",
 		       target_date = c(2018,1,30), 
                        layer = 'surface',
 		       Google_map_underlay = TRUE,
-		       input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_",
+                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
                        zoom = 6,
-		       box_bounds = c(NA, NA, NA, NA))
+		       box_bounds = c(NA, NA, NA, NA),
+		       p = NA)
 {
 
-# Note: For "plume" and "true_colour" maps, this currently downloads and calculates the data for the whole surface,
-# before cutting to size. Should make this more efficient by changing the code to match what is done for other variables,
-# which is to download only the relevant portion of the layer when box_bounds are set.
+if (length(p)!=1) Google_map_underlay <- FALSE
 
 # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-ereefs_case <- 0
-
-if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
-	ereefs_case <- 4
-} else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
-	ereefs_case <- 1
-}
+ereefs_case <- get_ereefs_case(input_file)
+input_stem <- get_file_stem(input_file)
+grids <- get_ereefs_grids(input_file, input_grid)
+x_grid <- grids[['x_grid']]
+y_grid <- grids[['y_grid']]
 
 # Date to map:
 if (is.vector(target_date)) {
@@ -177,11 +175,11 @@ if (ereefs_case == 4) {
 } else {
 	filename <- paste0(input_stem, '.nc')
 	nc <- ncdf4::nc_open(filename)
-        ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
+        ds <- try(as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01")), TRUE)
 	if (class(ds)=="try-error") {
 	  # We may be dealing with an old EMS file
-          print('time not found in netcdf file. Looking for t instead (in case it is an old EMS file).')
-	  ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+          print('t not found in netcdf file. Looking for time instead.')
+	  ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
@@ -193,91 +191,14 @@ if (var_name == "true_color") {
 }
 
 # Check for ggmap()
-if ((Google_map_underlay)&&(!requireNamespace("ggmap", quietly = TRUE))) {
+if ((Google_map_underlay)&(!requireNamespace("ggmap", quietly = TRUE))) {
   warning('Package ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
   print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
   Google_map_underlay = FALSE
 }
 
-if (var_name=="plume") {
-    #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
-    inputfile <- filename
-    nc <- ncdf4::nc_open(inputfile)
-    R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(1,1,day), count=c(-1,-1,1))
-    R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(1,1,day), count=c(-1,-1,1))
-    R_488 <- ncdf4::ncvar_get(nc, "R_488", start=c(1,1,day), count=c(-1,-1,1))
-    R_531 <- ncdf4::ncvar_get(nc, "R_531", start=c(1,1,day), count=c(-1,-1,1))
-    R_547 <- ncdf4::ncvar_get(nc, "R_547", start=c(1,1,day), count=c(-1,-1,1))
-    R_667 <- ncdf4::ncvar_get(nc, "R_667", start=c(1,1,day), count=c(-1,-1,1))
-    R_678 <- ncdf4::ncvar_get(nc, "R_678", start=c(1,1,day), count=c(-1,-1,1))
-    rsr <- list(R_412, R_443, R_488, R_531, R_547, R_667, R_678)
-    ems_var <- plume_class(rsr)
-    dims <- dim(ems_var)
-
-} else if (var_name=="true_colour") {
-    #inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
-    inputfile <- filename
-    nc <- ncdf4::nc_open(inputfile)
-    TCbright <- 10
-    R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(1,1,day), count=c(-1,-1,1)) * TCbright
-    R_555 <- ncdf4::ncvar_get(nc, "R_555", start=c(1,1,day), count=c(-1,-1,1)) * TCbright
-    R_645 <- ncdf4::ncvar_get(nc, "R_645", start=c(1,1,day), count=c(-1,-1,1)) * TCbright
-    R_470[R_470>1] <- 1
-    R_555[R_555>1] <- 1
-    R_645[R_645>1] <- 1
-
-    unscaledR = c(0, 30, 60, 120, 190, 255)/255;
-    scaledR = c(1, 110, 160, 210, 240, 255)/255;
-    scalefun <- approxfun(x=unscaledR, y=scaledR, yleft=1, yright=255)
-    red <- scalefun(R_645)
-    green <-scalefun(R_555)
-    blue <- scalefun(R_470)
-    red[is.na(red)] <- 0
-    green[is.na(green)] <- 0
-    blue[is.na(blue)] <- 0
-
-    ems_var <- rgb(red, green, blue)
-    ems_var[ems_var=="#000000"] <- NA
-    ems_var <-array(as.character(ems_var), dim=dim(R_645))
-    dims <- dim(ems_var)
-} else { 
-    #inputfile <- paste0(filename, '?', var_name)
-    inputfile <- filename
-    nc <- ncdf4::nc_open(inputfile)
-      # We don't yet know the dimensions of the variable, so let's get them
-      dims <- nc$var[[var_name]][['size']]
-      if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
-      ndims <- length(dims)
-      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
-}
-
 # Get cell grid corners
-if (!is.na(input_grid)) {
-  nc2 <- ncdf4::nc_open(input_grid)
-  x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
-  y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
-  ncdf4::nc_close(nc2)
-} else if ((dims[1]==600)&&(dims[2]==180)) { 
-     # This looks like GBR4 
-     x_grid <- gbr4_x_grid
-     y_grid <- gbr4_y_grid
-} else if ((dims[1]==510)&&(dims[2]==2389)) { 
-     # This looks like GBR1 
-     x_grid <- gbr1_x_grid
-     y_grid <- gbr1_y_grid
-} else { 
-     # Look for x_grid and y_grid in the main input file
-     nc2 <- ncdf4::nc_open(filename)
-     x_grid <- try(ncdf4::ncvar_get(nc2, "x_grid"), TRUE)
-     if (class(x_grid) == "try-error") {
-       ncdf4::nc_close(nc2)
-       stop(paste("Unfamiliar netcdf file variable dimensions:", filename, 
-		  "doesn't look like a GBR1 or GBR4 grid and x_grid and y_grid were not found in this file.",
-		  "Please specify a filename for input_grid."))
-     } 
-     y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
-     ncdf4::nc_close(nc2)
-}
+dims <- dim(x_grid) - 1
 
 outOfBox <- array(FALSE, dim=dim(x_grid))
 if (!is.na(box_bounds[1])) {
@@ -323,9 +244,59 @@ if (is.na(box_bounds[4])) {
 x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
 y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
-if ((var_name == 'true_colour') || (var_name == 'plume')) {
-	ems_var <- ems_var[xmin:xmax, ymin:ymax]
-} else {
+
+if (var_name=="plume") {
+    #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+    inputfile <- filename
+    nc <- ncdf4::nc_open(inputfile)
+    R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_488 <- ncdf4::ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_531 <- ncdf4::ncvar_get(nc, "R_531", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_547 <- ncdf4::ncvar_get(nc, "R_547", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_667 <- ncdf4::ncvar_get(nc, "R_667", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_678 <- ncdf4::ncvar_get(nc, "R_678", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    rsr <- list(R_412, R_443, R_488, R_531, R_547, R_667, R_678)
+    ems_var <- plume_class(rsr)
+    dims <- dim(ems_var)
+
+} else if (var_name=="true_colour") {
+    #inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
+    inputfile <- filename
+    nc <- ncdf4::nc_open(inputfile)
+    TCbright <- 10
+    R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
+    R_555 <- ncdf4::ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
+    R_645 <- ncdf4::ncvar_get(nc, "R_645", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
+    R_470[R_470>1] <- 1
+    R_555[R_555>1] <- 1
+    R_645[R_645>1] <- 1
+
+    unscaledR = c(0, 30, 60, 120, 190, 255)/255;
+    scaledR = c(1, 110, 160, 210, 240, 255)/255;
+    scalefun <- approxfun(x=unscaledR, y=scaledR, yleft=1, yright=255)
+    red <- scalefun(R_645)
+    green <-scalefun(R_555)
+    blue <- scalefun(R_470)
+    red[is.na(red)] <- 0
+    green[is.na(green)] <- 0
+    blue[is.na(blue)] <- 0
+
+    ems_var <- rgb(red, green, blue)
+    ems_var[ems_var=="#000000"] <- NA
+    ems_var <-array(as.character(ems_var), dim=dim(R_645))
+    dims <- dim(ems_var)
+} else { 
+    #inputfile <- paste0(filename, '?', var_name)
+    inputfile <- filename
+    nc <- ncdf4::nc_open(inputfile)
+      # We don't yet know the dimensions of the variable, so let's get them
+      dims <- nc$var[[var_name]][['size']]
+      if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
+      ndims <- length(dims)
+      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+}
+if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
     if (ndims == 4) {
        ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
     } else {
@@ -381,27 +352,16 @@ if (Google_map_underlay) {
  		max(gx, na.rm=TRUE)+0.5, 
  		max(gy, na.rm=TRUE)+0.5)
   myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", zoom=zoom, crop=TRUE))
-  if (var_name=="true_colour") {
-    p <- ggmap::ggmap(myMap) +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-	ggplot2::scale_fill_identity()
-  } else {
-    p <- ggmap::ggmap(myMap) +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-        ggplot2::scale_fill_gradient(low=scale_col[1], 
-				     high=scale_col[2], 
-				     na.value="transparent", 
-				     guide="colourbar",
-				     limits=scale_lim,
-				     oob=scales::squish)
-  }
-} else {
-  if (var_name=="true_colour") {
-    p <- ggplot2::ggplot() +
+  p <- ggmap::ggmap(myMap)
+} else if (length(p)==1) {
+  p <- ggplot2::ggplot()
+}
+if (var_name=="true_colour") {
+  p <- p +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
 	ggplot2::scale_fill_identity() 
-  } else {
-    p <- ggplot2::ggplot() +
+} else {
+  p <- p +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
         ggplot2::scale_fill_gradient(low=scale_col[1], 
 				     high=scale_col[2], 
@@ -409,9 +369,9 @@ if (Google_map_underlay) {
 				     guide="colourbar",
 				     limits=scale_lim,
 				     oob=scales::squish)
-  }
 }
 print(p)
+return(p)
 }
 
 #' Create a series of map image files for an animation of eReefs model output.
@@ -445,9 +405,9 @@ print(p)
 #'      followed by an underscore and then sequential numbers beginning with 100001.
 #' @param Google_map_underlay Set to TRUE (the default) to use ggmap::ggmap to show a Google Map as
 #'      an underlay for the model output plot. Requires the ggmap::ggmap librray.
-#' @param input_stem Path to the locally-stored or opendap-served netcdf file, including the stem
-#'      of the file name (i.e. the start of the filename without the date or file extension).
-#'      Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_".,
+#' @param input_file is the URI or file location of any of the EMS output files, 
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -473,7 +433,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                        layer = 'surface',
                        output_dir = 'ToAnimate',
 		       Google_map_underlay = TRUE,
-                       input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
+                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
@@ -483,13 +443,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
                       
 {
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- 0
-
-  if (stringi::stri_detect_fixed(input_stem, 'gbr4')) {
-	ereefs_case <- 4
-  } else if (stringi::stri_detect_fixed(input_stem ,'gbr1')) {
-	ereefs_case <- 1
-  }
+  ereefs_case <- get_ereefs_case(input_file)
+  input_stem <- get_file_stem(input_file)
+  grids <- get_ereefs_grids(input_file, input_grid)
+  x_grid <- grids[['x_grid']]
+  y_grid <- grids[['y_grid']]
 
   # Dates to map:
   if (is.vector(start_date)) {
@@ -502,7 +460,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   start_year <- as.integer(format(start_date, '%Y'))
   
   if (is.vector(end_date)) {
-	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
+	end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
   } else if (is.character(end_date)) {
 	end_date <- as.Date(end_date)
   }
@@ -515,7 +473,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   }
 
   # Check for ggmap::ggmap()
-  if ((Google_map_underlay)&&(!requireNamespace("ggmap", quietly = TRUE))) {
+  if ((Google_map_underlay)&(!requireNamespace("ggmap", quietly = TRUE))) {
     warning('Package ggmap::ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
     print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
     Google_map_underlay = FALSE
@@ -530,7 +488,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   } else {
       mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
       years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep(start_year + 1 : end_year - 1, each=12),
+                 rep((start_year + 1) : (end_year - 1), each=12),
                  rep(end_year, end_month))
   }
 
@@ -540,32 +498,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	var_name <- "true_colour"
   }
   
-  # Get cell grid corners for the full domain of the netcdf file
-  if (!is.na(input_grid)) {
-    nc2 <- ncdf4::nc_open(input_grid)
-    x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
-    y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
-    ncdf4::nc_close(nc2)
-  } else if (ereefs_case == 4) { 
-       x_grid <- gbr4_x_grid
-       y_grid <- gbr4_y_grid 
-  } else if (ereefs_case == 1) { 
-       x_grid <- gbr1_x_grid
-       y_grid <- gbr1_y_grid 
-  } else { 
-       # Look for x_grid and y_grid in the main input file
-       nc2 <- ncdf4::nc_open(paste0(input_stem, '.nc'))
-       if (!is.null(nc2$var[['x_grid']])) { 
-         x_grid <- ncdf4::ncvar_get(nc2, "x_grid")
-         y_grid <- ncdf4::ncvar_get(nc2, "y_grid")
-         ncdf4::nc_close(nc2)
-       } else {
-         ncdf4::nc_close(nc2)
-         stop(paste("Unfamiliar netcdf file variable dimensions:", paste0(input_stem, '.nc'),
-		    "doesn't look like a GBR1 or GBR4 grid and x_grid and y_grid were not found in this file.",
-		    "Please specify a filename for input_grid."))
-       } 
-  }
   dims <- dim(x_grid) - 1
 
   # Work out which parts of the grid are within box_bounds and which are outside
@@ -648,12 +580,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
     if (mcount == 1) {
        from_day <- start_day
        if (ereefs_case == 0) {
+	    filename <- paste0(input_stem, '.nc')
 	    nc <- ncdf4::nc_open(filename)
-	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")), TRUE)
+	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01")), TRUE)
 	    if (class(ds)=="try-error") {
 	      # We may be dealing with an old EMS file
-	      print('time not found in netcdf file. Looking for t instead (in case it is an old EMS file).')
-	      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	      print('t not found in netcdf file. Looking for time instead.')
+	      ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	    }
 	    ncdf4::nc_close(nc)
        }
@@ -681,10 +614,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	    fileslist <- from_day:(from_day+day_count-1)
     } else {
 	    # Everything is in one file but we are only going to read a month at a time
+	    # Output may be more than daily, or possibly less
 	    # filename <- paste0(input_stem, '.nc') # filename has been set previously
-            from_day <- as.integer(as.Date(paste(year, month, from_day, sep="-")) - ds[1]) + 1
+            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+	    if (from_day<1) from_day <-1
 	    start_array <- c(xmin, ymin, from_day)
-	    count_array <- c(xmax-xmin, ymax-ymin, day_count)
+	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/as.numeric(ds[2]-ds[1])))
 	    fileslist <- 1
     }
 
@@ -787,12 +722,16 @@ map_ereefs_movie <- function(var_name = "true_colour",
         }
   
         if (Google_map_underlay) {
-          if (var_name=="true_colour") {
-          p <- ggmap::ggmap(myMap) +
+          p <- ggmap::ggmap(myMap)
+	} else {
+	  p <- ggplot2::ggplot()
+        }
+        if (var_name=="true_colour") {
+	  p <- p +
               ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
 	      ggplot2::scale_fill_identity()
-          } else {
-          p <- ggmap::ggmap(myMap) +
+        } else {
+          p <- p +
               ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
               ggplot2::scale_fill_gradient(low=scale_col[1],
 					   high=scale_col[2],
@@ -800,17 +739,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
 					   guide="colourbar",
 					   limits=scale_lim,
 					   oob=scales::squish)
-          }
-	      #, limits=c(0,.01))
-        } else {
-          p <- ggplot2::ggplot() +
-             ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-             ggplot2::scale_fill_gradient(low=scale_col[1], 
-				          high=scale_col[2], 
-				          na.value="transparent", 
-				          guide="colourbar",
-				          limits=scale_lim,
-				          oob=scales::squish)
         }
         icount <- icount + 1
         if (!file.exists(output_dir)) {

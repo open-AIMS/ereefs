@@ -7,7 +7,7 @@
 get_ereefs_depth_integrated_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), start_date = c(2010, 12, 31),
   end_date = c(2016, 12, 31),
-  input_stem = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_",
+  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
   input_grid = NA, eta_stem = NA)
 }
 \arguments{
@@ -22,7 +22,9 @@ is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
-\item{input_stem}{is the URI or file location of the eReefs output files, ommitting the year and month parts of the inputfiles and ommitting ".nc" . Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_". If using Windows, you will need to set this to a local inputfile stem.}
+\item{input_file}{is the URI or file location of any of the EMS output files, 
+Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
@@ -30,7 +32,8 @@ z_grid can be found in the first INPUT_STEM file, and if not found, will check w
 of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
 z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 (not simple-format) ereefs netcdf output file such as 
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
 
 \item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
 date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
