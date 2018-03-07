@@ -7,7 +7,7 @@
 get_ereefs_vertical_slice(var_names = c("Chl_a_sum", "TN"),
   location_latlon = data.frame(latitude = c(-20, -16), longitude = c(148.5,
   152)), target_date = c(2016, 2, 4),
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
   input_grid = NA, eta_stem = NA)
 }
 \arguments{
@@ -19,7 +19,7 @@ Otherwise, extract only the locations corresponding to the cells nearest the spe
 Defaults to c(2016, 02, 04).}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
 If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid

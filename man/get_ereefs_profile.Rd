@@ -7,7 +7,7 @@
 get_ereefs_profile(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), start_date = c(2016, 2, 4),
   end_date = c(2016, 3, 2),
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
   input_grid = NA, eta_stem = NA, squeeze = TRUE)
 }
 \arguments{
@@ -19,7 +19,7 @@ Defaults to c(2016, 02, 04).}
 \item{end_date}{Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
 If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{input_grid}{Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the
