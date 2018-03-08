@@ -43,5 +43,5 @@ only one time-step. Default TRUE.}
 a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 }
 \description{
-Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.
+See also plor_ereefs_profile(), which relies on output from this function.
 }

@@ -123,6 +123,8 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 
 #' Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.
 #'
+#' See also plor_ereefs_profile(), which relies on output from this function.
+#'
 #' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
 #' @param location_latlon Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)
@@ -340,4 +342,42 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   return(return_list)
+}
+
+#' Plots a single vertical profile using output from get_ereefs_profile()
+#'
+#' Plots a single vertical profile already fetched from an eReefs or other EMS output netcdf file.
+#'
+#' @param profileObj A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles
+#' @param var_name The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
+#' @param target_date The target date (plot the profile closest in time to this).
+#' @param p The handle of an existing figure, if you don't want to create a new figure
+#' @return the handle of a figure containing the vertical profile plot
+#' @examples plot_ereefs_profile(get_ereefs_profile('TN'))
+#' @export
+plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(2016,01,01), p=NA, colour='blue') {
+  # Date to plot
+  if (is.vector(target_date)) {
+	  target_date <- as.Date(paste(target_date[1], target_date[2], target_date[3], sep='-'))
+  } else if (is.character(target_date)) {
+	  target_date <- as.Date(target_date)
+  }
+  day <- which.min(abs(target_date-profileObj$dates))
+  colnum <- which(colnames(profileObj$profiles)==var_name)
+  if (length(dim(profileObj$profiles))>2) {
+	  dind <- which.min(abs(profileObj$dates-target_date))
+          values <- array(profileObj$profiles[, colnum, dind], length(profileObj$z_grid)-1)
+	  eta <- profileObj$eta[dind]
+  } else {
+	  values <- array(profileObj$profiles[, colnum])
+	  eta <- profileObj$eta
+  }
+  wet <- which(!is.na(values))
+  values <- c(values[wet], values[max(wet)])
+  z <- c(profileObj$botz, profileObj$z_grid[wet[1:length(wet)-1]+1], eta)
+  mydata <- data.frame(z=z, values=values)
+  if (length(p)==1) p <- ggplot2::ggplot(mydata)
+  p <- p + ggplot2::geom_line(data=mydata, ggplot2::aes(x=values, y=z), colour=colour) + xlab(var_name) + ylab('metres above msl')
+  print(p)
+  return(p)
 }
