@@ -38,11 +38,11 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   z_grid <- grids[['z_grid']]
   nc <- ncdf4::nc_open(input_file)
   if (!is.null(nc$var[['latitude']])) {
-    latitude <- ncvar_get(nc, 'latitude')
-    longitude <- ncvar_get(nc, 'longitude')
+    latitude <- ncdf4::ncvar_get(nc, 'latitude')
+    longitude <- ncdf4::ncvar_get(nc, 'longitude')
   } else {
-    latitude <- ncvar_get(nc, 'x_centre')
-    longitude <- ncvar_get(nc, 'y_centre')
+    latitude <- ncdf4::ncvar_get(nc, 'x_centre')
+    longitude <- ncdf4::ncvar_get(nc, 'y_centre')
   }
   ncdf4::nc_close(nc)
 
@@ -57,10 +57,10 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 	# Find the grid cells intersected by the line between the two points.
 
 	# First, define the line:
-	lon1 <- location_latlon[1,2]
-	lon2 <- location_latlon[2,2]
-	lat1 <- location_latlon[1,1]
-	lat2 <- location_latlon[2,1]
+	lon1 <- location_latlon[1,'longitude']
+	lon2 <- location_latlon[2,'longitude']
+	lat1 <- location_latlon[1,'latitude']
+	lat2 <- location_latlon[2,'latitude']
 
 	# Define a line through the two points
 	#Y = A*x+b ; A*x +b - Y = 0
@@ -99,11 +99,13 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 	location_latlon <- data.frame(latitude=latitude[which(intersected)], longitude=longitude[which(intersected)])
   }
   if (dim(location_latlon)[1]==0) stop("The line segment given does not intersect any model cells on this grid.")
+  i <- dim(location_latlon)[1]
+  location_latlon[seq(i,1,-1),] <- location_latlon
 
   eta <- rep(NA, length(which(intersected)))
   botz <- rep(NA, length(which(intersected)))
   values <- array(NA, c(length(z_grid)-1, length(eta), length(var_names)))
-  mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,1:2]),
+  mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
 		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
   values[,1,] <- mydata$profiles
@@ -112,13 +114,14 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 
   for (i in 2:length(eta)) {
     print(paste('Extracting profile', i, 'of', length(eta)))
-    mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[i,1:2]),
+    mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[i,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
   		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
     values[,i,] <- mydata$profiles
     eta[i] <- as.numeric(mydata$eta)
     botz[i] <- as.numeric(mydata$botz)
   }
+  dimnames(values)[[1]] <- 1:(length(z_grid)-1)
   dimnames(values)[[3]] <- var_names
 
   return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, latlon=location_latlon)
@@ -164,11 +167,11 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
   nc <- ncdf4::nc_open(input_file)
   if (!is.null(nc$var[['latitude']])) {
-    latitude <- ncvar_get(nc, 'latitude')
-    longitude <- ncvar_get(nc, 'longitude')
+    latitude <- ncdf4::ncvar_get(nc, 'latitude')
+    longitude <- ncdf4::ncvar_get(nc, 'longitude')
   } else {
-    latitude <- ncvar_get(nc, 'x_centre')
-    longitude <- ncvar_get(nc, 'y_centre')
+    latitude <- ncdf4::ncvar_get(nc, 'x_centre')
+    longitude <- ncdf4::ncvar_get(nc, 'y_centre')
   }
   ncdf4::nc_close(nc)
 
@@ -309,6 +312,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
         if (!is.null(nc$var[['eta']])) { 
           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
 	} else {
+	  if (is.na(eta_stem)) stop('eta not found in netcdf file. Please specify eta_stem.')
           eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
 	}
         im1 = i+1
@@ -391,10 +395,10 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #'
 #' @param slice A list object as output by get_ereefs_vertical_slice(), containing dates, eta, z_grid, botz,
 #'              a data frame of values and a data frame of latitudes and longitudes
-#' @param col_scale Colours to use for low and high values. Default c("ivory", "hotpink").
+#' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
-plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', col_scale=c("ivory", "hotpink"), scale_lim=NA) {
+plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "hotpink"), scale_lim=NA) {
 	numprofiles <- dim(slice$values)[2]
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
@@ -419,9 +423,9 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', col_scale=c("ivory", 
 	}
 
 	mydata <- data.frame(xmin=dmin[ind], xmax=dmax[ind], ymin=zmin[ind], ymax=zmax[ind], z=values[ind])
-	p <- ggplot2::ggplot(data=mydata, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, fill=z)) + 
+	p <- ggplot2::ggplot(data=mydata,ggplot2:: aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, fill=z)) + 
 		ggplot2::geom_rect() +
-		ggplot2::scale_fill_gradient(name=var_name, low=col_scale[1], high=col_scale[2], limits=scale_lim, oob=scales::squish) +
+		ggplot2::scale_fill_gradient(name=var_name, low=scale_col[1], high=scale_col[2], limits=scale_lim, oob=scales::squish) +
 		ggplot2::ylab('metres above msl') +
 		ggplot2::xlab('kilometres from start of transect')
 	plot(p)
@@ -453,10 +457,10 @@ return(d)
 #'
 #' @param profileObj A list object as output by get_ereefs_profile(), containing dates, eta, z_grid, botz,
 #'              and a data frame of values.
-#' @param col_scale Colours to use for low and high values. Default c("ivory", "hotpink").
+#' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
-plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', col_scale=c("ivory", "hotpink"), scale_lim=NA) {
+plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "hotpink"), scale_lim=NA) {
 	numprofiles <- dim(slice$profiles)[3]
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
@@ -487,7 +491,7 @@ plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', col_scale=c("ivory", "h
 		ggplot2::geom_rect() +
 		ggplot2::scale_x_date() +
 		ggplot2::ylab('metres above msl') +
-		ggplot2::scale_fill_gradient(name=var_name, low=col_scale[1], high=col_scale[2], limits=scale_lim, oob=scales::squish)
+		ggplot2::scale_fill_gradient(name=var_name, low=scale_col[1], high=scale_col[2], limits=scale_lim, oob=scales::squish)
 	plot(p)
 	return(p)
 }

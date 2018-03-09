@@ -4,11 +4,11 @@
 \alias{plot_ereefs_zvt}
 \title{Produces a coloured rect plot of a vertical profile over time}
 \usage{
-plot_ereefs_zvt(slice, var_name = "Chl_a_sum", col_scale = c("ivory",
+plot_ereefs_zvt(slice, var_name = "Chl_a_sum", scale_col = c("ivory",
   "hotpink"), scale_lim = NA)
 }
 \arguments{
-\item{col_scale}{Colours to use for low and high values. Default c("ivory", "hotpink").}
+\item{scale_col}{Colours to use for low and high values. Default c("ivory", "hotpink").}
 
 \item{scale_lim}{values for low and high limits of colourscale. Defaults to full range.}
 
