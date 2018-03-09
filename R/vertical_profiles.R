@@ -4,7 +4,7 @@
 #'
 #' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
-#' @param location_latlon A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -16), longitude=c(148.5, 152.0)).
+#' @param location_latlon A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
 #'                        If length(location_lat_lon)==2, extract every grid cell along a straight line between the two points specified.
 #'                        Otherwise, extract only the locations corresponding to the cells nearest the specified points.
 #' @param target_date Target date to extract profile. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
@@ -24,7 +24,7 @@
 #'       only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).
 #' @export
 get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
-			 location_latlon=data.frame(latitude=c(-20, -16), longitude=c(148.5, 152.0)),
+			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
 			 target_date = c(2016, 02, 04),
                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
 			 input_grid = NA,
@@ -101,6 +101,7 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   if (dim(location_latlon)[1]==0) stop("The line segment given does not intersect any model cells on this grid.")
 
   eta <- rep(NA, length(which(intersected)))
+  botz <- rep(NA, length(which(intersected)))
   values <- array(NA, c(length(z_grid)-1, length(eta), length(var_names)))
   mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,1:2]),
 		     start_date = target_date, end_date = target_date, 
@@ -116,9 +117,11 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
     values[,i,] <- mydata$profiles
     eta[i] <- as.numeric(mydata$eta)
+    botz[i] <- as.numeric(mydata$botz)
   }
+  dimnames(values)[[3]] <- var_names
 
-  return_list <- list(eta=eta, z_grid=z_grid, values=values)
+  return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, latlon=location_latlon)
 }
 
 #' Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.
@@ -346,7 +349,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 
 #' Plots a single vertical profile using output from get_ereefs_profile()
 #'
-#' Plots a single vertical profile already fetched from an eReefs or other EMS output netcdf file.
+#' Relies on output from get_ereefs_profile().
 #'
 #' @param profileObj A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles
 #' @param var_name The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
@@ -380,4 +383,130 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
   p <- p + ggplot2::geom_line(data=mydata, ggplot2::aes(x=values, y=z), colour=colour) + xlab(var_name) + ylab('metres above msl')
   print(p)
   return(p)
+}
+
+#' Produces a coloured tile plot of a vertical slice already fetched from an eReefs or other EMS netcdf file.
+#'
+#' Relies on output from get_ereefs_vertical_slice().
+#'
+#' @param slice A list object as output by get_ereefs_vertical_slice(), containing dates, eta, z_grid, botz,
+#'              a data frame of values and a data frame of latitudes and longitudes
+#' @param col_scale Colours to use for low and high values. Default c("ivory", "hotpink").
+#' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
+#' @return p handle for the generated figure
+plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', col_scale=c("ivory", "hotpink"), scale_lim=NA) {
+	numprofiles <- dim(slice$values)[2]
+	layers <- length(slice$z_grid) - 1
+	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
+	zmax <- array(slice$z_grid[2:(layers+1)], c(layers, numprofiles))
+	for (i in 1:numprofiles) {
+		zmin[zmin[,i]<slice$botz[i],i] <- slice$botz[i]
+		zmin[zmin[,i]>slice$eta[i],i] <- slice$eta[i]
+		zmax[zmax[,i]<slice$botz[i],i] <- slice$botz[i]
+		zmax[zmax[,i]>slice$eta[i],i] <- slice$eta[i]
+	}
+	d <- earth.dist(slice$latlon[1,2],slice$latlon[1,1], slice$latlon[,2], slice$latlon[,1])
+	dmin <- c(-d[2]/2, d[1:(length(d)-1)])
+	dmin <- t(array(dmin, c(numprofiles, layers)))
+	dmax <- c(d[2:length(d)], d[length(d)-1] + (d[length(d)] - d[length(d)-1])/2)
+	dmax <- t(array(dmax, c(numprofiles, layers)))
+
+	ind <- which(!is.na(slice$values[, , var_name]))
+	values <- slice$values[,, var_name]
+	if (length(scale_lim==1)) {
+		scale_lim[1] <- min(c(values[ind]))
+		scale_lim[2] <- max(c(values[ind]))
+	}
+
+	mydata <- data.frame(xmin=dmin[ind], xmax=dmax[ind], ymin=zmin[ind], ymax=zmax[ind], z=values[ind])
+	p <- ggplot2::ggplot(data=mydata, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, fill=z)) + 
+		ggplot2::geom_rect() +
+		ggplot2::scale_fill_gradient(name=var_name, low=col_scale[1], high=col_scale[2], limits=scale_lim, oob=scales::squish) +
+		ggplot2::ylab('metres above msl') +
+		ggplot2::xlab('kilometres from start of transect')
+	plot(p)
+	return(p)
+}
+
+#' Calculate rough distance in kilometers between two points
+#'
+#' Not exported. This is very approximate - a package is available if a more accurate distance is needed.
+earth.dist <- function (long1, lat1, long2, lat2)
+{
+rad <- pi/180
+a1 <- lat1 * rad
+a2 <- long1 * rad
+b1 <- lat2 * rad
+b2 <- long2 * rad
+dlon <- b2 - a2
+dlat <- b1 - a1
+a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+R <- 6378.145
+d <- R * c
+return(d)
+}
+
+#' Produces a coloured rect plot of a vertical profile over time
+#'
+#' Relies on output from get_ereefs_profile().
+#'
+#' @param profileObj A list object as output by get_ereefs_profile(), containing dates, eta, z_grid, botz,
+#'              and a data frame of values.
+#' @param col_scale Colours to use for low and high values. Default c("ivory", "hotpink").
+#' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
+#' @return p handle for the generated figure
+plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', col_scale=c("ivory", "hotpink"), scale_lim=NA) {
+	numprofiles <- dim(slice$profiles)[3]
+	layers <- length(slice$z_grid) - 1
+	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
+	zmax <- array(slice$z_grid[2:(layers+1)], c(layers, numprofiles))
+	for (i in 1:numprofiles) {
+		zmin[zmin[,i]<slice$botz,i] <- slice$botz
+		zmin[zmin[,i]>slice$eta[i],i] <- slice$eta[i]
+		zmax[zmax[,i]<slice$botz,i] <- slice$botz
+		zmax[zmax[,i]>slice$eta[i],i] <- slice$eta[i]
+	}
+	d <- slice$dates
+	dmin <- c(d[1]-(d[2]-d[1])/2, d[1:(length(d)-1)])
+	dmin <- t(array(dmin, c(numprofiles, layers)))
+	dmax <- c(d[2:length(d)], d[length(d)-1] + (d[length(d)] - d[length(d)-1])/2)
+	dmax <- t(array(dmax, c(numprofiles, layers)))
+
+	ind <- which(!is.na(slice$profiles[, var_name, ]))
+	profiles <- slice$profiles[, var_name, ]
+	if (length(scale_lim==1)) {
+		scale_lim[1] <- min(c(profiles[ind]))
+		scale_lim[2] <- max(c(profiles[ind]))
+	}
+
+	mydata <- data.frame(xmin=as.Date(dmin[ind], origin='1990-01-01'), xmax=as.Date(dmax[ind], origin='1990-01-01'), 
+			     ymin=zmin[ind], ymax=zmax[ind], 
+			     z=profiles[ind])
+	p <- ggplot2::ggplot(data=mydata, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, fill=z)) + 
+		ggplot2::geom_rect() +
+		ggplot2::scale_x_date() +
+		ggplot2::ylab('metres above msl') +
+		ggplot2::scale_fill_gradient(name=var_name, low=col_scale[1], high=col_scale[2], limits=scale_lim, oob=scales::squish)
+	plot(p)
+	return(p)
+}
+
+#' Calculate rough distance in kilometers between two points
+#'
+#' Not exported. This is very approximate - a package is available if a more accurate distance is needed.
+earth.dist <- function (long1, lat1, long2, lat2)
+{
+rad <- pi/180
+a1 <- lat1 * rad
+a2 <- long1 * rad
+b1 <- lat2 * rad
+b2 <- long2 * rad
+dlon <- b2 - a2
+dlat <- b1 - a1
+a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
+c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+R <- 6378.145
+d <- R * c
+return(d)
 }

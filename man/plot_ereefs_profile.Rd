@@ -20,7 +20,7 @@ plot_ereefs_profile(profileObj, var_name = "Chl_a_sum",
 the handle of a figure containing the vertical profile plot
 }
 \description{
-Plots a single vertical profile already fetched from an eReefs or other EMS output netcdf file.
+Relies on output from get_ereefs_profile().
 }
 \examples{
 plot_ereefs_profile(get_ereefs_profile('TN'))

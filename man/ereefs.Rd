@@ -18,4 +18,9 @@ The ereefs package provides several functions:
                 from GBR4 output
    get_ereefs_depth_specified_ts() Extracts a time-series from a specified depth below the surface at
                 any arbitrary location within the GBR4 model domain.
+   get_ereefs_profile()
+   get_ereefs_vertical_slice()
+   plot_ereefs_profile()
+   plot_ereefs_slice()
+   plot_ereefs_zvt()
 }

@@ -5,13 +5,13 @@
 \title{Extract vertical profiles from an array of specified latitudes and longitudes over a specified time-period from an eReefs or other EMS netcdf file.}
 \usage{
 get_ereefs_vertical_slice(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = data.frame(latitude = c(-20, -16), longitude = c(148.5,
-  152)), target_date = c(2016, 2, 4),
+  location_latlon = data.frame(latitude = c(-20, -20), longitude = c(148.5,
+  149)), target_date = c(2016, 2, 4),
   input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
   input_grid = NA, eta_stem = NA)
 }
 \arguments{
-\item{location_latlon}{A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -16), longitude=c(148.5, 152.0)).
+\item{location_latlon}{A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
 If length(location_lat_lon)==2, extract every grid cell along a straight line between the two points specified.
 Otherwise, extract only the locations corresponding to the cells nearest the specified points.}
 
