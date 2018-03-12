@@ -11,7 +11,7 @@
 #'                   Defaults to c(2016, 02, 04).
 #' @param input_file is the URI or file location of any of the EMS output files, 
 #'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-#'        If using Windows, you will need to set this to a local inputfile stem.
+#'        If using Windows, you will need to set this to a local input_file stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -22,13 +22,15 @@
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).
+#' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.
 #' @export
-get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
+get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
 			 target_date = c(2016, 02, 04),
                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
 			 input_grid = NA,
-			 eta_stem = NA)
+			 eta_stem = NA,
+			 robust = FALSE)
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -95,8 +97,8 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 	intersected[((gy[,1]<minlat)&(gy[,2]<minlat)&(gy[,3]<minlat)&(gy[,4]<minlat))] <- FALSE
 	intersected[((gy[,1]>maxlat)&(gy[,2]>maxlat)&(gy[,3]>maxlat)&(gy[,4]>maxlat))] <- FALSE
 
-
-	location_latlon <- data.frame(latitude=latitude[which(intersected)], longitude=longitude[which(intersected)])
+	llind <- which(intersected)
+	location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
   }
   if (dim(location_latlon)[1]==0) stop("The line segment given does not intersect any model cells on this grid.")
   i <- dim(location_latlon)[1]
@@ -105,22 +107,108 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   eta <- rep(NA, length(which(intersected)))
   botz <- rep(NA, length(which(intersected)))
   values <- array(NA, c(length(z_grid)-1, length(eta), length(var_names)))
-  mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,c('latitude','longitude')]),
+
+  if (robust) {
+    mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
 		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
-  values[,1,] <- mydata$profiles
-  eta[1] <- as.numeric(mydata$eta)
-  grid_list <- mydata$grid_list
+    values[,1,] <- mydata$profiles
+    eta[1] <- as.numeric(mydata$eta)
+    grid_list <- mydata$grid_list
 
-  for (i in 2:length(eta)) {
-    print(paste('Extracting profile', i, 'of', length(eta)))
-    mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[i,c('latitude','longitude')]),
+    for (i in 2:length(eta)) {
+      print(paste('Extracting profile', i, 'of', length(eta)))
+      mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[i,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
   		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
-    values[,i,] <- mydata$profiles
-    eta[i] <- as.numeric(mydata$eta)
-    botz[i] <- as.numeric(mydata$botz)
+      values[,i,] <- mydata$profiles
+      eta[i] <- as.numeric(mydata$eta)
+      botz[i] <- as.numeric(mydata$botz)
+    }
+  } else {
+    # Date to plot
+    if (is.vector(target_date)) {
+      target_date <- as.Date(paste(target_date[1], target_date[2], target_date[3], sep='-'))
+    } else if (is.character(target_date)) {
+      target_date <- as.Date(target_date)
+    }
+    target_day <- as.integer(format(target_date, '%d'))
+    target_month <- as.integer(format(target_date, '%m'))
+    target_year <- as.integer(format(target_date, '%Y'))
+
+    #var_list <- paste(var_names, collapse=",")
+
+    location_grid <- cbind(floor((llind+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (llind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+
+    if (ereefs_case == 4) {
+        input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
+			  '.nc')
+        if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
+			  '.nc')
+        di <- target_day
+    } else if (ereefs_case == 1) {
+        input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
+			  '.nc')
+        if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
+			  '.nc')
+	di <- 1
+    } else {
+        input_file <- input_file
+        if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
+        nc <- ncdf4::nc_open(input_file)
+        if (!is.null(nc$var[['t']])) {
+          ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        } else {
+          ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+        }
+	di <- which.min(abs(ds - target_date))
+        ncdf4::nc_close(nc)
+    }
+    nc <- ncdf4::nc_open(input_file)
+    if (!is.na(eta_stem)) {
+	    nc3 <- ncdf4::nc_open(etafile)
+    } else {
+	    nc3 <- nc
+    }
+
+    startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
+    countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
+    location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
+    location_grid <- cbind(location_grid[,2], location_grid[,1])
+    ind3d <- rep(cbind(location_grid, NA), each=(length(z_grid)-1))
+    ind3d <- array(ind3d, c(dim(location_grid)[1]*(length(z_grid)-1), 3))
+    ind3d[, 3]  <- rep(1:(length(z_grid)-1), dim(location_grid)[1])
+
+    values <- array(NA, dim=c(length(z_grid)-1, dim(location_latlon)[1], length(var_names)))
+
+    zat <- ncdf4::ncatt_get(nc, "botz")
+    if (!is.null(zat$positive)) {
+	  if (zat$positive=="down") zsign <- -1 else zsign <- 1
+    } else {
+	  zsign <-1
+    }
+    botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=startv, count=countv)[location_grid])
+    eta <- as.numeric(ncdf4::ncvar_get(nc3, "eta", start=c(startv, di), count=c(countv, 1))[location_grid])
+
+    z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
+    zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
+    eta2 <- t(array(eta, dim=c(length(eta), length(z_grid)-1)))
+    botz2 <- t(array(botz, dim=c(length(botz), length(z_grid)-1)))
+    wet <- (eta2 > zm1) & (z > botz2)          # There is water in this layer
+    dry <- !wet
+
+    for (j in 1:length(var_names)) { 
+      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, di), count=c(countv, -1, 1))[ind3d]
+      wc[dry] <- NA
+      if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
+      values[1:(length(z_grid)-1), , j] <- wc
+    }
+    ncdf4::nc_close(nc)
+    if (length(eta_stem)>1) ncdf4::nc_close(nc3)
+
   }
+
   dimnames(values)[[1]] <- 1:(length(z_grid)-1)
   dimnames(values)[[3]] <- var_names
 
@@ -139,7 +227,7 @@ get_ereefs_vertical_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param end_date Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).
 #' @param input_file is the URI or file location of any of the EMS output files, 
 #'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-#'        If using Windows, you will need to set this to a local inputfile stem.
+#'        If using Windows, you will need to set this to a local input_file stem.
 #' @param input_grid Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the                                                        
 #'      locally-stored or opendap-served netcdf file that contains these. If not specified, the function will first look for                                                            
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size                                                                                 
@@ -211,26 +299,26 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
                  rep(end_year, end_month))
   }
 
-  var_list <- paste(var_names, collapse=",")
+  #var_list <- paste(var_names, collapse=",")
 
   if (ereefs_case == 4) {
-      inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
+      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
-      inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
+      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else {
-      inputfile <- input_file
+      input_file <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      nc <- ncdf4::nc_open(inputfile)
+      nc <- ncdf4::nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
         ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
@@ -239,7 +327,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
       ncdf4::nc_close(nc)
   }
-  nc <- ncdf4::nc_open(inputfile)
+  nc <- ncdf4::nc_open(input_file)
   if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
   # Initialise the data frame with the right number of NAs
   blanks <- rep(NA, blank_length)
@@ -252,13 +340,19 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      location_grid <- location_latlon
   } else { 
     # Find the nearest grid-points to the sampling location
-    tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
-    tmp <- which.min(tmp) 
-    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
-		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    grid_ind <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
+    grid_ind <- which.min(grid_ind) 
+    location_grid <- c(floor((grid_ind+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (grid_ind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
 		     
-  botz <- as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
+  zat <- ncdf4::ncatt_get(nc, "botz")
+  if (!is.null(zat$positive)) {
+	  if (zat$positive=="down") zsign <- -1 else zsign <- 1
+  } else {
+	  zsign <-1
+  }
+  botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
 
   # Loop through monthly eReefs files to extract the data
@@ -282,26 +376,30 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      }
      if (ereefs_case == 4) { 
         fileslist <- 1
-        inputfile <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+        input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
      } else if (ereefs_case == 1) {
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
      } else {
-            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+            #from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+            from_day <- ds[which.min(ds - (start_date+0.499))] # Choose a record as close to midday as we can
 	    if (from_day<1) from_day <-1
 	    fileslist <- 1
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
+	    if (start_date == end_date) { # Assume we only want a single profile
+		    day_count <- 1
+	    }
      }
 
      for (dcount in fileslist) {
         if (ereefs_case == 1) {
-	      inputfile <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
+	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
               if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
         }
-        #inputfile <- paste0(inputfile, '?', var_list, ',time,eta')
-        nc <- ncdf4::nc_open(inputfile)
+        #input_file <- paste0(input_file, '?', var_list, ',time,eta')
+        nc <- ncdf4::nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case > 0) {
           d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
@@ -322,19 +420,17 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
         z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
         zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
         eta2 <- t(array(eta, dim=c(length(eta), length(z_grid)-1)))
-        dz <- 0 * z
         wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
 	dry <- !wet                                # There is no water in this layer
 
         for (j in 1:length(var_names)) {
           wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
 	  wc[dry] <- NA
-	  if (dim(dz)[2] == 1) wc <- array(wc, dim=dim(dz))
-          # take the depth-integrated average over the water column
+	  if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
           values[1:(length(z_grid)-1), j, im1:i] <- wc
         }
         ncdf4::nc_close(nc)
-        if (!is.na(eta_stem)) ncdf4::nc_close(nc3)
+        if (length(eta_stem)>1) ncdf4::nc_close(nc3)
         setTxtProgressBar(pb,mcount)
     }
   }
@@ -391,9 +487,9 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 
 #' Produces a coloured tile plot of a vertical slice already fetched from an eReefs or other EMS netcdf file.
 #'
-#' Relies on output from get_ereefs_vertical_slice().
+#' Relies on output from get_ereefs_slice().
 #'
-#' @param slice A list object as output by get_ereefs_vertical_slice(), containing dates, eta, z_grid, botz,
+#' @param slice A list object as output by get_ereefs_slice(), containing dates, eta, z_grid, botz,
 #'              a data frame of values and a data frame of latitudes and longitudes
 #' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
@@ -417,7 +513,7 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 
 	ind <- which(!is.na(slice$values[, , var_name]))
 	values <- slice$values[,, var_name]
-	if (length(scale_lim==1)) {
+	if (length(scale_lim)==1) {
 		scale_lim[1] <- min(c(values[ind]))
 		scale_lim[2] <- max(c(values[ind]))
 	}
@@ -479,7 +575,7 @@ plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "h
 
 	ind <- which(!is.na(slice$profiles[, var_name, ]))
 	profiles <- slice$profiles[, var_name, ]
-	if (length(scale_lim==1)) {
+	if (length(scale_lim)==1) {
 		scale_lim[1] <- min(c(profiles[ind]))
 		scale_lim[2] <- max(c(profiles[ind]))
 	}

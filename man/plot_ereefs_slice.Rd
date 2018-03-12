@@ -8,7 +8,7 @@ plot_ereefs_slice(slice, var_name = "Chl_a_sum", scale_col = c("ivory",
   "hotpink"), scale_lim = NA)
 }
 \arguments{
-\item{slice}{A list object as output by get_ereefs_vertical_slice(), containing dates, eta, z_grid, botz,
+\item{slice}{A list object as output by get_ereefs_slice(), containing dates, eta, z_grid, botz,
 a data frame of values and a data frame of latitudes and longitudes}
 
 \item{scale_col}{Colours to use for low and high values. Default c("ivory", "hotpink").}
@@ -19,5 +19,5 @@ a data frame of values and a data frame of latitudes and longitudes}
 p handle for the generated figure
 }
 \description{
-Relies on output from get_ereefs_vertical_slice().
+Relies on output from get_ereefs_slice().
 }

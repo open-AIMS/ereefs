@@ -20,7 +20,7 @@ Defaults to c(2016, 02, 04).}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
 Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-If using Windows, you will need to set this to a local inputfile stem.}
+If using Windows, you will need to set this to a local input_file stem.}
 
 \item{input_grid}{Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the
 locally-stored or opendap-served netcdf file that contains these. If not specified, the function will first look for                                                            
