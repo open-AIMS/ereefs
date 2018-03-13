@@ -23,6 +23,8 @@
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).
 #' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.
+#' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
+#'       incorrect. Default FALSE
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -30,7 +32,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
 			 input_grid = NA,
 			 eta_stem = NA,
-			 robust = FALSE)
+			 robust = FALSE,
+			 overrid_positive = FALSE)
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -185,8 +188,10 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     zat <- ncdf4::ncatt_get(nc, "botz")
     if (!is.null(zat$positive)) {
 	  if (zat$positive=="down") zsign <- -1 else zsign <- 1
+          if (override_positive) zsign <- 1
     } else {
 	  zsign <-1
+          if (override_positive) zsign <- -1
     }
     botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=startv, count=countv)[location_grid])
     eta <- as.numeric(ncdf4::ncvar_get(nc3, "eta", start=c(startv, di), count=c(countv, 1))[location_grid])
@@ -499,13 +504,18 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
 	zmax <- array(slice$z_grid[2:(layers+1)], c(layers, numprofiles))
+	d <- rep(NA, numprofiles)
 	for (i in 1:numprofiles) {
 		zmin[zmin[,i]<slice$botz[i],i] <- slice$botz[i]
 		zmin[zmin[,i]>slice$eta[i],i] <- slice$eta[i]
 		zmax[zmax[,i]<slice$botz[i],i] <- slice$botz[i]
 		zmax[zmax[,i]>slice$eta[i],i] <- slice$eta[i]
+		if (i==1) {
+			d[i] <- 0
+		} else {
+	          d[i] <- earth.dist(slice$latlon[i-1,2],slice$latlon[i-1,1], slice$latlon[i,2], slice$latlon[i,1]) + d[i-1]
+		}
 	}
-	d <- earth.dist(slice$latlon[1,2],slice$latlon[1,1], slice$latlon[,2], slice$latlon[,1])
 	dmin <- c(-d[2]/2, d[1:(length(d)-1)])
 	dmin <- t(array(dmin, c(numprofiles, layers)))
 	dmax <- c(d[2:length(d)], d[length(d)-1] + (d[length(d)] - d[length(d)-1])/2)

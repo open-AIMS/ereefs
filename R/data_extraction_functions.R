@@ -250,8 +250,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       #inputfile <- paste0(inputfile, '?', var_list, ',time')
       nc <- ncdf4::nc_open(inputfile)
       if (ereefs_case > 0) {
-        d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
-        d <- as.Date(d, origin = as.Date("1990-01-01"))
+          if (!is.null(nc$var[['t']])) {
+            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+          } else {
+            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+          }
       } else {
 	d <- ds[from_day:(from_day + day_count - 1)]
       }
@@ -318,6 +321,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
+#' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
+#'       incorrect. Default FALSE
 #' @export
 #' @examples
 #' get_ereefs_depth_integrated_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')
@@ -327,7 +332,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 		          end_date = c(2016,12,31), 
                           input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
 			  input_grid = NA,
-			  eta_stem = NA)
+			  eta_stem = NA,
+			  override_positive=FALSE)
 {
 
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
@@ -427,8 +433,10 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
     if (zat$positive=="down") zsign <- -1 else zsign <- 1
+    if (override_positive) zsign <- 1
   } else {
    zsign <-1
+    if (override_positive) zsign <- -1
   }
   botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
@@ -478,9 +486,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
-            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
-            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
         } else {
 	  d <- ds[from_day:(from_day + day_count - 1)]
@@ -721,8 +729,11 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         nc <- ncdf4::nc_open(inputfile)
 	if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case > 0) {
-          d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
-          d <- as.Date(d, origin = as.Date("1990-01-01"))
+          if (!is.null(nc$var[['t']])) {
+            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+          } else {
+            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+          }
         } else {
 	  d <- ds[from_day:(from_day + day_count - 1)]
         }

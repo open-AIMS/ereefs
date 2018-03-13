@@ -259,6 +259,8 @@ if (var_name=="plume") {
     rsr <- list(R_412, R_443, R_488, R_531, R_547, R_667, R_678)
     ems_var <- plume_class(rsr)
     dims <- dim(ems_var)
+    var_units <- ''
+    var_longname <- 'Plume colour class'
 
 } else if (var_name=="true_colour") {
     #inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
@@ -286,6 +288,14 @@ if (var_name=="plume") {
     ems_var[ems_var=="#000000"] <- NA
     ems_var <-array(as.character(ems_var), dim=dim(R_645))
     dims <- dim(ems_var)
+} else if (var_name == 'ZooT') {
+    inputfile <- filename
+    nc <- ncdf4::nc_open(inputfile)
+      # We don't yet know the dimensions of the variable, so let's get them
+      dims <- nc$var[['ZooL_N']][['size']]
+      if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
+      ndims <- length(dims)
+      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
 } else { 
     #inputfile <- paste0(filename, '?', var_name)
     inputfile <- filename
@@ -296,7 +306,21 @@ if (var_name=="plume") {
       ndims <- length(dims)
       if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
 }
-if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
+
+if (var_name == 'ZooT') {
+    var_longname <- 'Total Zooplankton Nitrogen'
+    var_units <- 'mg N m3'
+    if (ndims == 4) {
+       ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+    } else {
+       ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    }
+} else if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
+    vat <- ncdf4::ncatt_get(nc, var_name)
+    var_longname <- vat$long_name
+    var_units <- vat$units
     if (ndims == 4) {
        ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
     } else {
@@ -368,8 +392,10 @@ if (var_name=="true_colour") {
 				     na.value="transparent", 
 				     guide="colourbar",
 				     limits=scale_lim,
+				     name=var_units,
 				     oob=scales::squish)
 }
+  p <- p + ggplot2::ggtitle(paste(var_longname, target_date))
 print(p)
 return(p)
 }

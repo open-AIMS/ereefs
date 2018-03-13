@@ -8,7 +8,7 @@ get_ereefs_depth_integrated_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), start_date = c(2010, 12, 31),
   end_date = c(2016, 12, 31),
   input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
-  input_grid = NA, eta_stem = NA)
+  input_grid = NA, eta_stem = NA, override_positive = FALSE)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
@@ -38,6 +38,9 @@ z grid from data files stored in this package. Alternatively, you can provide th
 \item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
 date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).}
+
+\item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
+incorrect. Default FALSE}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
