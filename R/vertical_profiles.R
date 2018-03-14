@@ -33,7 +33,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 input_grid = NA,
 			 eta_stem = NA,
 			 robust = FALSE,
-			 overrid_positive = FALSE)
+			 override_positive = FALSE)
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -149,7 +149,14 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
         if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-        di <- target_day
+        nc <- ncdf4::nc_open(input_file)
+        if (!is.null(nc$var[['t']])) {
+          ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        } else {
+          ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+        }
+	di <- which.min(abs(ds - target_date))
+        ncdf4::nc_close(nc)
     } else if (ereefs_case == 1) {
         input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
@@ -311,7 +318,14 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-      blank_length <- end_date - start_date + 1
+	nc <- ncdf4::nc_open(input_file)
+	if (!is.null(nc$var[['t']])) { 
+	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        } else {
+	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	}
+	ncdf4::nc_close(nc)
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
 			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
@@ -382,7 +396,9 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      if (ereefs_case == 4) { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+        from_day <- ds[which.min(ds - (start_date+0.499))] # Choose a record as close to midday as we can
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+	day_count <- day_count / as.numeric(ds[2]-ds[1])
      } else if (ereefs_case == 1) {
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
@@ -406,7 +422,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-        if (ereefs_case > 0) {
+        if (ereefs_case == 0) {
           d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
           d <- as.Date(d, origin = as.Date("1990-01-01"))
         } else {

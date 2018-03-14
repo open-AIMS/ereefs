@@ -167,19 +167,26 @@ if (is.vector(target_date)) {
 	target_date <- as.Date(target_date)
 }
 if (ereefs_case == 4) { 
-	day <- as.integer(format(target_date, '%d'))
 	filename <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
+	nc <- ncdf4::nc_open(filename)
+	if (!is.null(nc$var[['t']])) { 
+	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        } else {
+	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	}
+	day <- which.min(abs(target_date - ds))
+	ncdf4::nc_close(nc)
 } else if (ereefs_case == 1) {
 	day <- 1
+	ds <- target_date
 	filename <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
 } else {
 	filename <- paste0(input_stem, '.nc')
 	nc <- ncdf4::nc_open(filename)
-        ds <- try(as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01")), TRUE)
-	if (class(ds)=="try-error") {
-	  # We may be dealing with an old EMS file
-          print('t not found in netcdf file. Looking for time instead.')
-	  ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	if (!is.null(nc$var[['t']])) { 
+	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        } else {
+	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
@@ -395,7 +402,7 @@ if (var_name=="true_colour") {
 				     name=var_units,
 				     oob=scales::squish)
 }
-  p <- p + ggplot2::ggtitle(paste(var_longname, target_date))
+  p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
 print(p)
 return(p)
 }
@@ -608,14 +615,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
        if (ereefs_case == 0) {
 	    filename <- paste0(input_stem, '.nc')
 	    nc <- ncdf4::nc_open(filename)
-	    ds <- try(as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01")), TRUE)
-	    if (class(ds)=="try-error") {
-	      # We may be dealing with an old EMS file
-	      print('t not found in netcdf file. Looking for time instead.')
-	      ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    if (!is.null(nc$var[['t']])) { 
+	        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+            } else {
+	        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	    }
 	    ncdf4::nc_close(nc)
-       }
+           }
     } else {
        from_day <- 1
     }
@@ -630,10 +636,17 @@ map_ereefs_movie <- function(var_name = "true_colour",
     }
 
     if (ereefs_case == 4) { 
-            start_array <- c(xmin, ymin, from_day)
-            count_array <- c(xmax-xmin, ymax-ymin, day_count)
-	    fileslist <- 1
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+	    nc <- ncdf4::nc_open(filename)
+	    if (!is.null(nc$var[['t']])) { 
+	        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+            } else {
+	        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    }
+	    ncdf4::nc_close(nc)
+            start_array <- c(xmin, ymin, from_day)
+	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/as.numeric(ds[2]-ds[1])))
+	    fileslist <- 1
     } else if (ereefs_case == 1) {
             start_array <- c(xmin, ymin, 1)
             count_array <- c(xmax-xmin, ymax-ymin, 1)
@@ -675,6 +688,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	     ems_var <- plume_class(rsr)
         }
         dims <- dim(ems_var)
+	var_longname <- "Plume optical class"
+	var_units <- ""
       } else if (var_name=="true_colour") {
         #inputfile <- paste0(filename, '?R_470,R_555,R_645,time')
         inputfile <- filename
@@ -701,6 +716,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
         ems_var[ems_var=="#000000"] <- NA
         ems_var <-array(as.character(ems_var), dim=dim(R_645))
         dims <- dim(ems_var)
+
+	var_longname <- "Simulated true colour"
+	var_units <- ""
     
       } else { 
         #inputfile <- paste0(filename, '?time,', var_name)
@@ -719,6 +737,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
         } else {
            ems_var <- ncdf4::ncvar_get(nc, var_name, start=start_array, count=count_array)
         }
+        vat <- ncdf4::ncatt_get(nc, var_name)
+        var_longname <- vat$long_name
+        var_units <- vat$units
       }
       #ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     
@@ -764,8 +785,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
 					   na.value="transparent", 
 					   guide="colourbar",
 					   limits=scale_lim,
+					   name=var_units,
 					   oob=scales::squish)
         }
+        p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
         icount <- icount + 1
         if (!file.exists(output_dir)) {
           dir.create(output_dir)

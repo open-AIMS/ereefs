@@ -9,7 +9,7 @@ get_ereefs_slice(var_names = c("Chl_a_sum", "TN"),
   149)), target_date = c(2016, 2, 4),
   input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
   input_grid = NA, eta_stem = NA, robust = FALSE,
-  overrid_positive = FALSE)
+  override_positive = FALSE)
 }
 \arguments{
 \item{location_latlon}{A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
@@ -37,10 +37,10 @@ only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files
 
 \item{robust}{If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.}
 
-\item{var_name}{A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))}
-
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 incorrect. Default FALSE}
+
+\item{var_name}{A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))}
 }
 \value{
 a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
