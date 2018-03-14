@@ -37,6 +37,9 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+  if (!is.na(eta_stem)) {
+	      if (stringi::stri_detect(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
+  }
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]

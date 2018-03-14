@@ -295,6 +295,8 @@ if (var_name=="plume") {
     ems_var[ems_var=="#000000"] <- NA
     ems_var <-array(as.character(ems_var), dim=dim(R_645))
     dims <- dim(ems_var)
+    var_longname <- "Simulated true colour"
+    var_units <- ""
 } else if (var_name == 'ZooT') {
     inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
@@ -303,6 +305,8 @@ if (var_name=="plume") {
       if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
       ndims <- length(dims)
       if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+    var_longname <- "Total zooplankton nitrogen"
+    var_units <- "mg N m-3"
 } else { 
     #inputfile <- paste0(filename, '?', var_name)
     inputfile <- filename
@@ -665,6 +669,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
     for (i in fileslist) {
       if (ereefs_case == 1) {
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc')
+            ds <- as.Date(paste(year, month, i, sep="-", '%Y-%m-%d'))
       }
       if (var_name=="plume") {
         #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
