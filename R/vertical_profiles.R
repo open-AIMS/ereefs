@@ -1,7 +1,5 @@
 #' Extract vertical profiles from an array of specified latitudes and longitudes over a specified time-period from an eReefs or other EMS netcdf file.
 #'
-#' This is slow because we extract one profile at a time to avoid memory issues with large netcdf files.
-#'
 #' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
 #' @param location_latlon A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
@@ -187,11 +185,23 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 
     startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
     countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
+    if ((countv[1] == 1)&(countv[2] == 1)) stop('Slice matches a single grid-cell; use get_ereefs_profile() instead.')
     location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
     location_grid <- cbind(location_grid[,2], location_grid[,1])
+    numlines <- dim(location_grid)[1]
+    numcols <- 3
+    if (countv[2] == 1) {
+	    location_grid <- location_grid[,1]
+	    numlines <- length(location_grid)
+	    numcols <- 2
+    } else if (countv[1] == 1) {
+	    location_grid <- location_grid[,2]
+	    numlines <- length(location_grid)
+	    numcols <- 2
+    }
     ind3d <- rep(cbind(location_grid, NA), each=(length(z_grid)-1))
-    ind3d <- array(ind3d, c(dim(location_grid)[1]*(length(z_grid)-1), 3))
-    ind3d[, 3]  <- rep(1:(length(z_grid)-1), dim(location_grid)[1])
+    ind3d <- array(ind3d, c(numlines*(length(z_grid)-1), numcols))
+    ind3d[, numcols]  <- rep(1:(length(z_grid)-1), numlines)
 
     values <- array(NA, dim=c(length(z_grid)-1, dim(location_latlon)[1], length(var_names)))
 
@@ -214,6 +224,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     dry <- !wet
 
     for (j in 1:length(var_names)) { 
+      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, di), count=c(countv, -1, 1))
       wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, di), count=c(countv, -1, 1))[ind3d]
       wc[dry] <- NA
       if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
@@ -232,7 +243,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 
 #' Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.
 #'
-#' See also plor_ereefs_profile(), which relies on output from this function.
+#' See also plot_ereefs_profile(), which relies on output from this function.
 #'
 #' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
@@ -532,12 +543,12 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 		if (i==1) {
 			d[i] <- 0
 		} else {
-	          d[i] <- earth.dist(slice$latlon[i-1,2],slice$latlon[i-1,1], slice$latlon[i,2], slice$latlon[i,1]) + d[i-1]
+	          d[i] <- earth.dist(slice$latlon[i-1,'longitude'],slice$latlon[i-1,'latitude'], slice$latlon[i,'longitude'], slice$latlon[i,'latitude']) + d[i-1]
 		}
 	}
 	dmin <- c(-d[2]/2, d[1:(length(d)-1)])
 	dmin <- t(array(dmin, c(numprofiles, layers)))
-	dmax <- c(d[2:length(d)], d[length(d)-1] + (d[length(d)] - d[length(d)-1])/2)
+	dmax <- c(d[2:length(d)], d[length(d)] + (d[length(d)] - d[length(d)-1])/2)
 	dmax <- t(array(dmax, c(numprofiles, layers)))
 
 	ind <- which(!is.na(slice$values[, , var_name]))
