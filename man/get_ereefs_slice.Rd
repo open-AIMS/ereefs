@@ -31,8 +31,8 @@ z grid from data files stored in this package. Alternatively, you can provide th
 (not simple-format) ereefs netcdf output file such as 
 "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
 
-\item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
-date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
+\item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), or the stem of
+that filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).}
 
 \item{robust}{If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.}
@@ -46,5 +46,5 @@ incorrect. Default FALSE}
 a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 }
 \description{
-This is slow because we extract one profile at a time to avoid memory issues with large netcdf files.
+Extract vertical profiles from an array of specified latitudes and longitudes over a specified time-period from an eReefs or other EMS netcdf file.
 }

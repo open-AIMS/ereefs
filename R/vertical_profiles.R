@@ -17,8 +17,8 @@
 #'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
-#'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
+#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), or the stem of
+#'       that filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).
 #' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
@@ -261,7 +261,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'      z grid from data files stored in this package. Alternatively, you can provide the location of a full                                                                            
 #'      (not simple-format) ereefs netcdf output file such as                                                                                                                           
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc". 
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
+#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), or the stem of that
+#'       filename minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
 #' @param squeeze Whether to reduce the number of dimensions in the output profiles array if there is only one variable and/or 
@@ -278,6 +279,9 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+  if (!is.na(eta_stem)) {
+	      if (stringi::stri_detect(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
+  }
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
   nc <- ncdf4::nc_open(input_file)
   if (!is.null(nc$var[['latitude']])) {
