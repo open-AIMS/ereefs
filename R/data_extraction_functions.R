@@ -2,6 +2,7 @@
 #'
 #' @param filename Name of the file to examine
 #' @return 1 for daily, 4 for monthly, 0 for other
+#' @export
 get_ereefs_case <- function(filename) {
   ext <- stringi::stri_locate_last(filename, regex='.nc')[1]
   lastfew <- substr(filename, start=ext-10, stop=ext-1)
@@ -21,6 +22,7 @@ get_ereefs_case <- function(filename) {
 #' @param filename Name of the file to examine
 #' @param input_grid Optional alternative file from which to load x_grid, y_grid and z_grid
 #' @return a list containing x_grid, y_grid and z_grid
+#' @export
 get_ereefs_grids <- function(filename, input_grid=NA) {
 	if (!is.na(input_grid)) {
 		nc <- ncdf4::nc_open(input_grid)
@@ -67,6 +69,7 @@ get_ereefs_grids <- function(filename, input_grid=NA) {
 #'
 #' @param filename A netcdf filename from an EMS model run
 #' @return a character string
+#' @export
 get_file_stem <- function(filename) {
 	case <- get_ereefs_case(filename)
 	if (case==0) {

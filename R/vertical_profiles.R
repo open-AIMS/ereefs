@@ -533,6 +533,7 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
+#' @export
 plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "hotpink"), scale_lim=NA) {
 	numprofiles <- dim(slice$values)[2]
 	layers <- length(slice$z_grid) - 1
@@ -600,6 +601,7 @@ return(d)
 #' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
+#' @export
 plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "hotpink"), scale_lim=NA) {
 	numprofiles <- dim(slice$profiles)[3]
 	layers <- length(slice$z_grid) - 1
