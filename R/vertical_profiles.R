@@ -245,6 +245,10 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'
 #' See also plot_ereefs_profile(), which relies on output from this function.
 #'
+#' Note that this function assumes consistent frequency of model output, even if the time-series extends across multiple output files (e.g.
+#' multiple months of eReefs output). If the data in eta_stem is output on a different interval from the data in input_file, the function
+#' will do its best, but surface elevation estimates may not exactly match the time-stamps in the main input file.
+#'
 #' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
 #' @param location_latlon Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)
@@ -336,35 +340,36 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	nc <- ncdf4::nc_open(input_file)
-	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	}
-	ncdf4::nc_close(nc)
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
-      blank_length <- end_date - start_date + 1
-			  # '.nc?latitude,longitude')
   } else {
       input_file <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      nc <- ncdf4::nc_open(input_file)
-      if (!is.null(nc$var[['t']])) {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-      } else {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-      }
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-      ncdf4::nc_close(nc)
   }
   nc <- ncdf4::nc_open(input_file)
+  if (!is.null(nc$var[['t']])) { 
+    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+  } else {
+    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+  }
+  if (!is.na(eta_stem)) {
+    nc3 <- ncdf4::nc_open(etafile)
+    if (!is.null(nc3$var[['t']])) { 
+      eta_ds <- as.Date(ncdf4::ncvar_get(nc3, "t"), origin = as.Date("1990-01-01"))
+    } else {
+      eta_ds <- as.Date(ncdf4::ncvar_get(nc3, "time"), origin = as.Date("1990-01-01"))
+    }
+  } else {
+    eta_ds <- ds
+  }
+  if (length(ds)==1) {
+    blank_length <- as.numeric(end_date - start_date + 1)
+  } else {
+    blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+  }
   if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
   # Initialise the data frame with the right number of NAs
   blanks <- rep(NA, blank_length)
@@ -400,12 +405,16 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      mcount <- mcount + 1
      year <- years[mcount]
      if (mcount == 1) {
-        from_day <- start_day
+       from_record <- which.min(ds - (start_date+0.499)) # Choose a record as close to midday as we can
+       eta_from_record <- which.min(eta_ds - (start_date+0.499)) # Choose a record as close to midday as we can
+     } else {
+       from_record <- 1
+       eta_from_record <- 1
      }
      if ((start_year==end_year)&&(start_month==end_month)) {
         day_count <- end_day - start_day + 1
-    } else if (mcount == 1) {
-       day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
+     } else if (mcount == 1) {
+        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
      } else if (mcount == (length(mths))) {
         day_count <- end_day
      } else {
@@ -414,22 +423,21 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      if (ereefs_case == 4) { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-        from_day <- ds[which.min(ds - (start_date+0.499))] # Choose a record as close to midday as we can
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-	day_count <- day_count / as.numeric(ds[2]-ds[1])
      } else if (ereefs_case == 1) {
-        fileslist <- from_day:(from_day+day_count-1)
-        from_day <- 1
-        day_count <- 1
+        fileslist <- 1:day_count
+       day_count <- 1
      } else {
-            #from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
-            from_day <- ds[which.min(ds - (start_date+0.499))] # Choose a record as close to midday as we can
-	    if (from_day<1) from_day <-1
-	    fileslist <- 1
-	    day_count <- day_count / as.numeric(ds[2]-ds[1])
-	    if (start_date == end_date) { # Assume we only want a single profile
-		    day_count <- 1
-	    }
+	fileslist <- 1
+     }
+     if (start_date == end_date) { # Assume we only want a single profile
+       day_count <- 1
+       eta_day_count <- 1
+     } else if (length(ds)>1) {
+       day_count <- day_count / as.numeric(ds[2]-ds[1])
+       eta_day_count <- day_count / as.numeric(eta_ds[2]-eta_ds[1])
+     } else {
+       eta_day_count <- day_count
      }
 
      for (dcount in fileslist) {
@@ -441,20 +449,37 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
         nc <- ncdf4::nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case == 0) {
-          d <- ncdf4::ncvar_get(nc, "time", start=from_day, count=day_count)
+          d <- ncdf4::ncvar_get(nc, "time", start=from_record, count=day_count)
           d <- as.Date(d, origin = as.Date("1990-01-01"))
         } else {
-	  d <- ds[from_day:(from_day + day_count - 1)]
+	  d <- ds[from_record:(from_record + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
+          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_record), count=c(1,1,day_count))
 	} else {
 	  if (is.na(eta_stem)) stop('eta not found in netcdf file. Please specify eta_stem.')
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
+          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],eta_from_record), count=c(1,1,eta_day_count))
 	}
         im1 = i+1
         i <- i + length(d)
-	eta_record[im1:i] <- eta
+	if (length(eta_ds)==length(ds)) {
+	  eta_record[im1:i] <- eta
+	} else {
+  	  if (length(eta_ds)<length(ds)) {
+	    if (dcount==1) warning(paste('Surface elevation (eta) in', etafile, 'is output less frequently than', var_names[1], 'in', input_file,
+			  '. Assuming eta always==0, though this is unlikely'))
+	    eta_record[im1:i] <- 0*c(im:i)
+	  } else {
+	    if (dcount==1) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
+			  '. Using eta from closest times to output of', var_names[1], ', which could introduce an error.'))
+	    if (length(ds)==1) {
+	      eta_record[im1:i] <- eta[which.min(abs(eta_ds-ds[1]))]
+	    } else {
+	      interval <- as.numeric(ds[2] - ds[1])/as.numeric(eta_ds[2] - eta_ds[1])
+	      eta_record[im1:i] <- eta[seq(from=which.min(abs(eta_ds-ds[1])), to=length(eta), by=interval)]
+	    }
+	  }
+	}
         dates[im1:i] <- d
         z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
         zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
@@ -463,7 +488,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	dry <- !wet                                # There is no water in this layer
 
         for (j in 1:length(var_names)) {
-          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
+          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
 	  wc[dry] <- NA
 	  if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
           values[1:(length(z_grid)-1), j, im1:i] <- wc
