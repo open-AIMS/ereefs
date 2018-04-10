@@ -468,13 +468,20 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '. Assuming eta always==0, though this is unlikely'))
 	    eta_record[im1:i] <- 0*c(im:i)
 	  } else {
-	    if (dcount==1) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
-			  '. Using eta from closest times to output of', var_names[1], ', which could introduce an error.'))
 	    if (length(ds)==1) {
-	      eta_record[im1:i] <- eta[which.min(abs(eta_ds-ds[1]))]
+	      ind <- which.min(abs(eta_ds-ds[1]))
+	      eta_record[im1:i] <- eta[ind]
+	      if ((dcount==1)&((eta_ds[ind]-ds[1])>(1/48))) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
+			  '. Using eta from closest times to output of', var_names[1], ', which is more than 30 mins away from desired time.'))
 	    } else {
 	      interval <- as.numeric(ds[2] - ds[1])/as.numeric(eta_ds[2] - eta_ds[1])
-	      eta_record[im1:i] <- eta[seq(from=which.min(abs(eta_ds-ds[1])), to=length(eta), by=interval)]
+	      ind <- seq(from=which.min(abs(eta_ds-ds[1])), to=length(eta), by=interval)
+	      if (dcount==1) {
+		      tgap <- abs(eta_ds[ind] - ds)
+		      if (max(tgap)>(1/48)) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
+			  '. Using eta from closest times to output of', var_names[1], ', which is sometimes more than 30 mins away from desired time.'))
+	      }
+	      eta_record[im1:i] <- eta[ind]
 	    }
 	  }
 	}
