@@ -512,6 +512,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   if (squeeze&(dim(values)[2] == 1)&(length(dim(values))==3)) { # Only one variable, but multiple time-steps
 	  values <- array(values, dim=dim(values)[c(1,3)])
   }
+  if (all(is.na(values))) warning('No wet cells in this profile. Either this is a land cell or the positive attribute of botz is incorrect (use overrid_positive=TRUE) if this is the case)')
   return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   return(return_list)
 }
