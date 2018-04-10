@@ -208,10 +208,9 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     zat <- ncdf4::ncatt_get(nc, "botz")
     if (!is.null(zat$positive)) {
 	  if (zat$positive=="down") zsign <- -1 else zsign <- 1
-          if (override_positive) zsign <- 1
+          if (override_positive) zsign <- -zsign
     } else {
 	  zsign <-1
-          if (override_positive) zsign <- -1
     }
     botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=startv, count=countv)[location_grid])
     eta <- as.numeric(ncdf4::ncvar_get(nc3, "eta", start=c(startv, di), count=c(countv, 1))[location_grid])
@@ -279,7 +278,8 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
 			 input_grid = NA,
 			 eta_stem = NA,
-			 squeeze = TRUE)
+			 squeeze = TRUE,
+			 override_positive=FALSE)
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -391,6 +391,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
 	  if (zat$positive=="down") zsign <- -1 else zsign <- 1
+          if (override_positive) zsign <- -zsign
   } else {
 	  zsign <-1
   }
@@ -432,13 +433,10 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      }
      if (start_date == end_date) { # Assume we only want a single profile
        day_count <- 1
-       eta_day_count <- 1
      } else if (length(ds)>1) {
        day_count <- day_count / as.numeric(ds[2]-ds[1])
-       eta_day_count <- day_count / as.numeric(eta_ds[2]-eta_ds[1])
-     } else {
-       eta_day_count <- day_count
      }
+     eta_day_count <- day_count / as.numeric(eta_ds[2]-eta_ds[1])
 
      for (dcount in fileslist) {
         if (ereefs_case == 1) {
@@ -481,9 +479,9 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	  }
 	}
         dates[im1:i] <- d
-        z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
-        zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
-        eta2 <- t(array(eta, dim=c(length(eta), length(z_grid)-1)))
+        z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta_record)))
+        zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta_record)))
+        eta2 <- t(array(eta, dim=c(length(eta_record), length(z_grid)-1)))
         wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
 	dry <- !wet                                # There is no water in this layer
 
