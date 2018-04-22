@@ -110,7 +110,7 @@ plume_class <- function(rsr) {
 #' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
 #'      an underlay for the model output plot. Requires the ggmap librray.
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc"
 #'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
@@ -131,6 +131,7 @@ plume_class <- function(rsr) {
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max).
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
 #'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
+#' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
 #' @export
 #' @examples
 #' map_ereefs()
@@ -142,13 +143,14 @@ map_ereefs <- function(var_name = "true_colour",
 		       target_date = c(2018,1,30), 
                        layer = 'surface',
 		       Google_map_underlay = TRUE,
-                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
                        zoom = 6,
 		       box_bounds = c(NA, NA, NA, NA),
-		       p = NA)
+		       p = NA,
+		       return_poly = FALSE)
 {
 
 if (length(p)!=1) Google_map_underlay <- FALSE
@@ -408,7 +410,11 @@ if (var_name=="true_colour") {
 }
   p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
 print(p)
-return(p)
+if (return_poly) {
+  return(list(p, datapoly))
+} else {
+  return(p)
+}
 }
 
 #' Create a series of map image files for an animation of eReefs model output.
@@ -461,6 +467,9 @@ return(p)
 #'        entire extent of the model output (though modified by the value of zoom). 
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
 #'        also specify an appropriate value for zoom if specifying box_bounds.
+#' @param suppress_print Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.
+#' @return a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
+#'       value of the variable specified in VAR_NAME over the selected interval.
 #' @export
 #' @examples
 #' map_ereefs_movie()
@@ -475,7 +484,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                        scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
                        zoom = 6,
-		       box_bounds = c(NA, NA, NA, NA))
+		       box_bounds = c(NA, NA, NA, NA),
+             suppress_print=FALSE)
 		       
                       
 {
@@ -555,13 +565,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
   # Find the subset of x_grid and y_grid that is inside the box and crop the grids
   # to the box_bounds
   if (is.na(box_bounds[1])) { 
-  xmin <- 1
+   xmin <- 1
   } else {
-  xmin <- which(apply(!outOfBox, 1, any))[1]
-    if (length(xmin)==0) xmin <- 1
+   xmin <- which(apply(!outOfBox, 1, any))[1]
+   if (length(xmin)==0) xmin <- 1
   }
   if (is.na(box_bounds[2])) {
-  xmax <- dims[1]
+   xmax <- dims[1]
   } else {
     xmax <- which(apply(!outOfBox, 1, any))
     xmax <- xmax[length(xmax)]
@@ -610,6 +620,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   ndims <- 0
   icount <- 0
   mcount <- 0
+  pb <- txtProgressBar(min = 0, max = as.numeric(end_date-start_date), style = 3)
   for (month in mths) {
     mcount <- mcount + 1
     year <- years[mcount]
@@ -693,8 +704,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	     ems_var <- plume_class(rsr)
         }
         dims <- dim(ems_var)
-	var_longname <- "Plume optical class"
-	var_units <- ""
+	     var_longname <- "Plume optical class"
+	     var_units <- ""
       } else if (var_name=="true_colour") {
         #inputfile <- paste0(filename, '?R_470,R_555,R_645,time')
         inputfile <- filename
@@ -722,8 +733,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
         ems_var <-array(as.character(ems_var), dim=dim(R_645))
         dims <- dim(ems_var)
 
-	var_longname <- "Simulated true colour"
-	var_units <- ""
+	     var_longname <- "Simulated true colour"
+	     var_units <- ""
     
       } else { 
         #inputfile <- paste0(filename, '?time,', var_name)
@@ -760,6 +771,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
         ems_var2d <- ems_var[, , jcount]
         # Values associated with each polygon at chosen timestep
         n <- c(ems_var2d)[gx_ok&gy_ok]
+        if (icount==0) {
+           temporal_sum <- n
+        } else {
+           temporal_sum <- temporal_sum + n
+        }
     
         # Unique ID for each polygon
         id <- 1:length(n)
@@ -769,38 +785,51 @@ map_ereefs_movie <- function(var_name = "true_colour",
         positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
         datapoly <- merge(values, positions, by = c("id"))
     
-        if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) { 
-	  scale_lim <- c(min(n, na.rm=TRUE), max(n, na.rm=TRUE))
-        }
+        if (!suppress_print) {
+            if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) { 
+	            scale_lim <- c(min(n, na.rm=TRUE), max(n, na.rm=TRUE))
+            }
   
-        if (Google_map_underlay) {
-          p <- ggmap::ggmap(myMap)
-	} else {
-	  p <- ggplot2::ggplot()
-        }
-        if (var_name=="true_colour") {
-	  p <- p +
-              ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-	      ggplot2::scale_fill_identity()
-        } else {
-          p <- p +
-              ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-              ggplot2::scale_fill_gradient(low=scale_col[1],
-					   high=scale_col[2],
-					   na.value="transparent", 
-					   guide="colourbar",
-					   limits=scale_lim,
-					   name=var_units,
-					   oob=scales::squish)
-        }
-        p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
-        icount <- icount + 1
-        if (!file.exists(output_dir)) {
-          dir.create(output_dir)
-        }
-        fname <- paste0(output_dir, '/', var_name, '_', 100000 + icount, '.png', collapse='')
-        ggplot2::ggsave(fname, p)
-      } 
+            if (Google_map_underlay) {
+                  p <- ggmap::ggmap(myMap)
+	         } else {
+	            p <- ggplot2::ggplot()
+            }
+            if (var_name=="true_colour") {
+	            p <- p +
+               ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
+	            ggplot2::scale_fill_identity()
+            } else {
+               p <- p +
+               ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
+               ggplot2::scale_fill_gradient(low=scale_col[1],
+					                              high=scale_col[2],
+					                              na.value="transparent", 
+					                              guide="colourbar",
+					                              limits=scale_lim,
+					                              name=var_units,
+					                              oob=scales::squish)
+            }
+            p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
+            icount <- icount + 1
+            if (!file.exists(output_dir)) {
+               dir.create(output_dir)
+            }
+            fname <- paste0(output_dir, '/', var_name, '_', 100000 + icount, '.png', collapse='')
+            ggplot2::ggsave(fname, p)
+         }  else {
+            icount <- icount + 1
+         }
+         if (ereefs_case==1) {
+           setTxtProgressBar(pb,icount/as.numeric(end_date-start_date)/4)
+         } else { 
+           setTxtProgressBar(pb,icount/as.numeric(end_date-start_date))
+         }
+      }
     }
   }
+  close(pb)
+  values <- data.frame(id = id, value = temporal_sum/icount)
+  datapoly <- merge(values, positions, by = c("id"))
+  return(datapoly)
 }

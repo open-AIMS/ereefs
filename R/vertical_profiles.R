@@ -1,6 +1,8 @@
-#' Extract vertical profiles from an array of specified latitudes and longitudes over a specified time-period from an eReefs or other EMS netcdf file.
+#' Extract a vertical slice or depth-resolved transect from an eReefs or other EMS netcdf output file.
 #'
-#' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
+#' Extracts either a series of vertical profiles at points corresponding to a dataFrame of specified latitudes and longitudes (e.g. a cruise
+#' transect) or a vertical slice along a line between two specified points, at a specified point in time.
+#'
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
 #' @param location_latlon A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
 #'                        If length(location_lat_lon)==2, extract every grid cell along a straight line between the two points specified.
@@ -23,6 +25,7 @@
 #' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE
+#' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -512,7 +515,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   if (squeeze&(dim(values)[2] == 1)&(length(dim(values))==3)) { # Only one variable, but multiple time-steps
 	  values <- array(values, dim=dim(values)[c(1,3)])
   }
-  if (all(is.na(values))) warning('No wet cells in this profile. Either this is a land cell or the positive attribute of botz is incorrect (use overrid_positive=TRUE) if this is the case)')
+  if (all(is.na(values))) warning('No wet cells in this profile (or set of profiles). Either all locations are land cells or the positive attribute of botz is incorrect (use override_positive=TRUE) if this is the case)')
   return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   return(return_list)
 }
