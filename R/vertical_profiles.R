@@ -42,8 +42,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
 
-  if ((location_latlon[1,1]>location_latlon[2,1]) |
-      ((location_latlon[1,1]==location_latlon[2,1])&(location_latlon[1,2]>location_latlon[2,2]))) {
+  if ((location_latlon[1,1]<location_latlon[2,1]) |
+      ((location_latlon[1,1]==location_latlon[2,1])&(location_latlon[1,2]<location_latlon[2,2]))) {
      latlon_dir <- 1
   } else {
      latlon_dir <- -1
@@ -518,7 +518,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	    fileslist <- 1
      }
 
-     if (start_date == end_date) { # Assume we only want a single profile
+     if ((start_date == end_date)|(length(ds)==1)) { # Assume we only want a single profile
        day_count <- 1
        eta_day_count <- 1
      } else if (length(ds)>1) {
