@@ -6,9 +6,10 @@
 \usage{
 map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
   layer = "surface", Google_map_underlay = TRUE,
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc",
   input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
-  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA), p = NA)
+  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA), p = NA,
+  return_poly = FALSE)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -33,7 +34,7 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 an underlay for the model output plot. Requires the ggmap librray.}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
+Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc"
 If using Windows, you will need to set this to a local inputfile stem.}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
@@ -60,6 +61,8 @@ Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
 
 \item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
 If p is provided, Google_map_underlay is over-ridden and set to FALSE.}
+
+\item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
 }
 \value{
 a ggplot object

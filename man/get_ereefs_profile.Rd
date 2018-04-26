@@ -8,13 +8,15 @@ get_ereefs_profile(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), start_date = c(2016, 2, 4),
   end_date = c(2016, 3, 2),
   input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
-  input_grid = NA, eta_stem = NA, squeeze = TRUE)
+  input_grid = NA, eta_stem = NA, squeeze = TRUE,
+  override_positive = FALSE)
 }
 \arguments{
 \item{location_latlon}{Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)}
 
 \item{start_date}{Date from which to start extraction. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
-Defaults to c(2016, 02, 04).}
+Defaults to c(2016, 02, 04). If start_date is a vector, 0.499 is added to the calculated date to bring the start 
+as close to midday as possible.}
 
 \item{end_date}{Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).}
 
@@ -45,4 +47,9 @@ a list containing a vector of dates, an array of surface elevations (eta), the v
 }
 \description{
 See also plot_ereefs_profile(), which relies on output from this function.
+}
+\details{
+Note that this function assumes consistent frequency of model output, even if the time-series extends across multiple output files (e.g.
+multiple months of eReefs output). If the data in eta_stem is output on a different interval from the data in input_file, the function
+will do its best, but surface elevation estimates may not exactly match the time-stamps in the main input file.
 }

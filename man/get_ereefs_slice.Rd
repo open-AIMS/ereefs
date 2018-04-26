@@ -2,7 +2,7 @@
 % Please edit documentation in R/vertical_profiles.R
 \name{get_ereefs_slice}
 \alias{get_ereefs_slice}
-\title{Extract vertical profiles from an array of specified latitudes and longitudes over a specified time-period from an eReefs or other EMS netcdf file.}
+\title{Extract a vertical slice or depth-resolved transect from an eReefs or other EMS netcdf output file.}
 \usage{
 get_ereefs_slice(var_names = c("Chl_a_sum", "TN"),
   location_latlon = data.frame(latitude = c(-20, -20), longitude = c(148.5,
@@ -17,7 +17,8 @@ If length(location_lat_lon)==2, extract every grid cell along a straight line be
 Otherwise, extract only the locations corresponding to the cells nearest the specified points.}
 
 \item{target_date}{Target date to extract profile. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
-Defaults to c(2016, 02, 04).}
+Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the calculated date to bring it as
+close to midday as possible.}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
 Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
@@ -43,8 +44,11 @@ incorrect. Default FALSE}
 \item{var_name}{A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))}
 }
 \value{
-a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
+a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
+      (cell_centres), the locations of the cell edge points where the line intersects the grid edges (cell_intersections), and the vertical grid 
+      (z_grid) and a data frame of tracer values from the model.
 }
 \description{
-Extract vertical profiles from an array of specified latitudes and longitudes over a specified time-period from an eReefs or other EMS netcdf file.
+Extracts either a series of vertical profiles at points corresponding to a dataFrame of specified latitudes and longitudes (e.g. a cruise
+transect) or a vertical slice along a line between two specified points, at a specified point in time.
 }

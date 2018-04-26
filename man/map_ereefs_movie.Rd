@@ -9,7 +9,7 @@ map_ereefs_movie(var_name = "true_colour", start_date = c(2015, 12, 1),
   Google_map_underlay = TRUE,
   input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
   input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
-  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA))
+  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA), suppress_print = FALSE)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -54,6 +54,8 @@ entire extent of the model output (though modified by the value of zoom).
 Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
 also specify an appropriate value for zoom if specifying box_bounds.}
 
+\item{suppress_print}{Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.}
+
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2016,3,31).}
@@ -61,6 +63,10 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 \item{ggplot2::scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
 from the ggplot2::ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
 Defaults to c('ivory', 'coral4').}
+}
+\value{
+a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
+      value of the variable specified in VAR_NAME over the selected interval.
 }
 \description{
 Creates and saves to disk a sequential series of colour map images showing concentrations of a specified 
