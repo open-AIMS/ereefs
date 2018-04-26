@@ -8,7 +8,8 @@
 #'                        If length(location_lat_lon)==2, extract every grid cell along a straight line between the two points specified.
 #'                        Otherwise, extract only the locations corresponding to the cells nearest the specified points.
 #' @param target_date Target date to extract profile. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
-#'                   Defaults to c(2016, 02, 04).
+#'                   Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the calculated date to bring it as
+#'                   close to midday as possible.
 #' @param input_file is the URI or file location of any of the EMS output files, 
 #'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
 #'        If using Windows, you will need to set this to a local input_file stem.
@@ -25,7 +26,9 @@
 #' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE
-#' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
+#' @return a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
+#'       (cell_centres), the locations of the cell edge points where the line intersects the grid edges (cell_intersections), and the vertical grid 
+#'       (z_grid) and a data frame of tracer values from the model.
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -38,8 +41,16 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 {
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+
+  if ((location_latlon[1,1]>location_latlon[2,1]) |
+      ((location_latlon[1,1]==location_latlon[2,1])&(location_latlon[1,2]>location_latlon[2,2]))) {
+     latlon_dir <- 1
+  } else {
+     latlon_dir <- -1
+  }
+
   if (!is.na(eta_stem)) {
-	      if (stringi::stri_detect(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
+	      if (stringi::stri_endswith(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
   }
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
@@ -59,10 +70,10 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
 	intersected <- array(FALSE, dim=c(a,b))
-        gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
-        gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
-        gx <- array(gx, dim=c(a*b,4))
-        gy <- array(gy, dim=c(a*b,4))
+   gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
+   gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
+   gx <- array(gx, dim=c(a*b,4))
+   gy <- array(gy, dim=c(a*b,4))
 	# Find the grid cells intersected by the line between the two points.
 
 	# First, define the line:
@@ -105,11 +116,66 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 	intersected[((gy[,1]>maxlat)&(gy[,2]>maxlat)&(gy[,3]>maxlat)&(gy[,4]>maxlat))] <- FALSE
 
 	llind <- which(intersected)
+   gx <- gx[intersected, ]
+   gy <- gy[intersected, ]
+
+   # Find the locations where the edge intersections occur (could have done this all in one go, but this is easier to follow)
+   #Ax + b = a + cx -kc
+   c1 <- (gy[,2] - gy[,1]) / (gx[,2] - gx[,1])
+   xi <- (gy[,1] - b -gx[,1]*c1) / (A -c1)
+   d <- abs((xi<gx[,1]) + (xi<gx[,2]))
+   xi[d>1] <- NA
+   yi <- gy[,1] + (xi - gx[,1]) / (gx[,2] - gx[,1]) * (gy[,2] - gy[,1])
+
+   c1 <- (gy[,3] - gy[,2]) / (gx[,3] - gx[,2])
+   x <- (gy[,2] - b -gx[,2]*c1) / (A -c1)
+   d <- abs((x<gx[,2]) + (x<gx[,3]))
+   x[d>1] <- NA
+   y <- gy[,2] + (gy[,3] - gy[,2]) * (x - gx[,2]) / (gx[,3] - gx[,2])
+   xi <- c(xi, x)
+   yi <- c(yi, y)
+
+   c1 <- (gy[,4] - gy[,3]) / (gx[,4] - gx[,3])
+   x <- (gy[,3] - b -gx[,3]*c1) / (A -c1)
+   d <- abs((x<gx[,3]) + (x<gx[,4]))
+   x[d>1] <- NA
+   y <- gy[,3] + (gy[,4] - gy[,3]) * (x - gx[,3]) / (gx[,4] - gx[,3])
+   xi <- c(xi, x)
+   yi <- c(yi, y)
+
+   c1 <- (gy[,1] - gy[,4]) / (gx[,1] - gx[,4])
+   x <- (gy[,4] - b -gx[,4]*c1) / (A -c1)
+   d <- abs((x<gx[,4]) + (x<gx[,1]))
+   x[d>1] <- NA
+   y <- gy[,4] + (gy[,1] - gy[,4]) * (x - gx[,4]) / (gx[,1] - gx[,4])
+   xi <- c(xi, x)
+   yi <- c(yi, y)
+   yi <- yi[!is.na(xi)]
+   xi <- xi[!is.na(xi)]
+
+   if (maxlon>minlon) {
+      d <- sort(xi, index.return=TRUE)
+      yi <- c(yi[d$ix][seq(1,length(xi),3)], yi[d$ix[length(xi)]])
+      xi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
+      if (longitude[llind[length(llind)]] < longitude[llind[1]] ) {
+         yi <- yi[seq(length(xi), 1, -1)]
+         xi <- xi[seq(length(xi), 1, -1)]
+      }
+   } else {
+      d <- sort(yi, index.return=TRUE)
+      xi <- c(xi[d$ix][seq(1,length(xi),3)], xi[d$ix[length(xi)]])
+      yi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
+      if (latitude[llind[length(llind)]] < latitude[llind[1]] ) {
+         yi <- yi[seq(length(xi), 1, -1)]
+         xi <- xi[seq(length(xi), 1, -1)]
+      }
+   }
+
 	location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
+   location_edges <- data.frame(latitude=yi, longitude=xi)
   }
   if (dim(location_latlon)[1]==0) stop("The line segment given does not intersect any model cells on this grid.")
   i <- dim(location_latlon)[1]
-  location_latlon[seq(i,1,-1),] <- location_latlon
 
   eta <- rep(NA, length(which(intersected)))
   botz <- rep(NA, length(which(intersected)))
@@ -118,24 +184,24 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   if (robust) {
     mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
-		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
+		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem, override_positive=override_positive)
     values[,1,] <- mydata$profiles
     eta[1] <- as.numeric(mydata$eta)
+    botz[1] <- as.numeric(mydata$botz)
     grid_list <- mydata$grid_list
 
     for (i in 2:length(eta)) {
       print(paste('Extracting profile', i, 'of', length(eta)))
       mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[i,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
-  		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem)
+  		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem, override_positive=override_positive)
       values[,i,] <- mydata$profiles
       eta[i] <- as.numeric(mydata$eta)
       botz[i] <- as.numeric(mydata$botz)
     }
   } else {
-    # Date to plot
     if (is.vector(target_date)) {
-      target_date <- as.Date(paste(target_date[1], target_date[2], target_date[3], sep='-'))
+      target_date <- as.Date(paste(target_date[1], target_date[2], target_date[3], sep='-')) + 0.499
     } else if (is.character(target_date)) {
       target_date <- as.Date(target_date)
     }
@@ -153,38 +219,34 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
         if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-        nc <- ncdf4::nc_open(input_file)
-        if (!is.null(nc$var[['t']])) {
-          ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-          ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-        }
-	di <- which.min(abs(ds - target_date))
-        ncdf4::nc_close(nc)
     } else if (ereefs_case == 1) {
         input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
-	di <- 1
     } else {
         input_file <- input_file
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-        nc <- ncdf4::nc_open(input_file)
-        if (!is.null(nc$var[['t']])) {
-          ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-          ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-        }
-	di <- which.min(abs(ds - target_date))
-        ncdf4::nc_close(nc)
-    }
+    } 
     nc <- ncdf4::nc_open(input_file)
-    if (!is.na(eta_stem)) {
-	    nc3 <- ncdf4::nc_open(etafile)
+    if (!is.null(nc$var[['t']])) { 
+      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
     } else {
-	    nc3 <- nc
+      ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     }
+    if (!is.na(eta_stem)) {
+      nc3 <- ncdf4::nc_open(etafile)
+     if (!is.null(nc3$var[['t']])) { 
+        eta_ds <- as.Date(ncdf4::ncvar_get(nc3, "t"), origin = as.Date("1990-01-01"))
+     } else {
+        eta_ds <- as.Date(ncdf4::ncvar_get(nc3, "time"), origin = as.Date("1990-01-01"))
+     }
+    } else {
+     eta_ds <- ds
+    }
+    from_record <- which.min(ds - (target_date))
+    eta_from_record <- which.min(eta_ds - (target_date))
+    ########
 
     startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
     countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
@@ -216,7 +278,13 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 	  zsign <-1
     }
     botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=startv, count=countv)[location_grid])
-    eta <- as.numeric(ncdf4::ncvar_get(nc3, "eta", start=c(startv, di), count=c(countv, 1))[location_grid])
+    if (!is.null(nc$var[['eta']])) { 
+       eta <- ncdf4::ncvar_get(nc, 'eta', start=c(startv,from_record), count=c(countv,1))[location_grid]
+    } else { 
+       if (is.na(eta_stem)) stop('eta not found in netcdf file. Please specify eta_stem.')
+       eta <- as.numeric(ncdf4::ncvar_get(nc3, "eta", start=c(startv, eta_from_record), count=c(countv, 1)))
+       eta <- as.numeric(ncdf4::ncvar_get(nc3, "eta", start=c(startv, eta_from_record), count=c(countv, 1))[location_grid])
+    }
 
     z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
     zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
@@ -226,8 +294,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     dry <- !wet
 
     for (j in 1:length(var_names)) { 
-      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, di), count=c(countv, -1, 1))
-      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, di), count=c(countv, -1, 1))[ind3d]
+      #wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, from_record), count=c(countv, -1, 1))
+      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, from_record), count=c(countv, -1, 1))[ind3d]
       wc[dry] <- NA
       if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
       values[1:(length(z_grid)-1), , j] <- wc
@@ -240,7 +308,22 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   dimnames(values)[[1]] <- 1:(length(z_grid)-1)
   dimnames(values)[[3]] <- var_names
 
-  return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, latlon=location_latlon)
+  if ((location_latlon[1,1]<location_latlon[2,1]) |
+      ((location_latlon[1,1]==location_latlon[2,1])&(location_latlon[1,2]<location_latlon[2,2]))) {
+     directn <- 1
+  } else {
+     directn <- -1
+  }
+  if (latlon_dir != directn) {
+     ind <- seq(length(eta), 1, -1)
+     eta <- eta[ind]
+     botz <- botz[ind]
+     location_latlon <- location_latlon[ind,]
+     location_edges <- location_edges[seq(length(eta)+1, 1, -1),]
+     values <- values[,ind,]
+  }
+
+  return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, cell_centres=location_latlon, cell_intersections=location_edges)
 }
 
 #' Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.
@@ -255,7 +338,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
 #' @param location_latlon Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)
 #' @param start_date Date from which to start extraction. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
-#'                   Defaults to c(2016, 02, 04).
+#'                   Defaults to c(2016, 02, 04). If start_date is a vector, 0.499 is added to the calculated date to bring the start 
+#'                   as close to midday as possible.
 #' @param end_date Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).
 #' @param input_file is the URI or file location of any of the EMS output files, 
 #'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
@@ -287,7 +371,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
   if (!is.na(eta_stem)) {
-	      if (stringi::stri_detect(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
+	      if (stringi::stri_endswith(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
   }
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
   nc <- ncdf4::nc_open(input_file)
@@ -302,7 +386,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 
   # Dates to plot
   if (is.vector(start_date)) {
-	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
+	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-')) + 0.499
   } else if (is.character(start_date)) {
 	  start_date <- as.Date(start_date)
   }
@@ -311,7 +395,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   start_year <- as.integer(format(start_date, '%Y'))
 
   if (is.vector(end_date)) {
-	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
+	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-')) + 0.499
   } else if (is.character(end_date)) {
 	  end_date <- as.Date(end_date)
   }
@@ -373,7 +457,6 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
     blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
   }
-  if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
   # Initialise the data frame with the right number of NAs
   blanks <- rep(NA, blank_length)
   dates <- as.Date(blanks)
@@ -409,8 +492,8 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      mcount <- mcount + 1
      year <- years[mcount]
      if (mcount == 1) {
-       from_record <- which.min(ds - (start_date+0.499)) # Choose a record as close to midday as we can
-       eta_from_record <- which.min(eta_ds - (start_date+0.499)) # Choose a record as close to midday as we can
+       from_record <- which.min(ds - (start_date))
+       eta_from_record <- which.min(eta_ds - (start_date))
      } else {
        from_record <- 1
        eta_from_record <- 1
@@ -432,19 +515,21 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
         fileslist <- 1:day_count
        day_count <- 1
      } else {
-	fileslist <- 1
+	    fileslist <- 1
      }
+
      if (start_date == end_date) { # Assume we only want a single profile
        day_count <- 1
+       eta_day_count <- 1
      } else if (length(ds)>1) {
        day_count <- day_count / as.numeric(ds[2]-ds[1])
+       eta_day_count <- day_count / as.numeric(eta_ds[2]-eta_ds[1])
      }
-     eta_day_count <- day_count / as.numeric(eta_ds[2]-eta_ds[1])
 
      for (dcount in fileslist) {
         if (ereefs_case == 1) {
-	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
-              if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
+	      input_file <- paste0(input_stem, format(start_date+dcount-1, sep="-", '%Y-%m-%d'), '.nc')
+              if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(start_date+dcount-1, sep="-", '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(input_file)
@@ -453,7 +538,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
           d <- ncdf4::ncvar_get(nc, "time", start=from_record, count=day_count)
           d <- as.Date(d, origin = as.Date("1990-01-01"))
         } else {
-	  d <- ds[from_record:(from_record + day_count - 1)]
+	       d <- ds[from_record:(from_record + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_record), count=c(1,1,day_count))
@@ -461,8 +546,8 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	  if (is.na(eta_stem)) stop('eta not found in netcdf file. Please specify eta_stem.')
           eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],eta_from_record), count=c(1,1,eta_day_count))
 	}
-        im1 = i+1
-        i <- i + length(d)
+   im1 = i+1
+   i <- i + length(d)
 	if (length(eta_ds)==length(ds)) {
 	  eta_record[im1:i] <- eta
 	} else {
@@ -472,8 +557,12 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	    eta_record[im1:i] <- 0*c(im:i)
 	  } else {
 	    if (length(ds)==1) {
-	      ind <- which.min(abs(eta_ds-ds[1]))
-	      eta_record[im1:i] <- eta[ind]
+         if (start_date==end_date) {
+            eta_record[im1:i] <- eta
+            ind <- 1
+         } else { 
+            ind <- which.min(abs(eta_ds-ds[1])) 
+         }
 	      if ((dcount==1)&((eta_ds[ind]-ds[1])>(1/48))) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
 			  '. Using eta from closest times to output of', var_names[1], ', which is more than 30 mins away from desired time.'))
 	    } else {
@@ -488,23 +577,23 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	    }
 	  }
 	}
-        dates[im1:i] <- d
-        z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta_record)))
-        zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta_record)))
-        eta2 <- t(array(eta, dim=c(length(eta_record), length(z_grid)-1)))
-        wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
+   dates[im1:i] <- d
+   z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta_record)))
+   zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta_record)))
+   eta2 <- t(array(eta, dim=c(length(eta_record), length(z_grid)-1)))
+   wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
 	dry <- !wet                                # There is no water in this layer
 
-        for (j in 1:length(var_names)) {
-          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
+   for (j in 1:length(var_names)) {
+     wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
 	  wc[dry] <- NA
 	  if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
-          values[1:(length(z_grid)-1), j, im1:i] <- wc
-        }
-        ncdf4::nc_close(nc)
-        if (length(eta_stem)>1) ncdf4::nc_close(nc3)
-        setTxtProgressBar(pb,mcount)
-    }
+        values[1:(length(z_grid)-1), j, im1:i] <- wc 
+   }
+   ncdf4::nc_close(nc)
+   if (length(eta_stem)>1) ncdf4::nc_close(nc3)
+      setTxtProgressBar(pb,mcount)
+   }
   }
   close(pb)
 
@@ -568,7 +657,7 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
 #' @export
-plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "hotpink"), scale_lim=NA) {
+plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "navy"), scale_lim=NA) {
 	numprofiles <- dim(slice$values)[2]
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
@@ -579,15 +668,13 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 		zmin[zmin[,i]>slice$eta[i],i] <- slice$eta[i]
 		zmax[zmax[,i]<slice$botz[i],i] <- slice$botz[i]
 		zmax[zmax[,i]>slice$eta[i],i] <- slice$eta[i]
-		if (i==1) {
-			d[i] <- 0
-		} else {
-	          d[i] <- earth.dist(slice$latlon[i-1,'longitude'],slice$latlon[i-1,'latitude'], slice$latlon[i,'longitude'], slice$latlon[i,'latitude']) + d[i-1]
-		}
+	   d[i] <- earth.dist(slice$cell_intersections[i,'longitude'],slice$cell_intersections[i,'latitude'], slice$cell_intersections[i+1,'longitude'], slice$cell_intersections[i+1,'latitude']) 
 	}
-	dmin <- c(-d[2]/2, d[1:(length(d)-1)])
+
+   d <- cumsum(d)
+	dmin <- c(0, d[1:(numprofiles-1)])
+	dmax <- d[1:numprofiles]
 	dmin <- t(array(dmin, c(numprofiles, layers)))
-	dmax <- c(d[2:length(d)], d[length(d)] + (d[length(d)] - d[length(d)-1])/2)
 	dmax <- t(array(dmax, c(numprofiles, layers)))
 
 	ind <- which(!is.na(slice$values[, , var_name]))

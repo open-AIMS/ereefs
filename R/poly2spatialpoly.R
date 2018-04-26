@@ -1,5 +1,5 @@
-library(sp)
-library(raster)
+#library(sp)
+#library(raster)
 #library(rgdal)
 
 #' Convert a polygon dataframe in the format used by ggplot2::geom_polygon to a spatialPolygonDataFrame
@@ -32,8 +32,8 @@ poly2sp <- function(polydf) {
       y <- c(d$y, d$y[1])
       if (!any(is.na(x))) {
          count <- count + 1
-         sP <- Polygon(cbind(x,y))
-         SP[[count]] <- Polygons(list(sP), ids[mcount])
+         sP <- sp::Polygon(cbind(x,y))
+         SP[[count]] <- sp::Polygons(list(sP), ids[mcount])
          val[count] <- values[mcount]
          nids[count] <- ids[mcount]
       }
@@ -44,8 +44,8 @@ poly2sp <- function(polydf) {
    val <- val[1:count]
    nids <- ids[1:count]
    att <- data.frame(value=val, row.names=nids)
-   SPP <- SpatialPolygons(SP, 1:count)
-   sPdf <- SpatialPolygonsDataFrame(SPP, att)
+   SPP <- sp::SpatialPolygons(SP, 1:count)
+   sPdf <- sp::SpatialPolygonsDataFrame(SPP, att)
 }
 
 #' Convert a SpatialPolygonDataFrame to a raster. (Wrapper for raster::rasterize() with some reasonable defaults for the ereefs package)
@@ -68,6 +68,6 @@ sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymax
    nrows <- as.integer((ymx-ymn)/resolution)
    xmx <- xmn + resolution * ncols
    ymx <- ymn + resolution * nrows
-   if (is.na(r)) r <- raster(ncol=ncols, nrow=nrows, xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx)
-   r <- rasterize(sPdf, r, field='value')
+   if (is.na(r)) r <- raster::raster(ncol=ncols, nrow=nrows, xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx)
+   r <- raster::rasterize(sPdf, r, field='value')
 }
