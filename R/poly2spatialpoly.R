@@ -1,5 +1,3 @@
-#library(sp)
-#library(raster)
 #library(rgdal)
 
 #' Convert a polygon dataframe in the format used by ggplot2::geom_polygon to a spatialPolygonDataFrame
@@ -12,6 +10,7 @@
 
 poly2sp <- function(polydf) {
 
+   require(sp)
    polydf <- polydf[!is.na(polydf$value), ]
    num_ids <- length(polydf$id)
    values <- polydf$value[seq(1, num_ids*4, by=4)]

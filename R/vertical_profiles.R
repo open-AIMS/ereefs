@@ -314,13 +314,13 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
      directn <- -1
   }
-  if (latlon_dir != directn) {
+  if (latlon_dir == directn) {
      ind <- seq(length(eta), 1, -1)
      eta <- eta[ind]
      botz <- botz[ind]
      location_latlon <- location_latlon[ind,]
      location_edges <- location_edges[seq(length(eta)+1, 1, -1),]
-     values <- values[,ind,]
+     values[,1:length(eta),] <- values[,ind,]
   }
 
   return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, cell_centres=location_latlon, cell_intersections=location_edges)
