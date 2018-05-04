@@ -58,7 +58,7 @@ poly2sp <- function(polydf) {
 #' @return A SpatialPolygonsDataFrame object, as used in the package 'sp'
 #' @export
 
-sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymax=NA, r=NA) { 
+sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, yax=NA, r=NA) { 
    # Default settings line up with Dieter's grid but encompass full extent of eReefs domain
    bbox <- summary(sPdf)$bbox
    if (is.na(xmx)) xmx<-bbox['x','max']
