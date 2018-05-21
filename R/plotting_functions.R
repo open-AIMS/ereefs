@@ -158,6 +158,7 @@ if (length(p)!=1) Google_map_underlay <- FALSE
 # Check whether this is a GBR1 or GBR4 ereefs file, or something else
 ereefs_case <- get_ereefs_case(input_file)
 input_stem <- get_file_stem(input_file)
+check_platform_ok(input_stem)
 grids <- get_ereefs_grids(input_file, input_grid)
 x_grid <- grids[['x_grid']]
 y_grid <- grids[['y_grid']]
@@ -492,6 +493,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+  check_platform_ok(input_stem)
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]

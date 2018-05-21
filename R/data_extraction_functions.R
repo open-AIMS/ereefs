@@ -82,6 +82,23 @@ get_file_stem <- function(filename) {
 	return(file_stem)
 }
 
+#' Check whether the platform is Windows and the filename contains "http": if so, return an error
+#'
+#' Utility function for the eReefs package
+#' @param input_stem A netcdf filename or file stem
+#' @return TRUE or stop error
+#' @export
+check_platform_ok <- function(input_stem)
+{
+  ok <- TRUE
+  webserved <- stringi::stri_startswith_fixed(input_stem, "http:")
+  if ((.Platform$OS.type=="windows")&&(webserved)) {
+     ok <- FALSE
+     stop("Unfortunately, under Windows this function will only work with locally-stored netcdf files, not web-served files.")
+  }
+  return(ok)
+}
+
 #' Extracts time series at a specified location from eReefs model output files
 #'
 #' Create a time-series of values of one or more selected model output variables in a specified layer of the
@@ -124,6 +141,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Check whether output is daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+  check_platform_ok(input_stem)
 
   # Dates to plot
   if (is.vector(start_date)) {
@@ -350,6 +368,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+  check_platform_ok(input_stem)
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
@@ -607,6 +626,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
+  check_platform_ok(input_stem)
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
