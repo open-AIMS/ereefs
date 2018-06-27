@@ -259,6 +259,8 @@ if (var_name=="plume") {
     #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
     inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <- ncdf4::ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_488 <- ncdf4::ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
@@ -276,6 +278,8 @@ if (var_name=="plume") {
     #inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
     inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     TCbright <- 10
     R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
     R_555 <- ncdf4::ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
@@ -303,6 +307,8 @@ if (var_name=="plume") {
 } else if (var_name == 'ZooT') {
     inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
       # We don't yet know the dimensions of the variable, so let's get them
       dims <- nc$var[['ZooL_N']][['size']]
       if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
@@ -310,10 +316,24 @@ if (var_name=="plume") {
       if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
     var_longname <- "Total zooplankton nitrogen"
     var_units <- "mg N m-3"
+} else if (var_name == 'speed') {
+    inputfile <- filename
+    nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
+      # We don't yet know the dimensions of the variable, so let's get them
+      dims <- nc$var[['u']][['size']]
+      if (is.null(dims)) stop(paste('u', ' not found in netcdf file.')) 
+      ndims <- length(dims)
+      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+    var_longname <- "Current speed"
+    var_units <- "m s-1"
 } else { 
     #inputfile <- paste0(filename, '?', var_name)
     inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
       # We don't yet know the dimensions of the variable, so let's get them
       dims <- nc$var[[var_name]][['size']]
       if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
@@ -327,6 +347,16 @@ if (var_name == 'ZooT') {
     if (ndims == 4) {
        ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+    } else {
+       ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    }
+} else if (var_name == 'speed') {
+    var_longname <- 'Current speed'
+    var_units <- 'm s-1'
+    if (ndims == 4) {
+       ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- sqrt(ems_var^2 + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))^2)
     } else {
        ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
@@ -364,12 +394,16 @@ if (var_name=="true_colour") {
     # (gx_ok and gy_ok should be identical, but let's be certain)
     gx <- c(t(gx[gx_ok&gy_ok,]))
     gy <- c(t(gy[gx_ok&gy_ok,]))
+    longitude <- c(longitude)[gx_ok&gy_ok]
+    latitude <- c(latitude)[gx_ok&gy_ok]
 } else {
     ems_ok <- (ems_var!="#000000")
     n <- c(ems_var)[gx_ok&gy_ok&ems_ok]
     # (gx_ok and gy_ok should be identical, but let's be certain)
     gx <- c(t(gx[gx_ok&gy_ok&ems_ok,]))
     gy <- c(t(gy[gx_ok&gy_ok&ems_ok,]))
+    longitude <- c(longitude)[gx_ok&gy_ok&ems_ok]
+    latitude <- c(latitude)[gx_ok&gy_ok&ems_ok]
 }
 
 # Unique ID for each polygon
@@ -412,7 +446,7 @@ if (var_name=="true_colour") {
   p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
 print(p)
 if (return_poly) {
-  return(list(p, datapoly))
+  return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
 } else {
   return(p)
 }
@@ -486,7 +520,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
 		       scale_lim = c(NA, NA),
                        zoom = 6,
 		       box_bounds = c(NA, NA, NA, NA),
-             suppress_print=FALSE)
+             suppress_print=FALSE,
+             verbose=FALSE)
 		       
                       
 {
@@ -494,6 +529,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
   check_platform_ok(input_stem)
+  webserved <- stringi::stri_startswith_fixed(input_stem, "http:")
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
@@ -661,13 +697,16 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	    }
 	    ncdf4::nc_close(nc)
-            start_array <- c(xmin, ymin, from_day)
+       start_array <- c(xmin, ymin, from_day)
+       if(ds[2]==ds[1]) stop(paste('Error reading time from', filename))
+       tstep <- as.numeric(ds[2]-ds[1])
 	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/as.numeric(ds[2]-ds[1])))
 	    fileslist <- 1
-    } else if (ereefs_case == 1) {
-            start_array <- c(xmin, ymin, 1)
-            count_array <- c(xmax-xmin, ymax-ymin, 1)
+    } else if (ereefs_case == 1) { 
+       start_array <- c(xmin, ymin, 1) 
+       count_array <- c(xmax-xmin, ymax-ymin, 1)
 	    fileslist <- from_day:(from_day+day_count-1)
+       tstep <- 1
     } else {
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
@@ -680,10 +719,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
     }
 
     for (i in fileslist) {
-      if (ereefs_case == 1) {
-	    filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc')
-            ds <- as.Date(paste(year, month, i, sep="-", '%Y-%m-%d'))
+      if (ereefs_case == 1) { 
+         filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc') 
+         ds <- as.Date(paste(year, month, i, sep="-", '%Y-%m-%d'))
       }
+      if (verbose) print(filename)
       if (var_name=="plume") {
         #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
         inputfile <- filename
@@ -711,7 +751,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
       } else if (var_name=="true_colour") {
         #inputfile <- paste0(filename, '?R_470,R_555,R_645,time')
         inputfile <- filename
-        nc <- ncdf4::nc_open(inputfile)
         TCbright <- 10
         R_470 <- ncdf4::ncvar_get(nc, "R_470", start=start_array, count=count_array) * TCbright
         R_555 <- ncdf4::ncvar_get(nc, "R_555", start=start_array, count=count_array) * TCbright
@@ -744,16 +783,66 @@ map_ereefs_movie <- function(var_name = "true_colour",
         nc <- ncdf4::nc_open(inputfile)
         if (ndims == 0) {
           # We don't yet know the dimensions of the variable, so let's get them
-          dims <- nc$var[[var_name]][['size']]
+          if (var_name == "speed") {
+             dims <- nc$var[['u']][['size']]
+          } else if (var_name == "ZooT") {
+             dims <- nc$var[['ZooL_N']][['size']]
+          } else { 
+             dims <- nc$var[[var_name]][['size']]
+          }
           if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
           ndims <- length(dims)
           if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
         }
+
+        unsatisfied <- TRUE
+        trynum <- 0
+
+        while (unsatisfied) {
     
         if (ndims == 4) {
-           ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3]))
+          if (var_name == "speed") { 
+             ems_var <- try(ncdf4::ncvar_get(nc, 'u', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
+             dum1 <- try(ncdf4::ncvar_get(nc, 'v', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3]))^2)
+             if (class(dum1)=="try-error") ems_var <- dum1
+             if (class(ems_var)!="try_error") ems_var <- sqrt(ems_var^2 + dum1^2)
+          } else if (var_name == "ZooT") {
+             ems_var <- try(ncdf4::ncvar_get(nc, 'ZooL_N', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
+             dum1 <- try(ncdf4::ncvar_get(nc, 'ZooS_N', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
+             if (class(dum1)=="try-error") ems_var <- dum1
+             if (class(ems_var)!="try_error") ems_var <- ems_var +  dum1
+          } else {
+             ems_var <- try(ncdf4::ncvar_get(nc, var_name, start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
+          }
         } else {
-           ems_var <- ncdf4::ncvar_get(nc, var_name, start=start_array, count=count_array)
+           if (var_name == "speed") {
+              ems_var <- try(ncdf4::ncvar_get(nc, 'u', start=start_array, count=count_array))
+              dum1 <- try(ncdf4::ncvar_get(nc, 'v', start=start_array, count=count_array)^2)
+             if (class(dum1)=="try-error") ems_var <- dum1
+             if (class(ems_var)!="try_error") ems_var <- sqrt(ems_var^2 + dum1^2)
+           } else if (var_name == "ZooT") {
+              ems_var <- try(ncdf4::ncvar_get(nc, 'ZooL_N', start=start_array, count=count_array))
+              dum1 <- try(ncdf4::ncvar_get(nc, 'ZooS_N', start=start_array, count=count_array))
+              if (class(dum1)=="try-error") ems_var <- dum1
+              if (class(ems_var)!="try_error") ems_var <- ems_var +  dum1
+           } else { 
+              ems_var <- try(ncdf4::ncvar_get(nc, var_name, start=start_array, count=count_array))
+           }
+        }
+        if (class(ems_var)!="try-error") {
+           unsatisfied <- FALSE
+        } else if (stringi::stri_startswith_fixed(attr(ems_var, "condition")$message, "Error in ncvar_get_inner")) {
+           trynum <- trynum + 1
+           if (trynum>10) {
+              unsatisfied <- FALSE
+              stop('Too many CURL errors: giving up.')
+           } else { 
+              print(paste("Retrying ", trynum, "of 10"))
+           }
+        } else {
+           unsatisfied <- FALSE
+           stop(attr(ems_var, "condition"))
+        }
         }
         vat <- ncdf4::ncatt_get(nc, var_name)
         var_longname <- vat$long_name
@@ -822,16 +911,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
          }  else {
             icount <- icount + 1
          }
-         if (ereefs_case==1) {
-           setTxtProgressBar(pb,icount/as.numeric(end_date-start_date)/4)
-         } else { 
-           setTxtProgressBar(pb,icount/as.numeric(end_date-start_date))
-         }
+         setTxtProgressBar(pb,icount/tstep)
       }
     }
   }
   close(pb)
   values <- data.frame(id = id, value = temporal_sum/icount)
   datapoly <- merge(values, positions, by = c("id"))
-  return(datapoly)
+  return(list(datapoly=datapoly, value=values$value))
 }
