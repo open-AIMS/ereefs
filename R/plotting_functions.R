@@ -150,6 +150,7 @@ map_ereefs <- function(var_name = "true_colour",
                        zoom = 6,
 		       box_bounds = c(NA, NA, NA, NA),
 		       p = NA,
+             suppress_print = FALSE,
 		       return_poly = FALSE)
 {
 
@@ -948,6 +949,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #'      Ignored for true_colour plots.
 #' @param zoom Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
 #'      of eReefs models. Defaults to 6. Higher values will zoom in further.
+#' @param suppress_print Default FALSE. If true, don't prdocue the map image.
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
 #'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
 #' @return p Handle for the figure generated.
@@ -963,7 +965,8 @@ plot_map <- function(datapoly,
              scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
              zoom = 6,
-		       p = NA)
+		       p = NA,
+             suppress_print = FALSE)
 {
   if (class(datapoly$value)=="factor") {
      var_name <- "true_colour"
@@ -974,6 +977,8 @@ plot_map <- function(datapoly,
 	  scale_lim <- c(min(datapoly$value, na.rm=TRUE), max(datapoly$value, na.rm=TRUE))
   }
 
+  if (suppress_print) Google_map_underlay <- FALSE
+  if (length(p)!=1) Google_map_underlay <- FALSE
   if (Google_map_underlay) {
     MapLocation<-c(min(datapoly$x, na.rm=TRUE)-0.5, 
  		min(datapoly$y, na.rm=TRUE)-0.5, 
@@ -984,6 +989,7 @@ plot_map <- function(datapoly,
   } else if (length(p)==1) {
     p <- ggplot2::ggplot()
   }
+  if (!suppress_print) {
   if (var_name=="true_colour") {
     p <- p +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
@@ -1001,6 +1007,6 @@ plot_map <- function(datapoly,
   }
   p <- p + ggplot2::ggtitle(var_longname)
   print(p)
-  if (length(p)!=1) Google_map_underlay <- FALSE
+  }
   return(p)
 }
