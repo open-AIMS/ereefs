@@ -256,8 +256,8 @@ y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 
 if (var_name=="plume") {
-    #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
-    inputfile <- filename
+    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678,longitude,latitude')
+    #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <- ncdf4::ncvar_get(nc, 'longitude')
     latitude <-ncdf4:: ncvar_get(nc, 'latitude')
@@ -275,8 +275,8 @@ if (var_name=="plume") {
     var_longname <- 'Plume colour class'
 
 } else if (var_name=="true_colour") {
-    #inputfile <- paste0(filename, '?R_470,R_555,R_645,eta')
-    inputfile <- filename
+    inputfile <- paste0(filename, '?R_470,R_555,R_645,eta,longitude,latitude')
+    #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
     latitude <-ncdf4:: ncvar_get(nc, 'latitude')
@@ -305,40 +305,42 @@ if (var_name=="plume") {
     var_longname <- "Simulated true colour"
     var_units <- ""
 } else if (var_name == 'ZooT') {
-    inputfile <- filename
+    inputfile <- paste0(filename, '?ZooL_N,ZooS_N,longitude,latitude')
+    #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
     latitude <-ncdf4:: ncvar_get(nc, 'latitude')
-      # We don't yet know the dimensions of the variable, so let's get them
-      dims <- nc$var[['ZooL_N']][['size']]
-      if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
-      ndims <- length(dims)
-      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+    # We don't yet know the dimensions of the variable, so let's get them
+    dims <- nc$var[['ZooL_N']][['size']]
+    if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
+    ndims <- length(dims)
+    if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
     var_longname <- "Total zooplankton nitrogen"
     var_units <- "mg N m-3"
 } else if (var_name == 'speed') {
-    inputfile <- filename
+    inputfile <- paste0(filename, '?u,v,longitude,latitude')
+    #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
-      # We don't yet know the dimensions of the variable, so let's get them
-      dims <- nc$var[['u']][['size']]
-      if (is.null(dims)) stop(paste('u', ' not found in netcdf file.')) 
-      ndims <- length(dims)
-      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude') 
+    # We don't yet know the dimensions of the variable, so let's get them 
+    dims <- nc$var[['u']][['size']] 
+    if (is.null(dims)) stop(paste('u', ' not found in netcdf file.')) 
+    ndims <- length(dims) 
+    if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
     var_longname <- "Current speed"
     var_units <- "m s-1"
 } else { 
-    #inputfile <- paste0(filename, '?', var_name)
-    inputfile <- filename
+    inputfile <- paste0(filename, '?', var_name, ',longitude,latitude')
+    #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
-      # We don't yet know the dimensions of the variable, so let's get them
-      dims <- nc$var[[var_name]][['size']]
-      if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
-      ndims <- length(dims)
-      if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude') 
+    # We don't yet know the dimensions of the variable, so let's get them 
+    dims <- nc$var[[var_name]][['size']] 
+    if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
+    ndims <- length(dims) 
+    if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
 }
 
 if (var_name == 'ZooT') {
@@ -389,22 +391,12 @@ gy_ok <- !apply(is.na(gy),1, any)
 
 # Values associated with each polygon at chosen timestep
 #n <- c(ems_var[,,tstep])[gx_ok&gy_ok]
-if (var_name=="true_colour") { 
-    n <- c(ems_var)[gx_ok&gy_ok]
-    # (gx_ok and gy_ok should be identical, but let's be certain)
-    gx <- c(t(gx[gx_ok&gy_ok,]))
-    gy <- c(t(gy[gx_ok&gy_ok,]))
-    longitude <- c(longitude)[gx_ok&gy_ok]
-    latitude <- c(latitude)[gx_ok&gy_ok]
-} else {
-    ems_ok <- (ems_var!="#000000")
-    n <- c(ems_var)[gx_ok&gy_ok&ems_ok]
-    # (gx_ok and gy_ok should be identical, but let's be certain)
-    gx <- c(t(gx[gx_ok&gy_ok&ems_ok,]))
-    gy <- c(t(gy[gx_ok&gy_ok&ems_ok,]))
-    longitude <- c(longitude)[gx_ok&gy_ok&ems_ok]
-    latitude <- c(latitude)[gx_ok&gy_ok&ems_ok]
-}
+n <- c(ems_var)[gx_ok&gy_ok]
+# (gx_ok and gy_ok should be identical, but let's be certain)
+gx <- c(t(gx[gx_ok&gy_ok,]))
+gy <- c(t(gy[gx_ok&gy_ok,]))
+longitude <- c(longitude)[gx_ok&gy_ok]
+latitude <- c(latitude)[gx_ok&gy_ok]
 
 # Unique ID for each polygon
 id <- 1:length(n)
@@ -418,6 +410,7 @@ if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) {
 	scale_lim <- c(min(n, na.rm=TRUE), max(n, na.rm=TRUE))
 }
 
+if (suppress_print) Google_map_underlay <- FALSE
 if (Google_map_underlay) {
   MapLocation<-c(min(gx, na.rm=TRUE)-0.5, 
  		min(gy, na.rm=TRUE)-0.5, 
@@ -452,14 +445,19 @@ if (return_poly) {
 }
 }
 
-#' Create a series of map image files for an animation of eReefs model output.
+#' Create a series of map image files for an animation of eReefs model output AND calculate temporal
+#' mean values.
 #'
 #' Creates and saves to disk a sequential series of colour map images showing concentrations of a specified 
-#' eReefs model output variable at a specified model layer (by default, the surface layer). The map is optionally 
-#' (and by default) overlain on a Google Earth map of the region. The function should work under Linux or MacOS. 
+#' eReefs model output variable at a specified model layer (by default, the surface layer). 
+#' Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
+#' be suppressed by setting suppress_print to TRUE if this is the primary desired output).
+#' Maps produced are optionally (and by default) overlain on a Google Earth map of the region. 
+#' The function should work under Linux or MacOS. 
 #' The R netcdf4 library doesn't handle opendap served files under Windows, unfortunately, but can be used under 
 #' Windows for locally-stored model output files. Can be more efficient than calling map_ereefs multiple times if you 
 #' want to produce an animation because it loads a month at a time for GBR4 runs. 
+#' If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.
 #' To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
 #' or imageJ.  Barbara Robson (AIMS).
 #'
@@ -503,33 +501,34 @@ if (return_poly) {
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
 #'        also specify an appropriate value for zoom if specifying box_bounds.
 #' @param suppress_print Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.
+#' @param stride Default 'daily', but can otherwise be set to a numeric interval indicating how many time-steps to step forward for each frame.
+#' @param verbosity Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.
 #' @return a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
 #'       value of the variable specified in VAR_NAME over the selected interval.
 #' @export
 #' @examples
 #' map_ereefs_movie()
 map_ereefs_movie <- function(var_name = "true_colour", 
-		       start_date = c(2015,12,1), 
-		       end_date = c(2016,3,31), 
-                       layer = 'surface',
-                       output_dir = 'ToAnimate',
-		       Google_map_underlay = TRUE,
-                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
-                       input_grid = NA,
-                       scale_col = c('ivory', 'coral4'),
-		       scale_lim = c(NA, NA),
-                       zoom = 6,
-		       box_bounds = c(NA, NA, NA, NA),
-             suppress_print=FALSE,
-             verbose=FALSE)
-		       
-                      
+                             start_date = c(2015,12,1), 
+                             end_date = c(2016,3,31), 
+                             layer = 'surface', 
+                             output_dir = 'ToAnimate', 
+                             Google_map_underlay = TRUE, 
+                             input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc", 
+                             input_grid = NA, 
+                             scale_col = c('ivory', 'coral4'), 
+                             scale_lim = c(NA, NA), 
+                             zoom = 6, 
+                             box_bounds = c(NA, NA, NA, NA), 
+                             suppress_print=FALSE, 
+                             stride = 'daily',
+                             verbosity=0)
 {
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- get_ereefs_case(input_file)
+  ereefs_case <- get_ereefs_case(input_file) 
+  if (ereefs_case==1) warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
-  check_platform_ok(input_stem)
-  webserved <- stringi::stri_startswith_fixed(input_stem, "http:")
+  if ((.Platform$OS.type=="windows")) stop('Sorry: Windows is no longer supported by get_ereefs_movie() due to limitations of ncdf4 for Windows.')
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
@@ -561,8 +560,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
   if ((Google_map_underlay)&(!requireNamespace("ggmap", quietly = TRUE))) {
     warning('Package ggmap::ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
     print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
-    Google_map_underlay = FALSE
+    Google_map_underlay <- FALSE
   }
+  if (suppress_print) Google_map_underlay <- FALSE
   
   if (start_year==end_year) {
       mths <- start_month:end_month
@@ -633,8 +633,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
   y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
   # Set up the polygon corners. 4 per polygon.
-  a <- xmax - xmin
-  b <- ymax - ymin
+  a <- xmax - xmin + 1
+  b <- ymax - ymin + 1
 
   gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
   gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
@@ -648,17 +648,17 @@ map_ereefs_movie <- function(var_name = "true_colour",
   gy <- c(t(gy[gx_ok&gy_ok,]))
   if (Google_map_underlay) { 
 	  MapLocation<-c(min(x_grid, na.rm=TRUE)-0.5, 
- 	    min(y_grid, na.rm=TRUE)-0.5, 
- 	    max(x_grid, na.rm=TRUE)+0.5, 
-	    max(y_grid, na.rm=TRUE)+0.5)
-    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", crop=TRUE, zoom=zoom))
+                    min(y_grid, na.rm=TRUE)-0.5, 
+                    max(x_grid, na.rm=TRUE)+0.5, 
+                    max(y_grid, na.rm=TRUE)+0.5) 
+     myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", crop=TRUE, zoom=zoom))
   }
 
   # Main routine
   ndims <- 0
   icount <- 0
   mcount <- 0
-  pb <- txtProgressBar(min = 0, max = as.numeric(end_date-start_date), style = 3)
+  pb <- txtProgressBar(min = 0, max = 1, style = 3)
   for (month in mths) {
     mcount <- mcount + 1
     year <- years[mcount]
@@ -666,15 +666,15 @@ map_ereefs_movie <- function(var_name = "true_colour",
     if (mcount == 1) {
        from_day <- start_day
        if (ereefs_case == 0) {
-	    filename <- paste0(input_stem, '.nc')
-	    nc <- ncdf4::nc_open(filename)
-	    if (!is.null(nc$var[['t']])) { 
-	        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-            } else {
-	        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	    }
-	    ncdf4::nc_close(nc)
-           }
+	      filename <- paste0(input_stem, '.nc')
+	      nc <- ncdf4::nc_open(filename)
+	      if (!is.null(nc$var[['t']])) { 
+	          ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+              } else {
+	          ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	      }
+	      ncdf4::nc_close(nc)
+       }
     } else {
        from_day <- 1
     }
@@ -697,44 +697,55 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	    }
 	    ncdf4::nc_close(nc)
-       start_array <- c(xmin, ymin, from_day)
-       if(ds[2]==ds[1]) stop(paste('Error reading time from', filename))
+       if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
+       if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
+       if(ds[2]==ds[1]) stop(paste('Error reading time from', filename, '(t[2]==t[1])'))
        tstep <- as.numeric(ds[2]-ds[1])
-	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/as.numeric(ds[2]-ds[1])))
+       start_array <- c(xmin, ymin, as.integer((from_day-0.499999)*tstep + 1) )
+	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep) )
 	    fileslist <- 1
     } else if (ereefs_case == 1) { 
+       #warning('Assuming that only one timestep is output per day/file')
+	    fileslist <- from_day:(from_day+day_count-1)
        start_array <- c(xmin, ymin, 1) 
        count_array <- c(xmax-xmin, ymax-ymin, 1)
-	    fileslist <- from_day:(from_day+day_count-1)
        tstep <- 1
     } else {
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
-	    # filename <- paste0(input_stem, '.nc') # filename has been set previously
-            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+	    # filename <- paste0(input_stem, '.nc') # filename has been set previously 
+       tstep <- as.numeric(ds[2]-ds[1])
+       from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/tstep) + 1
 	    if (from_day<1) from_day <-1
 	    start_array <- c(xmin, ymin, from_day)
-	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/as.numeric(ds[2]-ds[1])))
+	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
 	    fileslist <- 1
     }
+    if (stride == 'daily') {
+       stride <- 1/tstep
+    } 
+    stride <- as.integer(stride)
 
     for (i in fileslist) {
       if (ereefs_case == 1) { 
          filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc') 
          ds <- as.Date(paste(year, month, i, sep="-", '%Y-%m-%d'))
       }
-      if (verbose) print(filename)
+      if (verbosity>0) print(filename)
       if (var_name=="plume") {
-        #inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
-        inputfile <- filename
+        slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+                        '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
+                        '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
+        inputfile <- paste0(filename, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
+        #inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
-        R_412 <- ncdf4::ncvar_get(nc, "R_412", start=start_array, count=count_array)
-        R_443 <- ncdf4::ncvar_get(nc, "R_443", start=start_array, count=count_array)
-        R_488 <- ncdf4::ncvar_get(nc, "R_488", start=start_array, count=count_array)
-        R_531 <- ncdf4::ncvar_get(nc, "R_531", start=start_array, count=count_array)
-        R_547 <- ncdf4::ncvar_get(nc, "R_547", start=start_array, count=count_array)
-        R_667 <- ncdf4::ncvar_get(nc, "R_667", start=start_array, count=count_array)
-        R_678 <- ncdf4::ncvar_get(nc, "R_678", start=start_array, count=count_array)
+        R_412 <- ncdf4::ncvar_get(nc, "R_412")
+        R_443 <- ncdf4::ncvar_get(nc, "R_443")
+        R_488 <- ncdf4::ncvar_get(nc, "R_488")
+        R_531 <- ncdf4::ncvar_get(nc, "R_531")
+        R_547 <- ncdf4::ncvar_get(nc, "R_547")
+        R_667 <- ncdf4::ncvar_get(nc, "R_667")
+        R_678 <- ncdf4::ncvar_get(nc, "R_678")
         ems_var <- NA*R_678
         if (ereefs_case ==4) {
             for (day in 1:dim(R_412)[3]) {
@@ -749,12 +760,16 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	     var_longname <- "Plume optical class"
 	     var_units <- ""
       } else if (var_name=="true_colour") {
-        #inputfile <- paste0(filename, '?R_470,R_555,R_645,time')
-        inputfile <- filename
+        slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+                        '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
+                        '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
+        inputfile <- paste0(filename, '?R_470', slice, ',R_555', slice, ',R_645', slice)
+        #inputfile <- filename
+        nc <- ncdf4::nc_open(inputfile)
         TCbright <- 10
-        R_470 <- ncdf4::ncvar_get(nc, "R_470", start=start_array, count=count_array) * TCbright
-        R_555 <- ncdf4::ncvar_get(nc, "R_555", start=start_array, count=count_array) * TCbright
-        R_645 <- ncdf4::ncvar_get(nc, "R_645", start=start_array, count=count_array) * TCbright
+        R_470 <- ncdf4::ncvar_get(nc, "R_470") * TCbright
+        R_555 <- ncdf4::ncvar_get(nc, "R_555") * TCbright
+        R_645 <- ncdf4::ncvar_get(nc, "R_645") * TCbright
         R_470[R_470>1] <- 1
         R_555[R_555>1] <- 1
         R_645[R_645>1] <- 1
@@ -778,10 +793,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	     var_units <- ""
     
       } else { 
-        #inputfile <- paste0(filename, '?time,', var_name)
-        inputfile <- filename
-        nc <- ncdf4::nc_open(inputfile)
+
         if (ndims == 0) {
+          nc <- ncdf4::nc_open(filename)
           # We don't yet know the dimensions of the variable, so let's get them
           if (var_name == "speed") {
              dims <- nc$var[['u']][['size']]
@@ -793,60 +807,50 @@ map_ereefs_movie <- function(var_name = "true_colour",
           if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
           ndims <- length(dims)
           if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+          ncdf4::nc_close(nc)
         }
 
-        unsatisfied <- TRUE
-        trynum <- 0
+        if (verbosity>1) {
+           print(paste('variable has ', ndims, 'dimensions'))
+           print('start_array = ')
+           print(start_array)
+           print('count_array = ')
+           print(count_array)
+        }
 
-        while (unsatisfied) {
-    
         if (ndims == 4) {
-          if (var_name == "speed") { 
-             ems_var <- try(ncdf4::ncvar_get(nc, 'u', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
-             dum1 <- try(ncdf4::ncvar_get(nc, 'v', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3]))^2)
-             if (class(dum1)=="try-error") ems_var <- dum1
-             if (class(ems_var)!="try_error") ems_var <- sqrt(ems_var^2 + dum1^2)
-          } else if (var_name == "ZooT") {
-             ems_var <- try(ncdf4::ncvar_get(nc, 'ZooL_N', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
-             dum1 <- try(ncdf4::ncvar_get(nc, 'ZooS_N', start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
-             if (class(dum1)=="try-error") ems_var <- dum1
-             if (class(ems_var)!="try_error") ems_var <- ems_var +  dum1
-          } else {
-             ems_var <- try(ncdf4::ncvar_get(nc, var_name, start=c(start_array[1:2],layer,start_array[3]), count=c(count_array[1:2],1,count_array[3])))
-          }
+          slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+                          '[', layer-1, ']',                                                    # layer
+                          '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
+                          '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
         } else {
-           if (var_name == "speed") {
-              ems_var <- try(ncdf4::ncvar_get(nc, 'u', start=start_array, count=count_array))
-              dum1 <- try(ncdf4::ncvar_get(nc, 'v', start=start_array, count=count_array)^2)
-             if (class(dum1)=="try-error") ems_var <- dum1
-             if (class(ems_var)!="try_error") ems_var <- sqrt(ems_var^2 + dum1^2)
-           } else if (var_name == "ZooT") {
-              ems_var <- try(ncdf4::ncvar_get(nc, 'ZooL_N', start=start_array, count=count_array))
-              dum1 <- try(ncdf4::ncvar_get(nc, 'ZooS_N', start=start_array, count=count_array))
-              if (class(dum1)=="try-error") ems_var <- dum1
-              if (class(ems_var)!="try_error") ems_var <- ems_var +  dum1
-           } else { 
-              ems_var <- try(ncdf4::ncvar_get(nc, var_name, start=start_array, count=count_array))
-           }
+          slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+                          '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
+                          '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
         }
-        if (class(ems_var)!="try-error") {
-           unsatisfied <- FALSE
-        } else if (stringi::stri_startswith_fixed(attr(ems_var, "condition")$message, "Error in ncvar_get_inner")) {
-           trynum <- trynum + 1
-           if (trynum>10) {
-              unsatisfied <- FALSE
-              stop('Too many CURL errors: giving up.')
-           } else { 
-              print(paste("Retrying ", trynum, "of 10"))
-           }
+        if (verbosity>1) print(paste('slice = ', slice))
+        if (var_name == "speed") { 
+           inputfile <- paste0(filename, '?u', slice, ',v', slice)
+           nc <- ncdf4::nc_open(inputfile)
+           ems_var <- sqrt(ncdf4::ncvar_get(nc, 'u')^2 + ncdf4::ncvar_get(nc, 'v')^2)
+           vat <- ncdf4::ncatt_get(nc, 'u')
+           var_longname <- 'current speed'
+           var_units <- vat$units
+        } else if (var_name == "ZooT") {
+           inputfile <- paste0(filename, '?ZooL_N', slice, ',ZooS_N', slice)
+           nc <- ncdf4::nc_open(inputfile)
+           ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N') + ncdf4::ncvar_get(nc, 'ZooS_N')
+           vat <- ncdf4::ncatt_get(nc, 'ZooL_N')
+           var_longname <- 'Total Zooplankton'
+           var_units <- vat$units
         } else {
-           unsatisfied <- FALSE
-           stop(attr(ems_var, "condition"))
+           inputfile <- paste0(filename, '?',var_name, slice)
+           nc <- ncdf4::nc_open(inputfile)
+           ems_var <- ncdf4::ncvar_get(nc, var_name)
+           vat <- ncdf4::ncatt_get(nc, var_name)
+           var_longname <- vat$long_name
+           var_units <- vat$units
         }
-        }
-        vat <- ncdf4::ncatt_get(nc, var_name)
-        var_longname <- vat$long_name
-        var_units <- vat$units
       }
       #ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     
@@ -863,15 +867,21 @@ map_ereefs_movie <- function(var_name = "true_colour",
         # Values associated with each polygon at chosen timestep
         n <- c(ems_var2d)[gx_ok&gy_ok]
         if (icount==0) {
-           temporal_sum <- n
+           if (var_name=='true_colour') {
+              temporal_sum <- as.integer(stringi::stri_sub(n,2,6))
+           } else { 
+              temporal_sum <- n
+           }
         } else {
-           temporal_sum <- temporal_sum + n
+           if (var_name=='true_colour') {
+              temporal_sum <- as.integer(stringi::stri_sub(n,2,6)) + temporal_sum
+           } else { 
+              temporal_sum <- temporal_sum + n
+           }
         }
     
         # Unique ID for each polygon
-        id <- 1:length(n)
-    
-        id <- as.factor(id)
+        id <- as.factor(1:length(n))
         values <- data.frame(id = id, value = n)
         positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
         datapoly <- merge(values, positions, by = c("id"))
@@ -911,7 +921,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
          }  else {
             icount <- icount + 1
          }
-         setTxtProgressBar(pb,icount/tstep)
+         setTxtProgressBar(pb,icount/as.integer(end_date-start_date)/tstep*stride)
       }
     }
   }
@@ -919,4 +929,78 @@ map_ereefs_movie <- function(var_name = "true_colour",
   values <- data.frame(id = id, value = temporal_sum/icount)
   datapoly <- merge(values, positions, by = c("id"))
   return(list(datapoly=datapoly, value=values$value))
+}
+
+#' Create a map using a dataframe in the format required by ggplot2::geom_plot, for instance from map_ereefs() or map_ereefs_movie()
+#'
+#' Plots a map figure in the same format as would be given by map_ereefs(), but using a pre-generated dataframe, instead of
+#' processing data directly from ereefs netcdf files.
+#' 
+#' @param datapoly A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().
+#' @param var_longname Character vector to use for the figure title.
+#' @param var_units Units to include in the figure labelling.
+#' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap librray.
+#' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
+#'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+#'      Defaults to c('ivory', 'coral4').
+#' @param scale_lim Upper and lower bounds for colour scale. Defaults to full range of data.
+#'      Ignored for true_colour plots.
+#' @param zoom Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
+#'      of eReefs models. Defaults to 6. Higher values will zoom in further.
+#' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
+#'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
+#' @return p Handle for the figure generated.
+#' @export
+#' @examples
+#' a <- map_ereefs('TN', return_poly=TRUE)
+#' plot_map(a[[2]])
+
+plot_map <- function(datapoly,
+             var_longname = '',
+             var_units = '',
+		       Google_map_underlay = TRUE,
+             scale_col = c('ivory', 'coral4'),
+		       scale_lim = c(NA, NA),
+             zoom = 6,
+		       p = NA)
+{
+  if (class(datapoly$value)=="factor") {
+     var_name <- "true_colour"
+  } else {
+     var_name <- "something else"
+  }
+  if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) { 
+	  scale_lim <- c(min(datapoly$value, na.rm=TRUE), max(datapoly$value, na.rm=TRUE))
+  }
+
+  if (Google_map_underlay) {
+    MapLocation<-c(min(datapoly$x, na.rm=TRUE)-0.5, 
+ 		min(datapoly$y, na.rm=TRUE)-0.5, 
+ 		max(datapoly$x, na.rm=TRUE)+0.5, 
+ 		max(datapoly$y, na.rm=TRUE)+0.5)
+    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", zoom=zoom, crop=TRUE))
+    p <- ggmap::ggmap(myMap)
+  } else if (length(p)==1) {
+    p <- ggplot2::ggplot()
+  }
+  if (var_name=="true_colour") {
+    p <- p +
+        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
+	     ggplot2::scale_fill_identity() 
+  } else {
+    p <- p +
+        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
+        ggplot2::scale_fill_gradient(low=scale_col[1], 
+				     high=scale_col[2], 
+				     na.value="transparent", 
+				     guide="colourbar",
+				     limits=scale_lim,
+				     name=var_units,
+				     oob=scales::squish)
+  }
+  p <- p + ggplot2::ggtitle(var_longname)
+  print(p)
+  if (length(p)!=1) Google_map_underlay <- FALSE
+  return(p)
 }
