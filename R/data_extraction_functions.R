@@ -303,14 +303,14 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
       #inputfile <- paste0(inputfile, '?', var_list, ',time')
       nc <- ncdf4::nc_open(inputfile)
-      if (ereefs_case == 1) {
+      if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
             d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
-      } else {
-	d <- ds[from_day:(from_day + day_count - 1)]
+      } else { 
+         d <- ds[from_day:(from_day + day_count - 1)]
       }
       im1 = i+1
       i <- i + length(d)
@@ -445,16 +445,14 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         } else {
 	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
-	ncdf4::nc_close(nc)
-        blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-			  # '.nc?latitude,longitude')
+	ncdf4::nc_close(nc) 
+   blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
   } else if (ereefs_case == 1) {
       inputfile <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
+			  '.nc') 
       blank_length <- end_date - start_date + 1
-			  # '.nc?latitude,longitude')
   } else {
       inputfile <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
@@ -547,20 +545,22 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         #inputfile <- paste0(inputfile, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(inputfile)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-        if (ereefs_case == 0) {
-          if (!is.null(nc$var[['t']])) {
-            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
-          } else {
-            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
-          }
+        # Get dates
+        if (ereefs_case > 0 ) { 
+           if (!is.null(nc$var[['t']])) { 
+              ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01")) 
+           } else { 
+              ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")) 
+           }
+	        d <- ds[from_day:(from_day + day_count - 1)]
         } else {
-	       d <- ds[from_day:(from_day + day_count - 1)]
+	        d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
-	} else {
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
-	}
+           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+        } else { 
+           eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+        }
         im1 = i+1
         i <- i + length(d)
         ts_frame$date[im1:i] <- d
@@ -772,8 +772,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      }
      if (ereefs_case == 4) { 
         fileslist <- 1
-        inputfile <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-	day_count <- day_count / as.numeric(ds[2]-ds[1])
+        inputfile <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc') 
+        day_count <- day_count / as.numeric(ds[2]-ds[1])
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
      } else if (ereefs_case == 1) {
         fileslist <- from_day:(from_day+day_count-1)
@@ -793,20 +793,20 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         #inputfile <- paste0(inputfile, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(inputfile)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-        if (ereefs_case == 0) {
+        if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
             d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
-        } else {
-	  d <- ds[from_day:(from_day + day_count - 1)]
+        } else { 
+           d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
-	} else {
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
-	}
+          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+        } else {
+          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+        }
         im1 = i+1
         i <- i + length(d)
         ts_frame$date[im1:i] <- d
@@ -1046,14 +1046,14 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         #inputfile <- paste0(inputfile, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(inputfile)
 	if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-        if (ereefs_case == 0) {
+        if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
             d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
-        } else {
-	  d <- ds[from_day:(from_day + day_count - 1)]
+        } else { 
+           d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
