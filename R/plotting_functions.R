@@ -140,21 +140,22 @@ plume_class <- function(rsr) {
 #' map_ereefs('Chl_a_sum', target_date='2016-07-15', scale_col=c('ivory', 'green4'))
 #' map_ereefs('salt', box_bounds=c(145,150,-20,-15), zoom=7, scale_lim=c(32,35))
 map_ereefs <- function(var_name = "true_colour", 
-		       target_date = c(2018,1,30), 
-                       layer = 'surface',
-		       Google_map_underlay = TRUE,
+                       target_date = c(2018,1,30), 
+                       layer = 'surface', 
+                       Google_map_underlay = TRUE,
                        input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc",
                        input_grid = NA,
-                       scale_col = c('ivory', 'coral4'),
-		       scale_lim = c(NA, NA),
-                       zoom = 6,
-		       box_bounds = c(NA, NA, NA, NA),
-		       p = NA,
-             suppress_print = FALSE,
-		       return_poly = FALSE)
+                       scale_col = c('ivory', 'coral4'), 
+                       scale_lim = c(NA, NA),
+                       zoom = 6, 
+                       box_bounds = c(NA, NA, NA, NA), 
+                       p = NA, 
+                       suppress_print = FALSE, 
+                       return_poly = FALSE)
 {
 
 if (length(p)!=1) Google_map_underlay <- FALSE
+if (suppress_print) Google_map_underlay <- FALSE
 
 # Check whether this is a GBR1 or GBR4 ereefs file, or something else
 ereefs_case <- get_ereefs_case(input_file)
@@ -257,7 +258,7 @@ y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 
 if (var_name=="plume") {
-    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678,longitude,latitude')
+    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678,longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <- ncdf4::ncvar_get(nc, 'longitude')
@@ -276,7 +277,7 @@ if (var_name=="plume") {
     var_longname <- 'Plume colour class'
 
 } else if (var_name=="true_colour") {
-    inputfile <- paste0(filename, '?R_470,R_555,R_645,eta,longitude,latitude')
+    inputfile <- paste0(filename, '?R_470,R_555,R_645,eta,longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
@@ -319,7 +320,7 @@ if (var_name=="plume") {
     var_longname <- "Total zooplankton nitrogen"
     var_units <- "mg N m-3"
 } else if (var_name == 'speed') {
-    inputfile <- paste0(filename, '?u,v,longitude,latitude')
+    inputfile <- paste0(filename, '?u,v,longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
@@ -332,7 +333,7 @@ if (var_name=="plume") {
     var_longname <- "Current speed"
     var_units <- "m s-1"
 } else { 
-    inputfile <- paste0(filename, '?', var_name, ',longitude,latitude')
+    inputfile <- paste0(filename, '?', var_name, ',longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     longitude <-ncdf4:: ncvar_get(nc, 'longitude')
@@ -354,6 +355,7 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else if (var_name == 'speed') {
     var_longname <- 'Current speed'
     var_units <- 'm s-1'
@@ -361,9 +363,10 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
        ems_var <- sqrt(ems_var^2 + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))^2)
     } else {
-       ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
     vat <- ncdf4::ncatt_get(nc, var_name)
     var_longname <- vat$long_name
@@ -373,6 +376,7 @@ if (var_name == 'ZooT') {
     } else {
        ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 }
 
 ncdf4::nc_close(nc)
@@ -398,12 +402,13 @@ gx <- c(t(gx[gx_ok&gy_ok,]))
 gy <- c(t(gy[gx_ok&gy_ok,]))
 longitude <- c(longitude)[gx_ok&gy_ok]
 latitude <- c(latitude)[gx_ok&gy_ok]
+botz <- c(botz)[gx_ok&gy_ok]
 
 # Unique ID for each polygon
 id <- 1:length(n)
 
 id <- as.factor(id)
-values <- data.frame(id = id, value = n)
+values <- data.frame(id = id, value = n, depth=botz)
 positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
 datapoly <- merge(values, positions, by = c("id"))
 
@@ -411,7 +416,6 @@ if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) {
 	scale_lim <- c(min(n, na.rm=TRUE), max(n, na.rm=TRUE))
 }
 
-if (suppress_print) Google_map_underlay <- FALSE
 if (Google_map_underlay) {
   MapLocation<-c(min(gx, na.rm=TRUE)-0.5, 
  		min(gy, na.rm=TRUE)-0.5, 
@@ -437,8 +441,8 @@ if (var_name=="true_colour") {
 				     name=var_units,
 				     oob=scales::squish)
 }
-  p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
-print(p)
+ p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
+if (!suppress_print) print(p)
 if (return_poly) {
   return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
 } else {
@@ -736,7 +740,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       if (var_name=="plume") {
         slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                         '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
-                        '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
+                        '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
         inputfile <- paste0(filename, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
         #inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
@@ -763,7 +767,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       } else if (var_name=="true_colour") {
         slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                         '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
-                        '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
+                        '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
         inputfile <- paste0(filename, '?R_470', slice, ',R_555', slice, ',R_645', slice)
         #inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
@@ -827,7 +831,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
         } else {
           slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
-                          '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
+                          '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
         }
         if (verbosity>1) print(paste('slice = ', slice))
         if (var_name == "speed") { 
@@ -835,7 +839,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
            nc <- ncdf4::nc_open(inputfile)
            ems_var <- sqrt(ncdf4::ncvar_get(nc, 'u')^2 + ncdf4::ncvar_get(nc, 'v')^2)
            vat <- ncdf4::ncatt_get(nc, 'u')
-           var_longname <- 'current speed'
+           var_longname <- 'Current speed'
            var_units <- vat$units
         } else if (var_name == "ZooT") {
            inputfile <- paste0(filename, '?ZooL_N', slice, ',ZooS_N', slice)
