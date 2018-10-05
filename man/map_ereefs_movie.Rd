@@ -2,14 +2,15 @@
 % Please edit documentation in R/plotting_functions.R
 \name{map_ereefs_movie}
 \alias{map_ereefs_movie}
-\title{Create a series of map image files for an animation of eReefs model output.}
+\title{Create a series of map image files for an animation of eReefs model output AND calculate temporal
+mean values.}
 \usage{
 map_ereefs_movie(var_name = "true_colour", start_date = c(2015, 12, 1),
-  end_date = c(2016, 3, 31), layer = "surface", output_dir = "ToAnimate",
-  Google_map_underlay = TRUE,
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
-  input_grid = NA, scale_col = c("ivory", "coral4"), scale_lim = c(NA,
-  NA), zoom = 6, box_bounds = c(NA, NA, NA, NA), suppress_print = FALSE)
+  end_date = c(2016, 3, 31), layer = "surface",
+  output_dir = "ToAnimate", Google_map_underlay = FALSE,
+  input_file = "menu", input_grid = NA, scale_col = c("ivory",
+  "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
+  NA, NA), suppress_print = FALSE, stride = "daily", verbosity = 0)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -31,12 +32,13 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 to 'ToAnimate'. Images are created in this directory with filenames beginning with var_name, 
 followed by an underscore and then sequential numbers beginning with 100001.}
 
-\item{Google_map_underlay}{Set to TRUE (the default) to use ggmap::ggmap to show a Google Map as
-an underlay for the model output plot. Requires the ggmap::ggmap librray.}
+\item{Google_map_underlay}{Set to TRUE to use ggmap to show a Google Map as
+an underlay for the model output plot. Requires the ggmap librray and an activated Google API key.
+Default now FALSE.}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-If using Windows, you will need to set this to a local inputfile stem.}
+Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
@@ -56,6 +58,10 @@ also specify an appropriate value for zoom if specifying box_bounds.}
 
 \item{suppress_print}{Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.}
 
+\item{stride}{Default 'daily', but can otherwise be set to a numeric interval indicating how many time-steps to step forward for each frame.}
+
+\item{verbosity}{Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.}
+
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2016,3,31).}
@@ -70,11 +76,13 @@ a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the
 }
 \description{
 Creates and saves to disk a sequential series of colour map images showing concentrations of a specified 
-eReefs model output variable at a specified model layer (by default, the surface layer). The map is optionally 
-(and by default) overlain on a Google Earth map of the region. The function should work under Linux or MacOS. 
-The R netcdf4 library doesn't handle opendap served files under Windows, unfortunately, but can be used under 
-Windows for locally-stored model output files. Can be more efficient than calling map_ereefs multiple times if you 
+eReefs model output variable at a specified model layer (by default, the surface layer). 
+Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
+be suppressed by setting suppress_print to TRUE if this is the primary desired output).
+Maps produced are optionally (and by default) overlain on a Google Earth map of the region. 
+Can be more efficient than calling map_ereefs multiple times if you 
 want to produce an animation because it loads a month at a time for GBR4 runs. 
+If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.
 To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
 or imageJ.  Barbara Robson (AIMS).
 }

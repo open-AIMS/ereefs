@@ -2,46 +2,65 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{get_ereefs_ts}
 \alias{get_ereefs_ts}
-\title{Extracts time series at a specified location from eReefs model output files}
+\title{Extracts time series at specified locations from eReefs model output files}
 \usage{
 get_ereefs_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), layer = "surface",
   start_date = c(2010, 12, 31), end_date = c(2016, 10, 31),
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc")
+  input_file = "menu", input_grid = NA, eta_stem = NA,
+  override_positive = FALSE)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{location_latlon}{is a vector containing the decimal latitude and longitude of the desired location. If 
+\item{location_latlon}{is a vector containing the decimal latitudes and longitudes of the desired location. If 
 you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
 is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 
-\item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value. Defaults to 'surface'.}
+\item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
+value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
+Defaults to 'surface'. Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
+below the free surface instead of a layer number.}
 
 \item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2010,12,31).}
+formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-If using Windows, you will need to set this to a local inputfile stem.}
+Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
+
+\item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
+coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
+but not specified, the function will first look for z_grid can be found in the first INPUT_STEM file, and if not found, 
+will check whether the size of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and 
+load an appropriate z grid from data files stored in this package. Alternatively, you can provide the location of a full 
+(not simple-format) ereefs netcdf output file such as 
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
+
+\item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
+date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
+only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and asking for a depth-integrated
+value..}
+
+\item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
+incorrect. Default FALSE}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2016,10,31).}
+formatted for input to as.Date(). Defaults to c(2016,10,31).}
 }
 \value{
 a data frame containing the dates and values of extracted variables.
 }
 \description{
 Create a time-series of values of one or more selected model output variables in a specified layer of the
-water column or sediment store (by default, the surface layer), aat a specified geographic location within 
+water column or sediment store (by default, the surface layer), at a specified geographic location within 
 the model domain.  See also get_ereefs_depth_integrated_ts() to extract depth-integrated values and 
 get_ereefs_depth_specified_ts() to extract values at a specified depth below the free (tidally moving) 
-surface. Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
-not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
-Under Windows, you can still use it for locally-saved files. Barbara Robson (AIMS).
+surface. Barbara Robson (AIMS).
 }
 \examples{
 get_ereefs_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')

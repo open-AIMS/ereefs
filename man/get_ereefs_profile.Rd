@@ -5,11 +5,9 @@
 \title{Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.}
 \usage{
 get_ereefs_profile(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852), start_date = c(2016, 2, 4),
-  end_date = c(2016, 3, 2),
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
-  input_grid = NA, eta_stem = NA, squeeze = TRUE,
-  override_positive = FALSE)
+  location_latlon = c(-23.39189, 150.88852), start_date = c(2016, 2,
+  4), end_date = c(2016, 3, 2), input_file = "menu", input_grid = NA,
+  eta_stem = NA, squeeze = TRUE, override_positive = FALSE)
 }
 \arguments{
 \item{location_latlon}{Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)}
@@ -21,8 +19,8 @@ as close to midday as possible.}
 \item{end_date}{Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-If using Windows, you will need to set this to a local input_file stem.}
+Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
 
 \item{input_grid}{Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the
 locally-stored or opendap-served netcdf file that contains these. If not specified, the function will first look for                                                            

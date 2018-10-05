@@ -13,5 +13,6 @@ get_ereefs_case(filename)
 1 for daily, 4 for monthly, 0 for other
 }
 \description{
-Determines whether the file provided looks like an example of daily (e.g. GBR1), monthly (e.g. GBR4) or other (e.g. RECOM) output
+If there are two dashes ('-') in the filename, it is assumed to be a daily output file. If there is one, it is assumed to
+be monthly. If there are no dashes, it's something else, such as a RECOM file.
 }

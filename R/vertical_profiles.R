@@ -13,8 +13,8 @@
 #'                   Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the calculated date to bring it as
 #'                   close to midday as possible.
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-#'        If using Windows, you will need to set this to a local input_file stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -35,12 +35,13 @@
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
 			 target_date = c(2016, 02, 04),
-                         input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
+                         input_file = "menu",
 			 input_grid = NA,
 			 eta_stem = NA,
 			 robust = FALSE,
 			 override_positive = FALSE)
 {
+  input_file <- substitute_filename(input_file)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
   check_platform_ok(input_stem)
@@ -254,8 +255,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'                   as close to midday as possible.
 #' @param end_date Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-#'        If using Windows, you will need to set this to a local input_file stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the                                                        
 #'      locally-stored or opendap-served netcdf file that contains these. If not specified, the function will first look for                                                            
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size                                                                                 
@@ -274,12 +275,13 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=c(-23.39189, 150.88852),
 			 start_date = c(2016, 02, 04),
 			 end_date = c(2016, 03, 02),
-                         input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
+          input_file = "menu",
 			 input_grid = NA,
 			 eta_stem = NA,
 			 squeeze = TRUE,
 			 override_positive=FALSE)
 {
+  input_file <- substitute_filename(input_file)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
   check_platform_ok(input_stem)

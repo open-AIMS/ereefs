@@ -67,9 +67,8 @@ plume_class <- function(rsr) {
 #'
 #' Creates a colour map showing concentrations of a specified eReefs model output variable at a specified
 #' model layer (by default, the surface layer). The map is optionally (and by default) overlain on a Google 
-#' Earth map of the region. The function should work under Linux or MacOS. The R netcdf4 library doesn't 
-#' handle opendap served files under Windows, unfortunately, but can be used under Windows for locally-stored
-#' model output files. By Barbara Robson (AIMS).
+#' Earth map of the region.
+#' By Barbara Robson (AIMS).
 #'
 #' References:
 #'
@@ -107,11 +106,12 @@ plume_class <- function(rsr) {
 #'      complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
 #'      relative to 1990-01-01 (this is not checked).
 #' @param layer Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.
-#' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap librray.
+#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
+#'      Default now FALSE.
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc"
-#'        If using Windows, you will need to set this to a local inputfile stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -142,8 +142,8 @@ plume_class <- function(rsr) {
 map_ereefs <- function(var_name = "true_colour", 
                        target_date = c(2018,1,30), 
                        layer = 'surface', 
-                       Google_map_underlay = TRUE,
-                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc",
+                       Google_map_underlay = FALSE,
+                       input_file = "menu",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'), 
                        scale_lim = c(NA, NA),
@@ -154,6 +154,7 @@ map_ereefs <- function(var_name = "true_colour",
                        return_poly = FALSE)
 {
 
+input_file <- substitute_filename(input_file)
 if (length(p)!=1) Google_map_underlay <- FALSE
 if (suppress_print) Google_map_underlay <- FALSE
 
@@ -377,6 +378,8 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
     botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
+} else {
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 }
 
 ncdf4::nc_close(nc)
@@ -421,7 +424,7 @@ if (Google_map_underlay) {
  		min(gy, na.rm=TRUE)-0.5, 
  		max(gx, na.rm=TRUE)+0.5, 
  		max(gy, na.rm=TRUE)+0.5)
-  myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", zoom=zoom, crop=TRUE))
+  myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", zoom=zoom, crop=TRUE, scale=2))
   p <- ggmap::ggmap(myMap)
 } else if (length(p)==1) {
   p <- ggplot2::ggplot()
@@ -438,10 +441,12 @@ if (var_name=="true_colour") {
 				     na.value="transparent", 
 				     guide="colourbar",
 				     limits=scale_lim,
+				     #name=expression(paste('cells m'^'-3')),
 				     name=var_units,
 				     oob=scales::squish)
 }
- p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
+ p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
+    ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
 if (!suppress_print) print(p)
 if (return_poly) {
   return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
@@ -458,9 +463,7 @@ if (return_poly) {
 #' Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
 #' be suppressed by setting suppress_print to TRUE if this is the primary desired output).
 #' Maps produced are optionally (and by default) overlain on a Google Earth map of the region. 
-#' The function should work under Linux or MacOS. 
-#' The R netcdf4 library doesn't handle opendap served files under Windows, unfortunately, but can be used under 
-#' Windows for locally-stored model output files. Can be more efficient than calling map_ereefs multiple times if you 
+#' Can be more efficient than calling map_ereefs multiple times if you 
 #' want to produce an animation because it loads a month at a time for GBR4 runs. 
 #' If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.
 #' To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
@@ -484,11 +487,12 @@ if (return_poly) {
 #' @param output_dir Path to directory in which to store images for animation. Created if necessary. Defaults
 #'      to 'ToAnimate'. Images are created in this directory with filenames beginning with var_name, 
 #'      followed by an underscore and then sequential numbers beginning with 100001.
-#' @param Google_map_underlay Set to TRUE (the default) to use ggmap::ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap::ggmap librray.
+#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap librray and an activated Google API key.
+#'      Default now FALSE.
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-#'        If using Windows, you will need to set this to a local inputfile stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -518,8 +522,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              end_date = c(2016,3,31), 
                              layer = 'surface', 
                              output_dir = 'ToAnimate', 
-                             Google_map_underlay = TRUE, 
-                             input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc", 
+                             Google_map_underlay = FALSE, 
+                             input_file = "menu",
                              input_grid = NA, 
                              scale_col = c('ivory', 'coral4'), 
                              scale_lim = c(NA, NA), 
@@ -529,11 +533,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              stride = 'daily',
                              verbosity=0)
 {
+  input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file) 
   if (ereefs_case==1) warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
-  if ((.Platform$OS.type=="windows")) stop('Sorry: Windows is no longer supported by get_ereefs_movie() due to limitations of ncdf4 for Windows.')
+  if ((.Platform$OS.type=="windows")) warning('If using Windows, you will need a specially-compiled version of the ncdf4 package to use this function')
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
@@ -656,7 +661,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                     min(y_grid, na.rm=TRUE)-0.5, 
                     max(x_grid, na.rm=TRUE)+0.5, 
                     max(y_grid, na.rm=TRUE)+0.5) 
-     myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", crop=TRUE, zoom=zoom))
+     myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", crop=TRUE, zoom=zoom, scale=2))
+     #myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="watercolor"))
   }
 
   # Main routine
@@ -917,6 +923,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 					                              oob=scales::squish)
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
+            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
             icount <- icount + 1
             if (!file.exists(output_dir)) {
                dir.create(output_dir)
@@ -944,8 +951,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @param datapoly A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().
 #' @param var_longname Character vector to use for the figure title.
 #' @param var_units Units to include in the figure labelling.
-#' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap librray.
+#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
+#'      Default now FALSE.
 #' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
 #'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
 #'      Defaults to c('ivory', 'coral4').
@@ -965,7 +973,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 plot_map <- function(datapoly,
              var_longname = '',
              var_units = '',
-		       Google_map_underlay = TRUE,
+		       Google_map_underlay = FALSE,
              scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
              zoom = 6,
@@ -988,7 +996,7 @@ plot_map <- function(datapoly,
  		min(datapoly$y, na.rm=TRUE)-0.5, 
  		max(datapoly$x, na.rm=TRUE)+0.5, 
  		max(datapoly$y, na.rm=TRUE)+0.5)
-    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="hybrid", zoom=zoom, crop=TRUE))
+    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", zoom=zoom, crop=TRUE, scale=2))
     p <- ggmap::ggmap(myMap)
   } else if (length(p)==1) {
     p <- ggplot2::ggplot()

@@ -4,8 +4,8 @@
 \alias{sp2raster}
 \title{Convert a SpatialPolygonDataFrame to a raster. (Wrapper for raster::rasterize() with some reasonable defaults for the ereefs package)}
 \usage{
-sp2raster(sPdf, xmn = 142.45, ymn = -27.5, resolution = 0.01, xmx = NA,
-  ymax = NA, r = NA)
+sp2raster(sPdf, xmn = 142.45, ymn = -27.5, resolution = 0.01,
+  xmx = NA, ymx = NA, r = NA)
 }
 \arguments{
 \item{sPdf}{SpatialPolygonDataFrame object, e.g. as output by poly2sp.}
@@ -16,9 +16,9 @@ sp2raster(sPdf, xmn = 142.45, ymn = -27.5, resolution = 0.01, xmx = NA,
 
 \item{resolution}{Grid resolution in degrees. Defaults to 0.01}
 
-\item{ymax}{Maximum y value for the grid. Defaults to max value from the SpatialPolygonDataFrame bounding box.}
-
 \item{xmax}{Maximum x value for the grid. Defaults to max value from the SpatialPolygonDataFrame bounding box.}
+
+\item{ymax}{Maximum y value for the grid. Defaults to max value from the SpatialPolygonDataFrame bounding box.}
 }
 \value{
 A SpatialPolygonsDataFrame object, as used in the package 'sp'

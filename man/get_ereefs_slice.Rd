@@ -5,9 +5,8 @@
 \title{Extract a vertical slice or depth-resolved transect from an eReefs or other EMS netcdf output file.}
 \usage{
 get_ereefs_slice(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = data.frame(latitude = c(-20, -20), longitude = c(148.5,
-  149)), target_date = c(2016, 2, 4),
-  input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc",
+  location_latlon = data.frame(latitude = c(-20, -20), longitude =
+  c(148.5, 149)), target_date = c(2016, 2, 4), input_file = "menu",
   input_grid = NA, eta_stem = NA, robust = FALSE,
   override_positive = FALSE)
 }
@@ -21,8 +20,8 @@ Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the c
 close to midday as possible.}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-01.nc". 
-If using Windows, you will need to set this to a local input_file stem.}
+Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
@@ -51,4 +50,6 @@ a list containing an array of surface elevations (eta), bottom depths (botz), th
 \description{
 Extracts either a series of vertical profiles at points corresponding to a dataFrame of specified latitudes and longitudes (e.g. a cruise
 transect) or a vertical slice along a line between two specified points, at a specified point in time.
+Instead of interpolating, this function takes the values of cells intersected by the line segment, which can cause some striping when lines
+transect the grid diagonally.
 }

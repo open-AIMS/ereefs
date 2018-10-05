@@ -2,7 +2,6 @@
 % Please edit documentation in R/vertical_profiles.R
 \name{earth.dist}
 \alias{earth.dist}
-\alias{earth.dist}
 \title{Calculate rough distance in kilometers between two points}
 \usage{
 earth.dist(long1, lat1, long2, lat2)

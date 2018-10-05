@@ -85,7 +85,7 @@ get_file_stem <- function(filename) {
 	return(file_stem)
 }
 
-#' Check whether the platform is Windows and the filename contains "http": if so, return an error
+#' Check whether the platform is Windows and the filename contains "http": if so, return a warning
 #'
 #' Utility function for the eReefs package
 #' @param input_stem A netcdf filename or file stem
@@ -97,9 +97,81 @@ check_platform_ok <- function(input_stem)
   webserved <- stringi::stri_startswith_fixed(input_stem, "http:")
   if ((.Platform$OS.type=="windows")&&(webserved)) {
      ok <- FALSE
-     stop("Unfortunately, under Windows this function will only work with locally-stored netcdf files, not web-served files.")
+     warning("Unfortunately, under Windows this function will only work with locally-stored netcdf files, not web-served files UNLESS you use a specially compiled version of the ncdf4 package -- contact b.robson@aims.gov.au for details.")
   }
   return(ok)
+}
+
+#' Check whether the given filename is a shortcut and if so, set the full filename
+#'
+#' Utility function for the eReefs package
+#' @param input_file A netcdf filename or file stem
+#' @return input_file
+#' @export
+substitute_filename <- function(input_file) {
+  choices  <- c("GBR4-v2.0",
+                "GBR4_BGC-v2.0 Chyb Dcrt",
+                "GBR4_BGC-v2.0 Chyb Dnrt",
+                "GBR4_BGC-v2.0 Cpre Dcrt",
+                "GBR4 rivers_2.0  Dnrt   GBR4 passive",
+                "GBR1-v2.0",
+                "GBR1 rivers_2.0  Dnrt",
+                "GBR4-v1.85",
+                "GBR4_BGC-v926",
+                "GBR4_BGC-v924",
+                "GBR1-v1.71",
+                "GBR1_BGC-v924",
+                "menu")
+  if (is.numeric(input_file)) {
+     input_file <- choices[input_file]
+  } else if (input_file == "choices") {
+     print(choices)
+     stop()
+  } else if ((input_file == "menu")||(input_file == length(choices))) {
+     selection <- utils::menu(c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
+                                "Latest release 4km biogeochemical model hindcast (Sept 2010 - Oct 2016)",
+                                "Latest release 4km biogeochemical model near real time (Oct 2016 - pres.)",
+                                "Pre-industrial catchment scenario 4km BGC (Oct 2016 - pres.)",
+                                "Pre-industrial catchment scanerio 4km BGC (Sept 2010 - Oct 2016)",
+                                "Latest release passive river tracers (Sept 2010 - pres.)",
+                                "Latest release 1km grid hydrodynamic model (Dec 2014 - pres.)",
+                                "Latest release 1km grid passive river tracers (Dec 2014 - pres.)",
+                                "Archived 4km hydro (v 1.85, Sept 2010-pres.)",
+                                "Archived 4km bgc (v926, Sept 2010 - Dec 2014)",
+                                "Archived 4km bgc (v924, Sept 2010 - Sept 2017)",
+                                "Archived 1km hydro (v 1.71, Dec 2014 – Apr 2016)",
+                                "Archived 1km bgc (v924, Dec 2014 – pres.)"))
+     input_file <- choices[selection]
+  }
+  input_file <- dplyr::case_when (
+# official run labels
+    input_file == "GBR4-v2.0" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
+    input_file == "GBR4_BGC-v2.0 Chyb Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
+    input_file == "GBR4_BGC-v2.0 Chyb Dnrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
+    input_file == "GBR4_BGC-v2.0 Cpre Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc",
+    input_file == "GBR4 rivers_2.0  Dnrt   GBR4 passive" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
+    input_file == "GBR1-v2.0" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
+    input_file == "GBR1 rivers_2.0  Dnrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0_rivers/gbr1_rivers_simple_2018-03.nc",
+    input_file == "GBR4-v1.85" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4/gbr4_simple_2016-03.nc.html",
+    input_file == "GBR4_BGC-v926" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_926/gbr4_bgc_simple_2014-11.nc",
+    input_file == "GBR4_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_924/gbr4_bgc_simple_2016-09.nc",
+    input_file == "GBR1-v1.71" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1/gbr1_simple_2016-03-25.nc",
+    input_file == "GBR1_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
+# additional shortcuts
+    input_file == "GBR4HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
+    input_file == "hd" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
+    input_file == "GBR4BGC" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
+    input_file == "bgc" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
+    input_file == "GBR4NRT" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
+    input_file == "nrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
+    input_file == "rivers" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
+    input_file == "GBR1HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
+    input_file == "GBR1BGC" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
+# otherwise, use input file name as entered
+    TRUE ~ input_file
+  )
+    
+  return (input_file)
 }
 
 #' Extracts time series at specified locations from eReefs model output files
@@ -108,9 +180,7 @@ check_platform_ok <- function(input_stem)
 #' water column or sediment store (by default, the surface layer), at a specified geographic location within 
 #' the model domain.  See also get_ereefs_depth_integrated_ts() to extract depth-integrated values and 
 #' get_ereefs_depth_specified_ts() to extract values at a specified depth below the free (tidally moving) 
-#' surface. Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
-#' not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
-#' Under Windows, you can still use it for locally-saved files. Barbara Robson (AIMS).
+#' surface. Barbara Robson (AIMS).
 #'
 #' @return a data frame containing the dates and values of extracted variables.
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
@@ -129,8 +199,8 @@ check_platform_ok <- function(input_stem)
 #'	       c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'        formatted for input to as.Date(). Defaults to c(2016,10,31).
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-#'        If using Windows, you will need to set this to a local input_file stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
 #'      but not specified, the function will first look for z_grid can be found in the first INPUT_STEM file, and if not found, 
@@ -154,12 +224,13 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           layer='surface', 
 		                    start_date = c(2010,12,31), 
 		                    end_date = c(2016,10,31), 
-                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+                          input_file = "menu",
+                          #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                           input_grid = NA,
                           eta_stem = NA,
                           override_positive=FALSE)
 {
-
+  input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
 
@@ -254,10 +325,19 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       longitude <- ncdf4::ncvar_get(nc, "longitude")
     }
     ncdf4::nc_close(nc)
-    tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
-    tmp <- which.min(tmp) 
-    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
-		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    if (is.null(dim(location_latlon))) {
+       tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
+       tmp <- which.min(tmp) 
+    } else { 
+       tmp <- integer(dim(location_latlon)[1])
+       for (i in 1:dim(location_latlon)[1]) { 
+          tmp2 <- (latitude - location_latlon[i,1])^2 + (longitude - location_latlon[i,2])^2 
+          tmp[i] <- which.min(tmp2) 
+       }
+    }
+    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]), 
+                       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    print(location_grid)
   }
 
   # Loop through monthly eReefs files to extract the data
@@ -343,9 +423,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
 #' Extracts time-series of selected variables from the bottom water-column cell at specified locations from eReefs output files
 #'
-#' Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
-#' not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
-#' Under Windows, you can still use it for locally-saved files.
 #' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value.
 #' By Barbara Robson (AIMS).
 #'
@@ -362,8 +439,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-#'        If using Windows, you will need to set this to a local input_file stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -384,11 +461,13 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           location_latlon=c(-23.39189, 150.88852), 
 		                    start_date = c(2010,12,31), 
 		                    end_date = c(2016,12,31), 
-                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+                          input_file = "menu",
+                          #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
 			                 input_grid = NA,
 			                 eta_stem = NA,
 			                 override_positive=FALSE)
 {
+  input_file <- substitute_filename(input_file)
 
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
@@ -589,9 +668,6 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
 #' Extracts depth-integrated time-series of selected variables at specified locations from eReefs output files
 #'
-#' Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
-#' not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
-#' Under Windows, you can still use it for locally-saved files.
 #' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value.
 #' By Barbara Robson (AIMS).
 #'
@@ -608,8 +684,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-#'        If using Windows, you will need to set this to a local input_file stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -630,13 +706,14 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           location_latlon=c(-23.39189, 150.88852), 
 		                    start_date = c(2010,12,31), 
 		                    end_date = c(2016,12,31), 
-                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+                          input_file = "menu",
 			                 input_grid = NA,
 			                 eta_stem = NA,
                           verbose = 0,
 			                 override_positive=FALSE)
 {
 
+  input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -854,11 +931,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' Extracts time-series of selected variables from eReefs output files at a specified location and depth below the
 #' surface.
 #'
-#' Note that this function can use an OpenDAP URI if you are running it under Linux or MacOS, but 
-#' not (as at February 2018) under Windows, because of issues with the windows version of the netcdf4 library. 
-#' Under Windows, you can still use it for locally-saved files. See also get_ereefs_ts() to extract from a specified 
-#' layer instead of a depth-integrated value and get_ereefs_depth_integrated_ts() to calculate depth-integrated values.
-#' By Barbara Robson (AIMS).
+#' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value and 
+#' get_ereefs_depth_integrated_ts() to calculate depth-integrated values. Barbara Robson (AIMS).
 #'
 #' @return a data frame containing the dates and values of extracted variables
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
@@ -875,8 +949,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc". 
-#'        If using Windows, you will need to set this to a local input_file stem.
+#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
+#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -895,11 +969,12 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           depth = 1.0,
 		          start_date = c(2010,12,31), 
 		          end_date = c(2016,12,31), 
-                          input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+                          input_file = "menu",
 		          input_grid = NA,
 			  eta_stem = NA)
 {
 
+  input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
