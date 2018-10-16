@@ -157,8 +157,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     } else {
      eta_ds <- ds
     }
-    from_record <- which.min(ds - (target_date))
-    eta_from_record <- which.min(eta_ds - (target_date))
+    from_record <- which.min(abs(ds - (target_date)))
+    eta_from_record <- which.min(abs(eta_ds - (target_date)))
     ########
 
     startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
@@ -407,8 +407,8 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      mcount <- mcount + 1
      year <- years[mcount]
      if (mcount == 1) {
-       from_record <- which.min(ds - (start_date))
-       eta_from_record <- which.min(eta_ds - (start_date))
+       from_record <- which.min(abs(ds - (start_date)))
+       eta_from_record <- which.min(abs(eta_ds - (start_date)))
      } else {
        from_record <- 1
        eta_from_record <- 1
@@ -493,9 +493,9 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	  }
 	}
    dates[im1:i] <- d
-   z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta_record)))
-   zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta_record)))
-   eta2 <- t(array(eta, dim=c(length(eta_record), length(z_grid)-1)))
+   z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(d)))
+   zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(d)))
+   eta2 <- t(array(eta, dim=c(length(d), length(z_grid)-1)))
    wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
 	dry <- !wet                                # There is no water in this layer
 
@@ -503,7 +503,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
 	  wc[dry] <- NA
 	  if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
-        values[1:(length(z_grid)-1), j, im1:i] <- wc 
+     values[1:(length(z_grid)-1), j, im1:i] <- wc 
    }
    ncdf4::nc_close(nc)
    if (length(eta_stem)>1) ncdf4::nc_close(nc3)
@@ -694,7 +694,6 @@ return(d)
 }
 
 find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude) {
-   print(location_latlon)
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
 	intersected <- array(FALSE, dim=c(a,b))
