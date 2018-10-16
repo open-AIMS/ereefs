@@ -8,13 +8,15 @@ map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
   layer = "surface", Google_map_underlay = FALSE,
   input_file = "menu", input_grid = NA, scale_col = c("ivory",
   "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
-  NA, NA), p = NA, suppress_print = FALSE, return_poly = FALSE)
+  NA, NA), p = NA, suppress_print = FALSE, return_poly = FALSE,
+  label_towns = TRUE)
 
 map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
   layer = "surface", Google_map_underlay = FALSE,
   input_file = "menu", input_grid = NA, scale_col = c("ivory",
   "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
-  NA, NA), p = NA, suppress_print = FALSE, return_poly = FALSE)
+  NA, NA), p = NA, suppress_print = FALSE, return_poly = FALSE,
+  label_towns = TRUE)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -68,6 +70,8 @@ Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
 If p is provided, Google_map_underlay is over-ridden and set to FALSE.}
 
 \item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
+
+\item{label_towns}{Add labels for town locations to the figure. Default TRUE}
 
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
 eReefs netcdf file that you are accessing (refer to eReefs model

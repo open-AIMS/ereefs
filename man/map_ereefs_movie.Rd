@@ -10,7 +10,8 @@ map_ereefs_movie(var_name = "true_colour", start_date = c(2015, 12, 1),
   output_dir = "ToAnimate", Google_map_underlay = FALSE,
   input_file = "menu", input_grid = NA, scale_col = c("ivory",
   "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
-  NA, NA), suppress_print = FALSE, stride = "daily", verbosity = 0)
+  NA, NA), suppress_print = FALSE, stride = "daily", verbosity = 0,
+  label_towns = TRUE)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
