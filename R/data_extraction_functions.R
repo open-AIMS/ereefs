@@ -58,7 +58,7 @@ get_ereefs_grids <- function(filename, input_grid=NA) {
 		    y_grid <- gbr4_y_grid
 		    z_grid <- gbr4_z_grid
 		  } else {
-		    stop('x_grid, y_grid and z_grid not found and grid size not recognised as GBR1 or GBR4. Please specifiy input_grid.')
+		    stop('x_grid, y_grid and z_grid not found and grid size not recognised as GBR1 or GBR4. Please specify input_grid.')
 		  }
                 }
 		ncdf4::nc_close(nc)
@@ -131,7 +131,6 @@ substitute_filename <- function(input_file) {
      selection <- utils::menu(c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
                                 "Latest release 4km biogeochemical model hindcast (Sept 2010 - Oct 2016)",
                                 "Latest release 4km biogeochemical model near real time (Oct 2016 - pres.)",
-                                "Pre-industrial catchment scenario 4km BGC (Oct 2016 - pres.)",
                                 "Pre-industrial catchment scanerio 4km BGC (Sept 2010 - Oct 2016)",
                                 "Latest release passive river tracers (Sept 2010 - pres.)",
                                 "Latest release 1km grid hydrodynamic model (Dec 2014 - pres.)",
@@ -234,7 +233,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
 
-  # Check whether output is daily (case 1), monthly (case 4) or something else (case 0)
+  # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
   check_platform_ok(input_stem)
@@ -326,9 +325,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     }
     ncdf4::nc_close(nc)
     if (is.null(dim(location_latlon))) {
+       # Just one location
        tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
        tmp <- which.min(tmp) 
     } else { 
+       # Multiple locations
        tmp <- integer(dim(location_latlon)[1])
        for (i in 1:dim(location_latlon)[1]) { 
           tmp2 <- (latitude - location_latlon[i,1])^2 + (longitude - location_latlon[i,2])^2 

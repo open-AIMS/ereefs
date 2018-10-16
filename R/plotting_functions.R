@@ -132,6 +132,7 @@ plume_class <- function(rsr) {
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
 #'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
+#' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @export
 #' @examples
 #' map_ereefs()
@@ -151,12 +152,17 @@ map_ereefs <- function(var_name = "true_colour",
                        box_bounds = c(NA, NA, NA, NA), 
                        p = NA, 
                        suppress_print = FALSE, 
-                       return_poly = FALSE)
+                       return_poly = FALSE,
+                       label_towns = TRUE)
 {
 
 input_file <- substitute_filename(input_file)
 if (length(p)!=1) Google_map_underlay <- FALSE
 if (suppress_print) Google_map_underlay <- FALSE
+
+towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
+                    longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
+                    town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
 
 # Check whether this is a GBR1 or GBR4 ereefs file, or something else
 ereefs_case <- get_ereefs_case(input_file)
@@ -445,7 +451,12 @@ if (var_name=="true_colour") {
 				     name=var_units,
 				     oob=scales::squish)
 }
- p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
+
+if (label_towns) {
+   p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
+}
+
+p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
     ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
 if (!suppress_print) print(p)
 if (return_poly) {
@@ -531,7 +542,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              box_bounds = c(NA, NA, NA, NA), 
                              suppress_print=FALSE, 
                              stride = 'daily',
-                             verbosity=0)
+                             verbosity=0, 
+                             label_towns = TRUE)
 {
   input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
@@ -539,6 +551,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
   if (ereefs_case==1) warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
   if ((.Platform$OS.type=="windows")) warning('If using Windows, you will need a specially-compiled version of the ncdf4 package to use this function')
+
+  towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
+                      longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
+                      town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
@@ -921,6 +937,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
 					                              limits=scale_lim,
 					                              name=var_units,
 					                              oob=scales::squish)
+            }
+
+            if (label_towns) {
+               p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
             p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
