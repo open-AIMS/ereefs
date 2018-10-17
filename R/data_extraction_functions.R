@@ -176,17 +176,22 @@ substitute_filename <- function(input_file) {
 #' Extracts time series at specified locations from eReefs model output files
 #'
 #' Create a time-series of values of one or more selected model output variables in a specified layer of the
-#' water column or sediment store (by default, the surface layer), at a specified geographic location within 
-#' the model domain.  See also get_ereefs_depth_integrated_ts() to extract depth-integrated values and 
-#' get_ereefs_depth_specified_ts() to extract values at a specified depth below the free (tidally moving) 
-#' surface. Barbara Robson (AIMS).
+#' water column or sediment store (by default, the surface layer), at a specified geographic location or 
+#' supplied data frame of geocoordinates within the model domain.  See also get_ereefs_depth_integrated_ts() to 
+#' extract depth-integrated values and get_ereefs_depth_specified_ts() to extract values at a specified depth 
+#' below the free (tidally moving) surface. Barbara Robson (AIMS).
 #'
-#' @return a data frame containing the dates and values of extracted variables.
+#' If you run into memory constraints, consider grouping points to be extracted within regions, and calling this once
+#' for each region.
+#'
+#' @return a data frame containing the dates and values of extracted variables (for a single geolocation) or a
+#'        list of such data frames (one list item per location) if there are multiple locations.
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param location_latlon is a vector containing the decimal latitudes and longitudes of the desired location. If 
 #'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-#'        is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).
+#'        is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852). You can alternatively
+#'        use a data frame for location_latlon, with named "latitude" and "longitude" vectors.
 #' @param layer is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 #'        value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
 #'        Defaults to 'surface'. Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
@@ -305,41 +310,64 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
-  # Initialise
-  blanks <- rep(NA, blank_length)
-  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  names(ts_frame) <- c("date", var_names)
-
 
   if (is.integer(location_latlon)) {
+     # We have specified grid coordinates rather than geocoordinates
      location_grid <- location_latlon
   } else { 
-    # Find the nearest grid-points to the sampling location
+    # We have geocoordinates. Find the nearest grid-points to the sampling location
+    # First, get the model grid
     nc <- ncdf4::nc_open(input_file)
     if (is.null(nc$var[['latitude']])) {
+      # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
       latitude <- ncdf4::ncvar_get(nc, "y_centre")
       longitude <- ncdf4::ncvar_get(nc, "x_centre")
     } else { 
+      # Simple format netcdf file
       latitude <- ncdf4::ncvar_get(nc, "latitude")
       longitude <- ncdf4::ncvar_get(nc, "longitude")
     }
     ncdf4::nc_close(nc)
+
     if (is.null(dim(location_latlon))) {
        # Just one location
-       tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
-       tmp <- which.min(tmp) 
+       grid_index <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
+       grid_index <- which.min(grid_index) 
     } else { 
        # Multiple locations
-       tmp <- integer(dim(location_latlon)[1])
-       for (i in 1:dim(location_latlon)[1]) { 
-          tmp2 <- (latitude - location_latlon[i,1])^2 + (longitude - location_latlon[i,2])^2 
-          tmp[i] <- which.min(tmp2) 
+       if (class(location_latlon) != "data.frame") {
+          # location_latlon has been provided as an array/matrix. Coerce it into a data frame for consistency.
+          location_latlon <- data.frame(latitude = location_latlon[,1], longitude = location_latlon[,2])
        }
+       grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
     }
-    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]), 
-                       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
-    print(location_grid)
+    location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
+                       (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
+  numpoints <- dim(location_grid)[1]
+  # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass all
+  # provided geocoordinate points
+  startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
+  countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
+
+  # Adjust grid locations so that they are relative to the region to be extracted instead of the whole model domain
+  location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
+  location_grid <- cbind(location_grid[,2], location_grid[,1])
+
+  # Update grid_index so that it is also relative
+  grid_index <- (location_grid[,2] - 1) * countv[1] + location_grid[,1]
+
+  # check whether all points are within a single model grid row or column, and adjust indices accordingly
+  if (countv[2] == 1) { 
+   location_grid <- location_grid[,1]
+  } else if (countv[1] == 1) {
+   location_grid <- location_grid[,2]
+  }
+
+  # Initialise
+  blanks <- rep(NA, blank_length)
+  ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
+  colnames(ts_frame) <- c("date", var_names)
 
   # Loop through monthly eReefs files to extract the data
   ndims <- rep(NA, length(var_names))
@@ -395,7 +423,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
       im1 = i+1
       i <- i + length(d)
-      ts_frame$date[im1:i] <- d
+      ts_frame[im1:i,"date",] <- d
       for (j in 1:length(var_names)) {
           if (is.na(ndims[j])) {
              # We don't yet know the dimensions of the variable, so let's get them
@@ -409,16 +437,22 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
             }
            }
           if (ndims[j] == 4) {
-             ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+             wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv,layer_actual[j],from_day), count=c(countv,1,day_count))
+             #ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
           } else {
-             ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
+             wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
+             #ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
           }
+          wc <- array(wc, c(countv[1]*countv[2], day_count))
+          ts_frame[im1:i, j+1, ] <- t(wc[grid_index,])
       }
       ncdf4::nc_close(nc)
       setTxtProgressBar(pb,mcount)
     }
   }
   close(pb)
+  ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=d, ts_frame[ ,2:dim(ts_frame)[2] , x])) 
+  if (numpoints == 1) ts_frame <- ts_frame[[1]]
   return(ts_frame)
 }
 

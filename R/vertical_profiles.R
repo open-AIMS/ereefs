@@ -161,13 +161,18 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     eta_from_record <- which.min(abs(eta_ds - (target_date)))
     ########
 
+    # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass the slice
     startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
     countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
     if ((countv[1] == 1)&(countv[2] == 1)) stop('Slice matches a single grid-cell; use get_ereefs_profile() instead.')
+
+    # Adjust grid locations so that they are relative to the region to be extracted instead of the whole model domain
     location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
     location_grid <- cbind(location_grid[,2], location_grid[,1])
     numlines <- dim(location_grid)[1]
     numcols <- 3
+
+    # check whether all points are within a single model grid row or column, and adjust indices accordingly
     if (countv[2] == 1) {
 	    location_grid <- location_grid[,1]
 	    numlines <- length(location_grid)
@@ -519,7 +524,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   if (squeeze&(dim(values)[2] == 1)&(length(dim(values))==3)) { # Only one variable, but multiple time-steps
 	  values <- array(values, dim=dim(values)[c(1,3)])
   }
-  if (all(is.na(values))) warning('No wet cells in this profile (or set of profiles). Either all locations are land cells or the positive attribute of botz is incorrect (use override_positive=TRUE) if this is the case)')
+  if (all(is.na(values))) warning('No wet cells in this profile. Either the location is a land cell or the positive attribute of botz is incorrect (use override_positive=TRUE) if this is the case)')
   return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   return(return_list)
 }
