@@ -232,11 +232,16 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                           input_grid = NA,
                           eta_stem = NA,
-                          override_positive=FALSE)
+                          override_positive=FALSE,
+                          verbosity = 1)
 {
   input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
+
+  if (is.null(dim(location_latlon))) {
+     location_latlon <- data.frame(latitude = location_latlon[1], longitude = location_latlon[2])
+  }
 
   # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
@@ -310,7 +315,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
-
   if (is.integer(location_latlon)) {
      # We have specified grid coordinates rather than geocoordinates
      location_grid <- location_latlon
@@ -374,7 +378,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   layer_actual <- rep(NA, length(var_names))
   i <- 0
   mcount <- 0
-  pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
+  if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
   for (month in mths) {
     mcount <- mcount + 1
     year <- years[mcount]
@@ -447,10 +451,10 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           ts_frame[im1:i, j+1, ] <- t(wc[grid_index,])
       }
       ncdf4::nc_close(nc)
-      setTxtProgressBar(pb,mcount)
+      if (verbosity>0) setTxtProgressBar(pb,mcount)
     }
   }
-  close(pb)
+  if (verbosity>0) close(pb)
   ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=d, ts_frame[ ,2:dim(ts_frame)[2] , x])) 
   if (numpoints == 1) ts_frame <- ts_frame[[1]]
   return(ts_frame)
@@ -500,7 +504,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
 			                 input_grid = NA,
 			                 eta_stem = NA,
-			                 override_positive=FALSE)
+			                 override_positive=FALSE, 
+                          verbosity = 1)
 {
   input_file <- substitute_filename(input_file)
 
@@ -618,7 +623,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Loop through monthly eReefs files to extract the data
   i <- 0
   mcount <- 0
-  pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
+  if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
   for (month in mths) {
      mcount <- mcount + 1
      year <- years[mcount]
@@ -694,10 +699,10 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         }
         ncdf4::nc_close(nc)
         if (!is.na(eta_stem)) ncdf4::nc_close(nc3)
-        setTxtProgressBar(pb,mcount)
+        if (verbosity>0) setTxtProgressBar(pb,mcount)
     }
   }
-  close(pb)
+  if (verbosity>0) close(pb)
   return(ts_frame)
 }
 
@@ -744,8 +749,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           input_file = "menu",
 			                 input_grid = NA,
 			                 eta_stem = NA,
-                          verbose = 0,
-			                 override_positive=FALSE)
+			                 override_positive=FALSE,
+                          verbosity = 1)
 {
 
   input_file <- substitute_filename(input_file)
@@ -796,7 +801,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (ereefs_case == 4) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-      if (verbose>0) print(input_file)
+      if (verbosity>1) print(input_file)
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
 	nc <- ncdf4::nc_open(input_file)
@@ -811,14 +816,14 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else if (ereefs_case == 1) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
-      if (verbose>0) print(input_file)
+      if (verbosity>1) print(input_file)
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
   } else {
       input_file <- input_file
-      if (verbose>0) print(input_file)
+      if (verbosity>1) print(input_file)
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
       nc <- ncdf4::nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
@@ -868,7 +873,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Loop through monthly eReefs files to extract the data
   i <- 0
   mcount <- 0
-  pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
+  if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
   for (month in mths) {
      mcount <- mcount + 1
      year <- years[mcount]
@@ -889,7 +894,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      if (ereefs_case == 4) { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc') 
-        if (verbose) print(input_file)
+        if (verbosity) print(input_file)
         day_count <- day_count / as.numeric(ds[2]-ds[1])
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
      } else if (ereefs_case == 1) {
@@ -906,7 +911,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         if (ereefs_case == 1) {
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
               if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
-        if (verbose) print(input_file)
+        if (verbosity>1) print(input_file)
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(input_file)
@@ -956,10 +961,10 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         }
         ncdf4::nc_close(nc)
         if (!is.na(eta_stem)) ncdf4::nc_close(nc3)
-        setTxtProgressBar(pb,mcount)
+        if (verbosity>0) setTxtProgressBar(pb,mcount)
     }
   }
-  close(pb)
+  if (verbosity>0) close(pb)
   return(ts_frame)
 }
 
@@ -1000,13 +1005,14 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @examples
 #' get_ereefs_depth_specified_ts('Chl_a_sum', c(-23.39189, 150.88852), depth=2.5)
 get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
-                          location_latlon=c(-23.39189, 150.88852), 
-                          depth = 1.0,
-		          start_date = c(2010,12,31), 
-		          end_date = c(2016,12,31), 
-                          input_file = "menu",
-		          input_grid = NA,
-			  eta_stem = NA)
+                                          location_latlon=c(-23.39189, 150.88852), 
+                                          depth = 1.0, 
+                                          start_date = c(2010,12,31), 
+                                          end_date = c(2016,12,31), 
+                                          input_file = "menu", 
+                                          input_grid = NA, 
+                                          eta_stem = NA, 
+                                          verbosity = 1)
 {
 
   input_file <- substitute_filename(input_file)
@@ -1123,7 +1129,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Loop through monthly eReefs files to extract the data
   i <- 0
   mcount <- 0
-  pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
+  if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
   for (month in mths) {
      mcount <- mcount + 1
      year <- years[mcount]
@@ -1201,9 +1207,9 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           ts_frame[im1:i, j+1] <- colSums(target * wc, na.rm=TRUE)
         }
         ncdf4::nc_close(nc)
-        setTxtProgressBar(pb,mcount)
+        if (verbosity>0) setTxtProgressBar(pb,mcount)
       }
     }
-    close(pb)
+    if (verbosity>0) close(pb)
     return(ts_frame)
 }
