@@ -239,10 +239,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
 
-  if (is.null(dim(location_latlon))) {
-     location_latlon <- data.frame(latitude = location_latlon[1], longitude = location_latlon[2])
-  }
-
   # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -315,11 +311,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
+  if (is.null(dim(location_latlon))) {
+     location_latlon <- array(location_latlon, c(1,2))
+  }
   if (is.integer(location_latlon)) {
      # We have specified grid coordinates rather than geocoordinates
      location_grid <- location_latlon
   } else { 
     # We have geocoordinates. Find the nearest grid-points to the sampling location
+
     # First, get the model grid
     nc <- ncdf4::nc_open(input_file)
     if (is.null(nc$var[['latitude']])) {
