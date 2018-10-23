@@ -265,11 +265,9 @@ y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 
 if (var_name=="plume") {
-    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678,longitude,latitude,botz')
+    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
-    longitude <- ncdf4::ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_488 <- ncdf4::ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
@@ -284,11 +282,9 @@ if (var_name=="plume") {
     var_longname <- 'Plume colour class'
 
 } else if (var_name=="true_colour") {
-    inputfile <- paste0(filename, '?R_470,R_555,R_645,eta,longitude,latitude,botz')
+    inputfile <- paste0(filename, '?R_470,R_555,R_645')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
-    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     TCbright <- 10
     R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
     R_555 <- ncdf4::ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
@@ -314,11 +310,9 @@ if (var_name=="plume") {
     var_longname <- "Simulated true colour"
     var_units <- ""
 } else if (var_name == 'ZooT') {
-    inputfile <- paste0(filename, '?ZooL_N,ZooS_N,longitude,latitude')
+    inputfile <- paste0(filename, '?ZooL_N,ZooS_N')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
-    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     # We don't yet know the dimensions of the variable, so let's get them
     dims <- nc$var[['ZooL_N']][['size']]
     if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
@@ -327,11 +321,9 @@ if (var_name=="plume") {
     var_longname <- "Total zooplankton nitrogen"
     var_units <- "mg N m-3"
 } else if (var_name == 'speed') {
-    inputfile <- paste0(filename, '?u,v,longitude,latitude,botz')
+    inputfile <- paste0(filename, '?u,v')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
-    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude') 
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[['u']][['size']] 
     if (is.null(dims)) stop(paste('u', ' not found in netcdf file.')) 
@@ -340,11 +332,9 @@ if (var_name=="plume") {
     var_longname <- "Current speed"
     var_units <- "m s-1"
 } else { 
-    inputfile <- paste0(filename, '?', var_name, ',longitude,latitude,botz')
+    inputfile <- paste0(filename, '?', var_name)
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
-    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
-    latitude <-ncdf4:: ncvar_get(nc, 'latitude') 
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[[var_name]][['size']] 
     if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
@@ -362,7 +352,6 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
-    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else if (var_name == 'speed') {
     var_longname <- 'Current speed'
     var_units <- 'm s-1'
@@ -373,7 +362,6 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
-    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
     vat <- ncdf4::ncatt_get(nc, var_name)
     var_longname <- vat$long_name
@@ -383,11 +371,25 @@ if (var_name == 'ZooT') {
     } else {
        ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
-    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
-} else {
-    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 }
 
+ncdf4::nc_close(nc)
+
+nc <- ncdf4::nc_open(filename)
+if (!is.null(nc$var[['botz']])) {
+   botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
+} else {
+   botz <- array(NA, dim(ems_var))
+}
+if (is.null(nc$var[['latitude']])) {
+# Standard EMS output file
+  latitude <- ncdf4::ncvar_get(nc, "y_centre")
+  longitude <- ncdf4::ncvar_get(nc, "x_centre")
+} else { 
+  # Simple format netcdf file
+  latitude <- ncdf4::ncvar_get(nc, "latitude")
+  longitude <- ncdf4::ncvar_get(nc, "longitude")
+}
 ncdf4::nc_close(nc)
 
 a <- dim(ems_var)[1]
