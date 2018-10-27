@@ -188,10 +188,9 @@ substitute_filename <- function(input_file) {
 #'        list of such data frames (one list item per location) if there are multiple locations.
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
-#' @param location_latlon is a vector containing the decimal latitudes and longitudes of the desired location. If 
-#'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-#'        is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852). You can alternatively
-#'        use a data frame for location_latlon, with named "latitude" and "longitude" vectors.
+#' @param location_latlon is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
+#'        a single latitude and longitude location. If you want to specify an x-y grid coordinate instead of a latitude and longitude, you 
+#'        can: to do this, is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).
 #' @param layer is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 #'        value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
 #'        Defaults to 'surface'. Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
@@ -207,18 +206,17 @@ substitute_filename <- function(input_file) {
 #'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
-#'      but not specified, the function will first look for z_grid can be found in the first INPUT_STEM file, and if not found, 
+#'      but not specified, the function will first look for z_grid in the first INPUT_STEM file, and if not found, 
 #'      will check whether the size of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and 
 #'      load an appropriate z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and asking for a depth-integrated
-#'       value..
+#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and you are asking for a depth-integrated
+#'       time-series or a depth-specified (relative to the surface) time-series
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
-#'       incorrect. Default FALSE
+#'       incorrect. Default FALSE. Not normally needed.
 #' @export
 #' @examples
 #' get_ereefs_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')
@@ -314,6 +312,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (is.null(dim(location_latlon))) {
      location_latlon <- array(location_latlon, c(1,2))
   }
+  if (dim(location_latlon)[1] > 1) stop('Currently, get_ereefs_depth_integrated_ts() only supports a single location. This is on my to-do list to fix in future. Let me know if you would like this feature. b.robson@aims.gov.au')
   if (is.integer(location_latlon)) {
      # We have specified grid coordinates rather than geocoordinates
      location_grid <- location_latlon
@@ -370,8 +369,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   # Initialise
   blanks <- rep(NA, blank_length)
-  ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
-  colnames(ts_frame) <- c("date", var_names)
+  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
+  names(ts_frame) <- c("date", var_names)
 
   # Loop through monthly eReefs files to extract the data
   ndims <- rep(NA, length(var_names))
@@ -397,15 +396,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
     }
     if (ereefs_case == 4) { 
-            fileslist <- 1
-            input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+       fileslist <- 1
+       input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
     } else if (ereefs_case == 1) {
 	    fileslist <- from_day:(from_day+day_count-1)
 	    from_day <- 1
 	    day_count <- 1
-    } else {
-            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+    } else { 
+       from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
 	    if (from_day<1) from_day <-1
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
@@ -835,30 +834,72 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
+
+  nc <- ncdf4::nc_open(input_file)
+  if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
+
+  if (is.null(dim(location_latlon))) {
+     location_latlon <- array(location_latlon, c(1,2))
+  }
+  if (is.integer(location_latlon)) {
+     # We have specified grid coordinates rather than geocoordinates
+     location_grid <- location_latlon
+  } else { 
+    # We have geocoordinates. Find the nearest grid-points to the sampling location
+
+    # First, get the model grid
+    nc <- ncdf4::nc_open(input_file)
+    if (is.null(nc$var[['latitude']])) {
+      # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
+      latitude <- ncdf4::ncvar_get(nc, "y_centre")
+      longitude <- ncdf4::ncvar_get(nc, "x_centre")
+    } else { 
+      # Simple format netcdf file
+      latitude <- ncdf4::ncvar_get(nc, "latitude")
+      longitude <- ncdf4::ncvar_get(nc, "longitude")
+    }
+    ncdf4::nc_close(nc)
+
+    if (is.null(dim(location_latlon))) {
+       # Just one location
+       grid_index <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
+       grid_index <- which.min(grid_index) 
+    } else { 
+       # Multiple locations
+       if (class(location_latlon) != "data.frame") {
+          # location_latlon has been provided as an array/matrix. Coerce it into a data frame for consistency.
+          location_latlon <- data.frame(latitude = location_latlon[,1], longitude = location_latlon[,2])
+       }
+       grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
+    }
+    location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
+                       (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+  }
+  numpoints <- dim(location_grid)[1]
+  # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass all
+  # provided geocoordinate points
+  startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
+  countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
+
+  # Adjust grid locations so that they are relative to the region to be extracted instead of the whole model domain
+  location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
+  location_grid <- cbind(location_grid[,2], location_grid[,1])
+
+  # Update grid_index so that it is also relative
+  grid_index <- (location_grid[,2] - 1) * countv[1] + location_grid[,1]
+
+  # check whether all points are within a single model grid row or column, and adjust indices accordingly
+  if (countv[2] == 1) { 
+   location_grid <- location_grid[,1]
+  } else if (countv[1] == 1) {
+   location_grid <- location_grid[,2]
+  }
+
   # Initialise
   blanks <- rep(NA, blank_length)
   ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
   names(ts_frame) <- c("date", var_names)
 
-  nc <- ncdf4::nc_open(input_file)
-  if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-
-  if (is.integer(location_latlon)) {
-     location_grid <- location_latlon
-  } else { 
-    # Find the nearest grid-points to the sampling location
-    if (is.null(nc$var[['latitude']])) {
-      latitude <- ncdf4::ncvar_get(nc, "y_centre")
-      longitude <- ncdf4::ncvar_get(nc, "x_centre")
-    } else { 
-      latitude <- ncdf4::ncvar_get(nc, "latitude")
-      longitude <- ncdf4::ncvar_get(nc, "longitude")
-    }
-    tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
-    tmp <- which.min(tmp) 
-    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
-		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
-  }
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
     if (zat$positive=="down") zsign <- -1 else zsign <- 1
@@ -902,7 +943,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
      } else {
-            from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+       from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
 	    if (from_day<1) from_day <-1
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
@@ -910,8 +951,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      for (dcount in fileslist) {
         if (ereefs_case == 1) {
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
-              if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
-        if (verbosity>1) print(input_file)
+         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
+         if (verbosity>1) print(input_file)
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(input_file)
