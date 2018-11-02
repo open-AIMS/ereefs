@@ -8,16 +8,15 @@ get_ereefs_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), layer = "surface",
   start_date = c(2010, 12, 31), end_date = c(2016, 10, 31),
   input_file = "menu", input_grid = NA, eta_stem = NA,
-  override_positive = FALSE)
+  override_positive = FALSE, verbosity = 1)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{location_latlon}{is a vector containing the decimal latitudes and longitudes of the desired location. If 
-you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852). You can alternatively
-use a data frame for location_latlon, with named "latitude" and "longitude" vectors.}
+\item{location_latlon}{is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
+a single latitude and longitude location. If you want to specify an x-y grid coordinate instead of a latitude and longitude, you 
+can: to do this, is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 
 \item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
@@ -34,20 +33,19 @@ can be used (codenames as used in https://research.csiro.au/ereefs/models/model-
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
-but not specified, the function will first look for z_grid can be found in the first INPUT_STEM file, and if not found, 
+but not specified, the function will first look for z_grid in the first INPUT_STEM file, and if not found, 
 will check whether the size of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and 
 load an appropriate z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 (not simple-format) ereefs netcdf output file such as 
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
+"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
 
 \item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
 date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and asking for a depth-integrated
-value..}
+only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and you are asking for a depth-integrated
+time-series or a depth-specified (relative to the surface) time-series}
 
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
-incorrect. Default FALSE}
+incorrect. Default FALSE. Not normally needed.}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
@@ -69,5 +67,9 @@ If you run into memory constraints, consider grouping points to be extracted wit
 for each region.
 }
 \examples{
-get_ereefs_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')
+\dontrun{
+get_ereefs_ts('Chl_a_sum', location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
+get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
+}
 }

@@ -538,7 +538,10 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param target_date The target date (plot the profile closest in time to this).
 #' @param p The handle of an existing figure, if you don't want to create a new figure
 #' @return the handle of a figure containing the vertical profile plot
-#' @examples plot_ereefs_profile(get_ereefs_profile('TN'))
+#' @examples 
+#' \dontrun {
+#' plot_ereefs_profile(get_ereefs_profile('TN'))
+#' }
 #' @export
 plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(2016,01,01), p=NA, colour='blue') {
   # Date to plot

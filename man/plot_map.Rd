@@ -42,6 +42,8 @@ Plots a map figure in the same format as would be given by map_ereefs(), but usi
 processing data directly from ereefs netcdf files.
 }
 \examples{
+\dontrun{
 a <- map_ereefs('TN', return_poly=TRUE)
 plot_map(a[[2]])
+}
 }

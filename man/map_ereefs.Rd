@@ -188,9 +188,11 @@ map_ereefs('TN')
 map_ereefs('plume', target_date=c(2011, 1, 30))
 map_ereefs('Chl_a_sum', target_date='2016-07-15', scale_col=c('ivory', 'green4'))
 map_ereefs('salt', box_bounds=c(145,150,-20,-15), zoom=7, scale_lim=c(32,35))
+\dontrun{
 map_ereefs()
 map_ereefs('TN')
 map_ereefs('plume', target_date=c(2011, 1, 30))
 map_ereefs('Chl_a_sum', target_date='2016-07-15', scale_col=c('ivory', 'green4'))
 map_ereefs('salt', box_bounds=c(145,150,-20,-15), zoom=7, scale_lim=c(32,35))
+}
 }

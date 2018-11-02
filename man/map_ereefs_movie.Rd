@@ -88,5 +88,7 @@ To stitch together the images into an animation, you will need other software su
 or imageJ.  Barbara Robson (AIMS).
 }
 \examples{
-map_ereefs_movie()
+\dontrun{
+map_ereefs_movie(start_date=c(2016,2,1),end_date=c(2016,2,15))
+}
 }

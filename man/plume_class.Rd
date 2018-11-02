@@ -26,5 +26,7 @@ Devlin, M.J., McKinna, L.W., Álvarez-Romero, J.G., Petus, C., Abott, B., Harkne
   Barrier Reef, Australia. Marine pollution bulletin, 65(4-9), pp.224-235.
 }
 \examples{
+\dontrun{
 plume_class(rsr)
+}
 }

@@ -31,9 +31,7 @@ daysIn <- function (d) {
 #'         to optical plume classes.
 #' @export
 #' @examples
-#' \dontrun{
 #' plume_class(rsr)
-#' }
 
 plume_class <- function(rsr) {
     xdim <- nrow(rsr[[1]])
@@ -69,8 +67,9 @@ plume_class <- function(rsr) {
 #'
 #' Creates a colour map showing concentrations of a specified eReefs model output variable at a specified
 #' model layer (by default, the surface layer). The map is optionally (and by default) overlain on a Google 
-#' Earth map of the region.
-#' By Barbara Robson (AIMS).
+#' Earth map of the region. The function should work under Linux or MacOS. The R netcdf4 library doesn't 
+#' handle opendap served files under Windows, unfortunately, but can be used under Windows for locally-stored
+#' model output files. By Barbara Robson (AIMS).
 #'
 #' References:
 #'
@@ -108,12 +107,11 @@ plume_class <- function(rsr) {
 #'      complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
 #'      relative to 1990-01-01 (this is not checked).
 #' @param layer Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.
-#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
-#'      Default now FALSE.
+#' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap librray.
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc"
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -134,21 +132,18 @@ plume_class <- function(rsr) {
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
 #'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
-#' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @export
 #' @examples
-#' \dontrun{
 #' map_ereefs()
 #' map_ereefs('TN')
 #' map_ereefs('plume', target_date=c(2011, 1, 30))
 #' map_ereefs('Chl_a_sum', target_date='2016-07-15', scale_col=c('ivory', 'green4'))
 #' map_ereefs('salt', box_bounds=c(145,150,-20,-15), zoom=7, scale_lim=c(32,35))
-#'}
 map_ereefs <- function(var_name = "true_colour", 
                        target_date = c(2018,1,30), 
                        layer = 'surface', 
-                       Google_map_underlay = FALSE,
-                       input_file = "menu",
+                       Google_map_underlay = TRUE,
+                       input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'), 
                        scale_lim = c(NA, NA),
@@ -156,17 +151,11 @@ map_ereefs <- function(var_name = "true_colour",
                        box_bounds = c(NA, NA, NA, NA), 
                        p = NA, 
                        suppress_print = FALSE, 
-                       return_poly = FALSE,
-                       label_towns = TRUE)
+                       return_poly = FALSE)
 {
 
-input_file <- substitute_filename(input_file)
 if (length(p)!=1) Google_map_underlay <- FALSE
 if (suppress_print) Google_map_underlay <- FALSE
-
-towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
-                    longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
-                    town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
 
 # Check whether this is a GBR1 or GBR4 ereefs file, or something else
 ereefs_case <- get_ereefs_case(input_file)
@@ -269,9 +258,11 @@ y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 
 if (var_name=="plume") {
-    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678,longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <- ncdf4::ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_488 <- ncdf4::ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
@@ -286,9 +277,11 @@ if (var_name=="plume") {
     var_longname <- 'Plume colour class'
 
 } else if (var_name=="true_colour") {
-    inputfile <- paste0(filename, '?R_470,R_555,R_645')
+    inputfile <- paste0(filename, '?R_470,R_555,R_645,eta,longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     TCbright <- 10
     R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
     R_555 <- ncdf4::ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
@@ -314,9 +307,11 @@ if (var_name=="plume") {
     var_longname <- "Simulated true colour"
     var_units <- ""
 } else if (var_name == 'ZooT') {
-    inputfile <- paste0(filename, '?ZooL_N,ZooS_N')
+    inputfile <- paste0(filename, '?ZooL_N,ZooS_N,longitude,latitude')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude')
     # We don't yet know the dimensions of the variable, so let's get them
     dims <- nc$var[['ZooL_N']][['size']]
     if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
@@ -325,9 +320,11 @@ if (var_name=="plume") {
     var_longname <- "Total zooplankton nitrogen"
     var_units <- "mg N m-3"
 } else if (var_name == 'speed') {
-    inputfile <- paste0(filename, '?u,v')
+    inputfile <- paste0(filename, '?u,v,longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude') 
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[['u']][['size']] 
     if (is.null(dims)) stop(paste('u', ' not found in netcdf file.')) 
@@ -336,9 +333,11 @@ if (var_name=="plume") {
     var_longname <- "Current speed"
     var_units <- "m s-1"
 } else { 
-    inputfile <- paste0(filename, '?', var_name)
+    inputfile <- paste0(filename, '?', var_name, ',longitude,latitude,botz')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
+    longitude <-ncdf4:: ncvar_get(nc, 'longitude')
+    latitude <-ncdf4:: ncvar_get(nc, 'latitude') 
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[[var_name]][['size']] 
     if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
@@ -356,6 +355,7 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else if (var_name == 'speed') {
     var_longname <- 'Current speed'
     var_units <- 'm s-1'
@@ -366,6 +366,7 @@ if (var_name == 'ZooT') {
        ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
        ems_var <- ems_var + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
     vat <- ncdf4::ncatt_get(nc, var_name)
     var_longname <- vat$long_name
@@ -375,25 +376,11 @@ if (var_name == 'ZooT') {
     } else {
        ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
-}
-
-ncdf4::nc_close(nc)
-
-nc <- ncdf4::nc_open(filename)
-if (!is.null(nc$var[['botz']])) {
-   botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else {
-   botz <- array(NA, dim(ems_var))
+    botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 }
-if (is.null(nc$var[['latitude']])) {
-# Standard EMS output file
-  latitude <- ncdf4::ncvar_get(nc, "y_centre")
-  longitude <- ncdf4::ncvar_get(nc, "x_centre")
-} else { 
-  # Simple format netcdf file
-  latitude <- ncdf4::ncvar_get(nc, "latitude")
-  longitude <- ncdf4::ncvar_get(nc, "longitude")
-}
+
 ncdf4::nc_close(nc)
 
 a <- dim(ems_var)[1]
@@ -436,7 +423,7 @@ if (Google_map_underlay) {
  		min(gy, na.rm=TRUE)-0.5, 
  		max(gx, na.rm=TRUE)+0.5, 
  		max(gy, na.rm=TRUE)+0.5)
-  myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", zoom=zoom, crop=TRUE, scale=2))
+  myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="terrain", zoom=zoom, crop=TRUE))
   p <- ggmap::ggmap(myMap)
 } else if (length(p)==1) {
   p <- ggplot2::ggplot()
@@ -453,17 +440,10 @@ if (var_name=="true_colour") {
 				     na.value="transparent", 
 				     guide="colourbar",
 				     limits=scale_lim,
-				     #name=expression(paste('cells m'^'-3')),
 				     name=var_units,
 				     oob=scales::squish)
 }
-
-if (label_towns) {
-   p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
-}
-
-p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
-    ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
+ p <- p + ggplot2::ggtitle(paste(var_longname, ds[day]))
 if (!suppress_print) print(p)
 if (return_poly) {
   return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
@@ -480,7 +460,9 @@ if (return_poly) {
 #' Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
 #' be suppressed by setting suppress_print to TRUE if this is the primary desired output).
 #' Maps produced are optionally (and by default) overlain on a Google Earth map of the region. 
-#' Can be more efficient than calling map_ereefs multiple times if you 
+#' The function should work under Linux or MacOS. 
+#' The R netcdf4 library doesn't handle opendap served files under Windows, unfortunately, but can be used under 
+#' Windows for locally-stored model output files. Can be more efficient than calling map_ereefs multiple times if you 
 #' want to produce an animation because it loads a month at a time for GBR4 runs. 
 #' If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.
 #' To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
@@ -504,12 +486,11 @@ if (return_poly) {
 #' @param output_dir Path to directory in which to store images for animation. Created if necessary. Defaults
 #'      to 'ToAnimate'. Images are created in this directory with filenames beginning with var_name, 
 #'      followed by an underscore and then sequential numbers beginning with 100001.
-#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap librray and an activated Google API key.
-#'      Default now FALSE.
+#' @param Google_map_underlay Set to TRUE (the default) to use ggmap::ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap::ggmap librray.
 #' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#'        Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2011-01.nc". 
+#'        If using Windows, you will need to set this to a local inputfile stem.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -533,16 +514,14 @@ if (return_poly) {
 #'       value of the variable specified in VAR_NAME over the selected interval.
 #' @export
 #' @examples
-#' \dontrun{
-#' map_ereefs_movie(start_date=c(2016,2,1),end_date=c(2016,2,15))
-#'}
+#' map_ereefs_movie()
 map_ereefs_movie <- function(var_name = "true_colour", 
                              start_date = c(2015,12,1), 
                              end_date = c(2016,3,31), 
                              layer = 'surface', 
                              output_dir = 'ToAnimate', 
-                             Google_map_underlay = FALSE, 
-                             input_file = "menu",
+                             Google_map_underlay = TRUE, 
+                             input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2011-01.nc", 
                              input_grid = NA, 
                              scale_col = c('ivory', 'coral4'), 
                              scale_lim = c(NA, NA), 
@@ -550,19 +529,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              box_bounds = c(NA, NA, NA, NA), 
                              suppress_print=FALSE, 
                              stride = 'daily',
-                             verbosity=0, 
-                             label_towns = TRUE)
+                             verbosity=0)
 {
-  input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file) 
   if (ereefs_case==1) warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
-  if ((.Platform$OS.type=="windows")) warning('If using Windows, you will need a specially-compiled version of the ncdf4 package to use this function')
-
-  towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
-                      longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
-                      town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
+  if ((.Platform$OS.type=="windows")) stop('Sorry: Windows is no longer supported by get_ereefs_movie() due to limitations of ncdf4 for Windows.')
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
@@ -685,8 +658,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                     min(y_grid, na.rm=TRUE)-0.5, 
                     max(x_grid, na.rm=TRUE)+0.5, 
                     max(y_grid, na.rm=TRUE)+0.5) 
-     myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", crop=TRUE, zoom=zoom, scale=2))
-     #myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="watercolor"))
+     #myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="terrain", crop=TRUE, zoom=zoom))
+     myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="watercolor"))
   }
 
   # Main routine
@@ -946,10 +919,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
 					                              name=var_units,
 					                              oob=scales::squish)
             }
-
-            if (label_towns) {
-               p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
-            }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
             p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
             icount <- icount + 1
@@ -979,9 +948,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @param datapoly A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().
 #' @param var_longname Character vector to use for the figure title.
 #' @param var_units Units to include in the figure labelling.
-#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
-#'      Default now FALSE.
+#' @param Google_map_underlay Set to TRUE (the default) to use ggmap to show a Google Map as
+#'      an underlay for the model output plot. Requires the ggmap librray.
 #' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
 #'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
 #'      Defaults to c('ivory', 'coral4').
@@ -995,15 +963,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @return p Handle for the figure generated.
 #' @export
 #' @examples
-#' \dontrun{
 #' a <- map_ereefs('TN', return_poly=TRUE)
 #' plot_map(a[[2]])
-#'}
 
 plot_map <- function(datapoly,
              var_longname = '',
              var_units = '',
-		       Google_map_underlay = FALSE,
+		       Google_map_underlay = TRUE,
              scale_col = c('ivory', 'coral4'),
 		       scale_lim = c(NA, NA),
              zoom = 6,
@@ -1026,7 +992,7 @@ plot_map <- function(datapoly,
  		min(datapoly$y, na.rm=TRUE)-0.5, 
  		max(datapoly$x, na.rm=TRUE)+0.5, 
  		max(datapoly$y, na.rm=TRUE)+0.5)
-    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", zoom=zoom, crop=TRUE, scale=2))
+    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="terrain", zoom=zoom, crop=TRUE))
     p <- ggmap::ggmap(myMap)
   } else if (length(p)==1) {
     p <- ggplot2::ggplot()

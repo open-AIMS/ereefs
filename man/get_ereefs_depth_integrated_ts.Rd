@@ -7,8 +7,8 @@
 get_ereefs_depth_integrated_ts(var_names = c("Chl_a_sum", "TN"),
   location_latlon = c(-23.39189, 150.88852), start_date = c(2010, 12,
   31), end_date = c(2016, 12, 31), input_file = "menu",
-  input_grid = NA, eta_stem = NA, verbose = 0,
-  override_positive = FALSE)
+  input_grid = NA, eta_stem = NA, override_positive = FALSE,
+  verbosity = 1)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
@@ -54,5 +54,7 @@ See also get_ereefs_ts() to extract from a specified layer instead of a depth-in
 By Barbara Robson (AIMS).
 }
 \examples{
-get_ereefs_depth_integrated_ts('Chl_a_sum', c(-23.39189, 150.88852))
+\dontrun{
+get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), location_latlon=data.frame(latitide=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+}
 }
