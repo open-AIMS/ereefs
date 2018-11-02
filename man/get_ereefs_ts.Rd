@@ -16,7 +16,8 @@ want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
 \item{location_latlon}{is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
 a single latitude and longitude location. If you want to specify an x-y grid coordinate instead of a latitude and longitude, you 
-can: to do this, is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
+can: to do this, is.integer(location_latlon) must be TRUE. location_latlon can also be set to "mmp" to extract time-series at all 
+Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852).}
 
 \item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.

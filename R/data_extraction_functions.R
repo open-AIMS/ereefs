@@ -190,7 +190,8 @@ substitute_filename <- function(input_file) {
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param location_latlon is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
 #'        a single latitude and longitude location. If you want to specify an x-y grid coordinate instead of a latitude and longitude, you 
-#'        can: to do this, is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).
+#'        can: to do this, is.integer(location_latlon) must be TRUE. location_latlon can also be set to "mmp" to extract time-series at all 
+#'        Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852).
 #' @param layer is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 #'        value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
 #'        Defaults to 'surface'. Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
@@ -240,6 +241,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
+  if (location_latlon=="mmp") {
+     location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
+     mmp <- TRUE
+  } else {
+     mmp <- FALSE
+  }
 
   # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
@@ -459,6 +466,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (verbosity>0) close(pb)
   ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
+  if (mmp) names(ts_frame) <- mmp_sites$Name
   if (numpoints == 1) ts_frame <- ts_frame[[1]]
   return(ts_frame)
 }
