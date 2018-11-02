@@ -23,7 +23,7 @@ the handle of a figure containing the vertical profile plot
 Relies on output from get_ereefs_profile().
 }
 \examples{
-\dontrun {
+\dontrun{
 plot_ereefs_profile(get_ereefs_profile('TN'))
 }
 }
