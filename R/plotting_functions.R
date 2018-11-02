@@ -529,7 +529,7 @@ if (return_poly) {
 #'       value of the variable specified in VAR_NAME over the selected interval.
 #' @export
 #' @examples
-#' map_ereefs_movie()
+#' map_ereefs_movie(start_date=c(2016,2,1),end_date=c(2016,2,15))
 map_ereefs_movie <- function(var_name = "true_colour", 
                              start_date = c(2015,12,1), 
                              end_date = c(2016,3,31), 

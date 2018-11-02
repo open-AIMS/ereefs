@@ -16,7 +16,8 @@ want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
 \item{location_latlon}{is a vector containing the decimal latitudes and longitudes of the desired location. If 
 you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
+is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852). You can alternatively
+use a data frame for location_latlon, with named "latitude" and "longitude" vectors.}
 
 \item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
@@ -53,14 +54,19 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 formatted for input to as.Date(). Defaults to c(2016,10,31).}
 }
 \value{
-a data frame containing the dates and values of extracted variables.
+a data frame containing the dates and values of extracted variables (for a single geolocation) or a
+       list of such data frames (one list item per location) if there are multiple locations.
 }
 \description{
 Create a time-series of values of one or more selected model output variables in a specified layer of the
-water column or sediment store (by default, the surface layer), at a specified geographic location within 
-the model domain.  See also get_ereefs_depth_integrated_ts() to extract depth-integrated values and 
-get_ereefs_depth_specified_ts() to extract values at a specified depth below the free (tidally moving) 
-surface. Barbara Robson (AIMS).
+water column or sediment store (by default, the surface layer), at a specified geographic location or 
+supplied data frame of geocoordinates within the model domain.  See also get_ereefs_depth_integrated_ts() to 
+extract depth-integrated values and get_ereefs_depth_specified_ts() to extract values at a specified depth 
+below the free (tidally moving) surface. Barbara Robson (AIMS).
+}
+\details{
+If you run into memory constraints, consider grouping points to be extracted within regions, and calling this once
+for each region.
 }
 \examples{
 get_ereefs_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')

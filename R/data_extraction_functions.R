@@ -219,7 +219,9 @@ substitute_filename <- function(input_file) {
 #'       incorrect. Default FALSE. Not normally needed.
 #' @export
 #' @examples
-#' get_ereefs_ts('Chl_a_sum', c(-23.39189, 150.88852), layer='surface')
+#' get_ereefs_ts('Chl_a_sum', location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+#' get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
+#' get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
 
 get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                           location_latlon=c(-23.39189, 150.88852), 
@@ -312,7 +314,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (is.null(dim(location_latlon))) {
      location_latlon <- array(location_latlon, c(1,2))
   }
-  if (dim(location_latlon)[1] > 1) stop('Currently, get_ereefs_depth_integrated_ts() only supports a single location. This is on my to-do list to fix in future. Let me know if you would like this feature. b.robson@aims.gov.au')
   if (is.integer(location_latlon)) {
      # We have specified grid coordinates rather than geocoordinates
      location_grid <- location_latlon
@@ -369,8 +370,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   # Initialise
   blanks <- rep(NA, blank_length)
-  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  names(ts_frame) <- c("date", var_names)
+  ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
+  colnames(ts_frame) <- c("date", var_names)
 
   # Loop through monthly eReefs files to extract the data
   ndims <- rep(NA, length(var_names))
@@ -426,6 +427,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
       im1 = i+1
       i <- i + length(d)
+
       ts_frame[im1:i,"date",] <- d
       for (j in 1:length(var_names)) {
           if (is.na(ndims[j])) {
@@ -447,14 +449,14 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
              #ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
           }
           wc <- array(wc, c(countv[1]*countv[2], day_count))
-          ts_frame[im1:i, j+1, ] <- t(wc[grid_index,])
+          ts_frame[im1:i, j+1,] <- t(wc[grid_index,])
       }
       ncdf4::nc_close(nc)
       if (verbosity>0) setTxtProgressBar(pb,mcount)
     }
   }
   if (verbosity>0) close(pb)
-  ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=d, ts_frame[ ,2:dim(ts_frame)[2] , x])) 
+  ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
   if (numpoints == 1) ts_frame <- ts_frame[[1]]
   return(ts_frame)
 }
@@ -494,7 +496,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'       incorrect. Default FALSE
 #' @export
 #' @examples
-#' get_ereefs_bottom_ts('Chl_a_sum', c(-23.39189, 150.88852))
+#' get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), location_latlon=data.frame(latitide=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
 get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                           location_latlon=c(-23.39189, 150.88852), 
 		                    start_date = c(2010,12,31), 
@@ -740,7 +742,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'       incorrect. Default FALSE
 #' @export
 #' @examples
-#' get_ereefs_depth_integrated_ts('Chl_a_sum', c(-23.39189, 150.88852))
+#' get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), location_latlon=data.frame(latitide=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
 get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                           location_latlon=c(-23.39189, 150.88852), 
 		                    start_date = c(2010,12,31), 
@@ -834,6 +836,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
+  if (dim(location_latlon)[1] > 1) stop('Currently, get_ereefs_depth_integrated_ts() only supports a single location. This is on my to-do list to fix in future. Let me know if you would like this feature. b.robson@aims.gov.au')
 
   nc <- ncdf4::nc_open(input_file)
   if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
@@ -1044,7 +1047,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
 #' @export
 #' @examples
-#' get_ereefs_depth_specified_ts('Chl_a_sum', c(-23.39189, 150.88852), depth=2.5)
+#' get_ereefs_depth_specified_ts(c('Chl_a_sum', 'NH4'), depth=5.0, location_latlon=data.frame(latitide=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
 get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                                           location_latlon=c(-23.39189, 150.88852), 
                                           depth = 1.0, 
