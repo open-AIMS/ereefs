@@ -539,7 +539,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param p The handle of an existing figure, if you don't want to create a new figure
 #' @return the handle of a figure containing the vertical profile plot
 #' @examples 
-#' \dontrun {
+#' \dontrun{
 #' plot_ereefs_profile(get_ereefs_profile('TN'))
 #' }
 #' @export
