@@ -850,7 +850,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
-  if (dim(location_latlon)[1] > 1) stop('Currently, get_ereefs_depth_integrated_ts() only supports a single location. This is on my to-do list to fix in future. Let me know if you would like this feature. b.robson@aims.gov.au')
+  if (!is.null(dim(location_latlon))) { 
+    if (dim(location_latlon)[1] > 1) stop('Currently, get_ereefs_depth_integrated_ts() only supports a single location. This is on my to-do list to fix in future. Let me know if you would like this feature. b.robson@aims.gov.au')
+  }
 
   nc <- ncdf4::nc_open(input_file)
   if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
@@ -875,7 +877,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       latitude <- ncdf4::ncvar_get(nc, "latitude")
       longitude <- ncdf4::ncvar_get(nc, "longitude")
     }
-    ncdf4::nc_close(nc)
 
     if (is.null(dim(location_latlon))) {
        # Just one location
@@ -906,9 +907,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   grid_index <- (location_grid[,2] - 1) * countv[1] + location_grid[,1]
 
   # check whether all points are within a single model grid row or column, and adjust indices accordingly
-  if (countv[2] == 1) { 
+  if ((countv[2] == 1)&&(countv[1] != 1)) { 
    location_grid <- location_grid[,1]
-  } else if (countv[1] == 1) {
+  } else if ((countv[1] == 1)&&(countv[2] != 1)) {
    location_grid <- location_grid[,2]
   }
 
