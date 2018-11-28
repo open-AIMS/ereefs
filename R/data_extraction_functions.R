@@ -926,8 +926,10 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
    zsign <-1
     if (override_positive) zsign <- -1
   }
-  botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
+  botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(startv), count=c(countv)))
+  #botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
+print('alpha 1'); print('botz')
 
   # Loop through monthly eReefs files to extract the data
   i <- 0
@@ -985,9 +987,11 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
            d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
+          #eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         } else {
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
+          #eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         }
         im1 = i+1
         i <- i + length(d)
@@ -1013,7 +1017,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   
 
         for (j in 1:length(var_names)) {
-          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
+          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,day_count))
+          #wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
 	       if (dim(dz)[2] == 1) wc <- array(wc, dim=dim(dz))
           # take the depth-integrated average over the water column
           ts_frame[im1:i, j+1] <- colSums(dz * wc, na.rm=TRUE) / colSums(dz)
