@@ -29,16 +29,16 @@ get_ereefs_case <- function(filename) {
 get_ereefs_grids <- function(filename, input_grid=NA) {
 	if (!is.na(input_grid)) {
 		nc <- ncdf4::nc_open(input_grid)
-		x_grid <- ncdf4::ncvar_get(nc, 'x_grid')
-		y_grid <- ncdf4::ncvar_get(nc, 'y_grid')
-		z_grid <- ncdf4::ncvar_get(nc, 'z_grid')
+		x_grid <- safe_ncvar_get(nc, 'x_grid')
+		y_grid <- safe_ncvar_get(nc, 'y_grid')
+		z_grid <- safe_ncvar_get(nc, 'z_grid')
 		ncdf4::nc_close(nc)
 	} else {
 		nc <- ncdf4::nc_open(filename)
 		if (!is.null(nc$var[['x_grid']])) { 
-		  x_grid <- ncdf4::ncvar_get(nc, 'x_grid')
-		  y_grid <- ncdf4::ncvar_get(nc, 'y_grid')
-		  z_grid <- ncdf4::ncvar_get(nc, 'z_grid')
+		  x_grid <- safe_ncvar_get(nc, 'x_grid')
+		  y_grid <- safe_ncvar_get(nc, 'y_grid')
+		  z_grid <- safe_ncvar_get(nc, 'z_grid')
                 } else {
 		  if (!is.null(nc$dim[['i']])) {
 		    ilen <- nc$dim[['i']][['len']]
@@ -241,7 +241,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if (location_latlon[1]=="mmp") {
+  if (is.character(location_latlon)&&(location_latlon=="mmp")) {
      location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
      mmp <- TRUE
   } else {
@@ -296,9 +296,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
 	nc <- ncdf4::nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	ncdf4::nc_close(nc)
         blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
@@ -312,9 +312,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       input_file <- input_file
       nc <- ncdf4::nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
       ncdf4::nc_close(nc)
@@ -333,12 +333,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     nc <- ncdf4::nc_open(input_file)
     if (is.null(nc$var[['latitude']])) {
       # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
-      latitude <- ncdf4::ncvar_get(nc, "y_centre")
-      longitude <- ncdf4::ncvar_get(nc, "x_centre")
+      latitude <- safe_ncvar_get(nc, "y_centre")
+      longitude <- safe_ncvar_get(nc, "x_centre")
     } else { 
       # Simple format netcdf file
-      latitude <- ncdf4::ncvar_get(nc, "latitude")
-      longitude <- ncdf4::ncvar_get(nc, "longitude")
+      latitude <- safe_ncvar_get(nc, "latitude")
+      longitude <- safe_ncvar_get(nc, "longitude")
     }
     ncdf4::nc_close(nc)
 
@@ -427,9 +427,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       nc <- ncdf4::nc_open(input_file)
       if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
-            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
-            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
       } else { 
          d <- ds[from_day:(from_day + day_count - 1)]
@@ -451,11 +451,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
             }
            }
           if (ndims[j] == 4) {
-             wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv,layer_actual[j],from_day), count=c(countv,1,day_count))
-             #ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+             wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual[j],from_day), count=c(countv,1,day_count))
+             #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
           } else {
-             wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
-             #ts_frame[im1:i, j+1] <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
+             wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
+             #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
           }
           wc <- array(wc, c(countv[1]*countv[2], day_count))
           ts_frame[im1:i, j+1,] <- t(wc[grid_index,])
@@ -573,9 +573,9 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
 	nc <- ncdf4::nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	ncdf4::nc_close(nc) 
    blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
@@ -590,9 +590,9 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
       nc <- ncdf4::nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
       ncdf4::nc_close(nc)
@@ -611,11 +611,11 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else { 
     # Find the nearest grid-points to the sampling location
     if (is.null(nc$var[['latitude']])) {
-      latitude <- ncdf4::ncvar_get(nc, "y_centre")
-      longitude <- ncdf4::ncvar_get(nc, "x_centre")
+      latitude <- safe_ncvar_get(nc, "y_centre")
+      longitude <- safe_ncvar_get(nc, "x_centre")
     } else { 
-      latitude <- ncdf4::ncvar_get(nc, "latitude")
-      longitude <- ncdf4::ncvar_get(nc, "longitude")
+      latitude <- safe_ncvar_get(nc, "latitude")
+      longitude <- safe_ncvar_get(nc, "longitude")
     }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
@@ -630,7 +630,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
    zsign <-1
     if (override_positive) zsign <- -1
   }
-  botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
+  botz <- zsign * as.numeric(safe_ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
 
   # Loop through monthly eReefs files to extract the data
@@ -680,18 +680,18 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         # Get dates
         if (ereefs_case > 0 ) { 
            if (!is.null(nc$var[['t']])) { 
-              ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01")) 
+              ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01")) 
            } else { 
-              ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01")) 
+              ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01")) 
            }
 	        d <- ds[from_day:(from_day + day_count - 1)]
         } else {
 	        d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+           eta <- safe_ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         } else { 
-           eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+           eta <- safe_ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         }
         im1 = i+1
         i <- i + length(d)
@@ -705,7 +705,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         dz[bottom] <- 1
 
         for (j in 1:length(var_names)) {
-          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
+          wc <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
 	       if (dim(dz)[2] == 1) wc <- array(wc, dim=dim(dz))
           # take the depth-integrated average over the water column
           ts_frame[im1:i, j+1] <- colSums(dz * wc, na.rm=TRUE)
@@ -821,9 +821,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
 	nc <- ncdf4::nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	ncdf4::nc_close(nc)
         blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
@@ -842,9 +842,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
       nc <- ncdf4::nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
       ncdf4::nc_close(nc)
@@ -870,12 +870,12 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     nc <- ncdf4::nc_open(input_file)
     if (is.null(nc$var[['latitude']])) {
       # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
-      latitude <- ncdf4::ncvar_get(nc, "y_centre")
-      longitude <- ncdf4::ncvar_get(nc, "x_centre")
+      latitude <- safe_ncvar_get(nc, "y_centre")
+      longitude <- safe_ncvar_get(nc, "x_centre")
     } else { 
       # Simple format netcdf file
-      latitude <- ncdf4::ncvar_get(nc, "latitude")
-      longitude <- ncdf4::ncvar_get(nc, "longitude")
+      latitude <- safe_ncvar_get(nc, "latitude")
+      longitude <- safe_ncvar_get(nc, "longitude")
     }
 
     if (is.null(dim(location_latlon))) {
@@ -926,8 +926,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
    zsign <-1
     if (override_positive) zsign <- -1
   }
-  botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(startv), count=c(countv)))
-  #botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
+  botz <- zsign * as.numeric(safe_ncvar_get(nc, "botz", start=c(startv), count=c(countv)))
+  #botz <- zsign * as.numeric(safe_ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
 print('alpha 1'); print('botz')
 
@@ -979,19 +979,19 @@ print('alpha 1'); print('botz')
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
-            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
-            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
         } else { 
            d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
-          #eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+          eta <- safe_ncvar_get(nc, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
+          #eta <- safe_ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         } else {
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
-          #eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+          eta <- safe_ncvar_get(nc3, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
+          #eta <- safe_ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         }
         im1 = i+1
         i <- i + length(d)
@@ -1017,8 +1017,8 @@ print('alpha 1'); print('botz')
   
 
         for (j in 1:length(var_names)) {
-          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,day_count))
-          #wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
+          wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,day_count))
+          #wc <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
 	       if (dim(dz)[2] == 1) wc <- array(wc, dim=dim(dz))
           # take the depth-integrated average over the water column
           ts_frame[im1:i, j+1] <- colSums(dz * wc, na.rm=TRUE) / colSums(dz)
@@ -1133,9 +1133,9 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
 	nc <- ncdf4::nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	ncdf4::nc_close(nc)
         blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
@@ -1152,9 +1152,9 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
       nc <- ncdf4::nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
-        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
       ncdf4::nc_close(nc)
@@ -1172,11 +1172,11 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else { 
     # Find the nearest grid-points to the sampling location
     if (is.null(nc$var[['latitude']])) {
-      latitude <- ncdf4::ncvar_get(nc, "y_centre")
-      longitude <- ncdf4::ncvar_get(nc, "x_centre")
+      latitude <- safe_ncvar_get(nc, "y_centre")
+      longitude <- safe_ncvar_get(nc, "x_centre")
     } else { 
-      latitude <- ncdf4::ncvar_get(nc, "latitude")
-      longitude <- ncdf4::ncvar_get(nc, "longitude")
+      latitude <- safe_ncvar_get(nc, "latitude")
+      longitude <- safe_ncvar_get(nc, "longitude")
     }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
@@ -1189,7 +1189,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
 	zsign <-1
   }
-  botz <- zsign * as.numeric(ncdf4::ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
+  botz <- zsign * as.numeric(safe_ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
 
   # Loop through monthly eReefs files to extract the data
@@ -1236,17 +1236,17 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
-            d <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
-            d <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
         } else { 
            d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
+          eta <- safe_ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
 	} else {
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
+          eta <- safe_ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
 	}
         im1 = i+1
         i <- i + length(d)
@@ -1267,7 +1267,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         target <- (shallower_top & deeper_bottom)
    
         for (j in 1:length(var_names)) {
-          wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
+          wc <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
 
 	  if (dim(target)[2] == 1) wc <- array(wc, dim=dim(target))
           ts_frame[im1:i, j+1] <- colSums(target * wc, na.rm=TRUE)
@@ -1278,4 +1278,26 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     }
     if (verbosity>0) close(pb)
     return(ts_frame)
+}
+
+#' A wrapper to ncdf4::ncvar_get() that will pause and try again up to 119 times
+#' if at first it fails, to overcome temporary net access errors or DAP errors.
+#'
+#' Parameters before 'tries' are passed through to ncvar_get
+#'
+#' @param tries number of times to retry (increasing pause length by one second each time. Default 12 
+#' @return variable extracted using ncvar_get()
+#' @export
+safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
+ signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=12) {
+   myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+   trywait = 1
+   while ((class(myvar)=='try-error')&&(trywait<=120)) { 
+      print(paste('retrying in ', trywait, 'second(s)')) 
+      Sys.sleep(trywait) 
+      trywait <- trywait+1 
+      myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+   }
+   if (trywait>120) stop(paste('Cannot access netcdf file', nc$filename))
+   return(myvar)
 }

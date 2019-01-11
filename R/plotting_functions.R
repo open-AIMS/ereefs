@@ -186,9 +186,9 @@ if (ereefs_case == 4) {
 	filename <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
 	nc <- ncdf4::nc_open(filename)
 	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
@@ -200,9 +200,9 @@ if (ereefs_case == 4) {
 	filename <- paste0(input_stem, '.nc')
 	nc <- ncdf4::nc_open(filename)
 	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
-	    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
@@ -272,13 +272,13 @@ if (var_name=="plume") {
     inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
-    R_412 <- ncdf4::ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-    R_443 <- ncdf4::ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-    R_488 <- ncdf4::ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-    R_531 <- ncdf4::ncvar_get(nc, "R_531", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-    R_547 <- ncdf4::ncvar_get(nc, "R_547", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-    R_667 <- ncdf4::ncvar_get(nc, "R_667", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-    R_678 <- ncdf4::ncvar_get(nc, "R_678", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_412 <- safe_ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_443 <- safe_ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_488 <- safe_ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_531 <- safe_ncvar_get(nc, "R_531", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_547 <- safe_ncvar_get(nc, "R_547", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_667 <- safe_ncvar_get(nc, "R_667", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+    R_678 <- safe_ncvar_get(nc, "R_678", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     rsr <- list(R_412, R_443, R_488, R_531, R_547, R_667, R_678)
     ems_var <- plume_class(rsr)
     dims <- dim(ems_var)
@@ -290,9 +290,9 @@ if (var_name=="plume") {
     #inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     TCbright <- 10
-    R_470 <- ncdf4::ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
-    R_555 <- ncdf4::ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
-    R_645 <- ncdf4::ncvar_get(nc, "R_645", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
+    R_470 <- safe_ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
+    R_555 <- safe_ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
+    R_645 <- safe_ncvar_get(nc, "R_645", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
     R_470[R_470>1] <- 1
     R_555[R_555>1] <- 1
     R_645[R_645>1] <- 1
@@ -350,30 +350,30 @@ if (var_name == 'ZooT') {
     var_longname <- 'Total Zooplankton Nitrogen'
     var_units <- 'mg N m3'
     if (ndims == 4) {
-       ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
-       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- safe_ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- ems_var + safe_ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
     } else {
-       ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- safe_ncvar_get(nc, 'ZooL_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ems_var + safe_ncvar_get(nc, 'ZooS_N', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
 } else if (var_name == 'speed') {
     var_longname <- 'Current speed'
     var_units <- 'm s-1'
     if (ndims == 4) {
-       ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
-       ems_var <- sqrt(ems_var^2 + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))^2)
+       ems_var <- safe_ncvar_get(nc, 'u', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- sqrt(ems_var^2 + safe_ncvar_get(nc, 'v', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))^2)
     } else {
-       ems_var <- ncdf4::ncvar_get(nc, 'u', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-       ems_var <- ems_var + ncdf4::ncvar_get(nc, 'v', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- safe_ncvar_get(nc, 'u', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ems_var + safe_ncvar_get(nc, 'v', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
 } else if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
     vat <- ncdf4::ncatt_get(nc, var_name)
     var_longname <- vat$long_name
     var_units <- vat$units
     if (ndims == 4) {
-       ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- safe_ncvar_get(nc, var_name, start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
     } else {
-       ems_var <- ncdf4::ncvar_get(nc, var_name, start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- safe_ncvar_get(nc, var_name, start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
 }
 
@@ -381,18 +381,18 @@ ncdf4::nc_close(nc)
 
 nc <- ncdf4::nc_open(filename)
 if (!is.null(nc$var[['botz']])) {
-   botz <- ncdf4::ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
+   botz <- safe_ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else {
    botz <- array(NA, dim(ems_var))
 }
 if (is.null(nc$var[['latitude']])) {
 # Standard EMS output file
-  latitude <- ncdf4::ncvar_get(nc, "y_centre")
-  longitude <- ncdf4::ncvar_get(nc, "x_centre")
+  latitude <- safe_ncvar_get(nc, "y_centre")
+  longitude <- safe_ncvar_get(nc, "x_centre")
 } else { 
   # Simple format netcdf file
-  latitude <- ncdf4::ncvar_get(nc, "latitude")
-  longitude <- ncdf4::ncvar_get(nc, "longitude")
+  latitude <- safe_ncvar_get(nc, "latitude")
+  longitude <- safe_ncvar_get(nc, "longitude")
 }
 ncdf4::nc_close(nc)
 
@@ -704,9 +704,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	      filename <- paste0(input_stem, '.nc')
 	      nc <- ncdf4::nc_open(filename)
 	      if (!is.null(nc$var[['t']])) { 
-	          ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	          ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
               } else {
-	          ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	          ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	      }
 	      ncdf4::nc_close(nc)
        }
@@ -727,9 +727,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    nc <- ncdf4::nc_open(filename)
 	    if (!is.null(nc$var[['t']])) { 
-	        ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+	        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
             } else {
-	        ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	    }
 	    ncdf4::nc_close(nc)
        if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
@@ -774,13 +774,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
         inputfile <- paste0(filename, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
         #inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
-        R_412 <- ncdf4::ncvar_get(nc, "R_412")
-        R_443 <- ncdf4::ncvar_get(nc, "R_443")
-        R_488 <- ncdf4::ncvar_get(nc, "R_488")
-        R_531 <- ncdf4::ncvar_get(nc, "R_531")
-        R_547 <- ncdf4::ncvar_get(nc, "R_547")
-        R_667 <- ncdf4::ncvar_get(nc, "R_667")
-        R_678 <- ncdf4::ncvar_get(nc, "R_678")
+        R_412 <- safe_ncvar_get(nc, "R_412")
+        R_443 <- safe_ncvar_get(nc, "R_443")
+        R_488 <- safe_ncvar_get(nc, "R_488")
+        R_531 <- safe_ncvar_get(nc, "R_531")
+        R_547 <- safe_ncvar_get(nc, "R_547")
+        R_667 <- safe_ncvar_get(nc, "R_667")
+        R_678 <- safe_ncvar_get(nc, "R_678")
         ems_var <- NA*R_678
         if (ereefs_case ==4) {
             for (day in 1:dim(R_412)[3]) {
@@ -802,9 +802,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
         #inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
         TCbright <- 10
-        R_470 <- ncdf4::ncvar_get(nc, "R_470") * TCbright
-        R_555 <- ncdf4::ncvar_get(nc, "R_555") * TCbright
-        R_645 <- ncdf4::ncvar_get(nc, "R_645") * TCbright
+        R_470 <- safe_ncvar_get(nc, "R_470") * TCbright
+        R_555 <- safe_ncvar_get(nc, "R_555") * TCbright
+        R_645 <- safe_ncvar_get(nc, "R_645") * TCbright
         R_470[R_470>1] <- 1
         R_555[R_555>1] <- 1
         R_645[R_645>1] <- 1
@@ -857,7 +857,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
           slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                           '[', layer-1, ']',                                                    # layer
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
-                          '[', start_array[1]-1, ':', start_array[2] + count_array[1] - 1, ']') # x
+                          '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
         } else {
           slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
@@ -867,27 +867,27 @@ map_ereefs_movie <- function(var_name = "true_colour",
         if (var_name == "speed") { 
            inputfile <- paste0(filename, '?u', slice, ',v', slice)
            nc <- ncdf4::nc_open(inputfile)
-           ems_var <- sqrt(ncdf4::ncvar_get(nc, 'u')^2 + ncdf4::ncvar_get(nc, 'v')^2)
+           ems_var <- sqrt(safe_ncvar_get(nc, 'u')^2 + ncdf4::ncvar_get(nc, 'v')^2)
            vat <- ncdf4::ncatt_get(nc, 'u')
            var_longname <- 'Current speed'
            var_units <- vat$units
         } else if (var_name == "ZooT") {
            inputfile <- paste0(filename, '?ZooL_N', slice, ',ZooS_N', slice)
            nc <- ncdf4::nc_open(inputfile)
-           ems_var <- ncdf4::ncvar_get(nc, 'ZooL_N') + ncdf4::ncvar_get(nc, 'ZooS_N')
+           ems_var <- safe_ncvar_get(nc, 'ZooL_N') + ncdf4::ncvar_get(nc, 'ZooS_N')
            vat <- ncdf4::ncatt_get(nc, 'ZooL_N')
            var_longname <- 'Total Zooplankton'
            var_units <- vat$units
         } else {
            inputfile <- paste0(filename, '?',var_name, slice)
            nc <- ncdf4::nc_open(inputfile)
-           ems_var <- ncdf4::ncvar_get(nc, var_name)
+           ems_var <- safe_ncvar_get(nc, var_name)
            vat <- ncdf4::ncatt_get(nc, var_name)
            var_longname <- vat$long_name
            var_units <- vat$units
         }
       }
-      #ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+      #ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     
       dum1 <- length(dim(ems_var))
       if (dum1==2) {
@@ -927,7 +927,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
             }
   
             if (Google_map_underlay) {
-                  p <- ggmap::ggmap(myMap)
+               p <- ggmap::ggmap(myMap)
 	         } else {
 	            p <- ggplot2::ggplot()
             }
@@ -951,13 +951,15 @@ map_ereefs_movie <- function(var_name = "true_colour",
                p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
-            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
+            q <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
             icount <- icount + 1
+            #print(p)
             if (!file.exists(output_dir)) {
                dir.create(output_dir)
             }
             fname <- paste0(output_dir, '/', var_name, '_', 100000 + icount, '.png', collapse='')
             ggplot2::ggsave(fname, p)
+            rm('p')
          }  else {
             icount <- icount + 1
          }
