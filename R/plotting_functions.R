@@ -951,7 +951,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
                p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
-            q <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
+            if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
+            if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
+            if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
+            if (is.na(box_bounds[4])) box_bounds[4] <- max(positions$y)
+            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
             icount <- icount + 1
             #print(p)
             if (!file.exists(output_dir)) {
