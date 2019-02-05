@@ -602,7 +602,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       mths <- start_month:end_month
       years <- rep(start_year, length(mths))
   } else if ((start_year + 1) == end_year) {
-        mths <- c(start_month:12, 1:end_month)
+      mths <- c(start_month:12, 1:end_month)
       years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
   } else {
       mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
@@ -736,8 +736,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
        if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
        if(ds[2]==ds[1]) stop(paste('Error reading time from', filename, '(t[2]==t[1])'))
        tstep <- as.numeric(ds[2]-ds[1])
-       start_array <- c(xmin, ymin, as.integer((from_day-0.499999)*tstep + 1) )
-	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep) )
+       dum1 <- as.integer((from_day - 0.4999999)/tstep + 1)
+       dum2 <- as.integer((day_count - 1) / tstep) +1
+       ds <- ds[seq(from=dum1, by=as.integer(1/tstep), to=(dum1+dum2))]
+       start_array <- c(xmin, ymin, dum1)
+	    count_array <- c(xmax-xmin, ymax-ymin, dum2)
 	    fileslist <- 1
     } else if (ereefs_case == 1) { 
        #warning('Assuming that only one timestep is output per day/file')
