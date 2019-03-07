@@ -366,14 +366,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   numpoints <- dim(location_grid)[1]
   # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass all
   # provided geocoordinate points
-  print(paste("debug 1", location_grid[,1], location_grid[,2]))
   startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
   countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
 
   # Adjust grid locations so that they are relative to the region to be extracted instead of the whole model domain
   location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
   location_grid <- cbind(location_grid[,2], location_grid[,1])
-  print(paste("debug 2", location_grid[,1], location_grid[,2]))
 
   # Update grid_index so that it is also relative
   grid_index <- (location_grid[,2] - 1) * countv[1] + location_grid[,1]
