@@ -107,7 +107,8 @@ plume_class <- function(rsr) {
 #'      input file, as the function will plot the closest date in the file to the target date without
 #'      complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
 #'      relative to 1990-01-01 (this is not checked).
-#' @param layer Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.
+#' @param layer Either a (positive) integer layer number, a negative number indicating depth below MSL (not depth below the free surface) 
+#'        or 'surface' to choose the surface layer. Defaults to 'surface'.
 #' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
 #'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
 #'      Default now FALSE.
@@ -175,6 +176,13 @@ check_platform_ok(input_stem)
 grids <- get_ereefs_grids(input_file, input_grid)
 x_grid <- grids[['x_grid']]
 y_grid <- grids[['y_grid']]
+
+# Allow user to specify a depth below MSL by setting layer to a negative value
+if (layer<0) {
+   z_grid <- grids[['z_grid']]
+   layer <- which.min(z_grid<layer)
+}
+
 
 # Date to map:
 if (is.vector(target_date)) {
@@ -923,6 +931,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
         values <- data.frame(id = id, value = n)
         positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
         datapoly <- merge(values, positions, by = c("id"))
+        print('debug 1'); print(var_name)
     
         if (!suppress_print) {
             if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) { 
@@ -935,6 +944,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	            p <- ggplot2::ggplot()
             }
             if (var_name=="true_colour") {
+        print('debug 2');
 	            p <- p +
                ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
 	            ggplot2::scale_fill_identity()
@@ -951,9 +961,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
             }
 
             if (label_towns) {
+        print('debug 3');
                p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
+        print('debug 4');
             if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
             if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
             if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
