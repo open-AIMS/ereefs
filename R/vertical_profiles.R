@@ -523,9 +523,13 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (squeeze&(dim(values)[2] == 1)&(length(dim(values))==3)) { # Only one variable, but multiple time-steps
 	  values <- array(values, dim=dim(values)[c(1,3)])
+     if (all(is.na(values))) warning('No wet cells in this profile. Either the location is a land cell or the positive attribute of botz is incorrect (use override_positive=TRUE) if this is the case)')
+     return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
+     names(return_list) <- c(names(return_list)[1:4], var_names)
+  } else { 
+     if (all(is.na(values))) warning('No wet cells in this profile. Either the location is a land cell or the positive attribute of botz is incorrect (use override_positive=TRUE) if this is the case)')
+     return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   }
-  if (all(is.na(values))) warning('No wet cells in this profile. Either the location is a land cell or the positive attribute of botz is incorrect (use override_positive=TRUE) if this is the case)')
-  return_list <- list(dates=dates, eta=eta_record, z_grid=z_grid, botz=botz, profiles=values)
   return(return_list)
 }
 
@@ -535,6 +539,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 #'
 #' @param profileObj A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles
 #' @param var_name The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
+#'        If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.
 #' @param target_date The target date (plot the profile closest in time to this).
 #' @param p The handle of an existing figure, if you don't want to create a new figure
 #' @return the handle of a figure containing the vertical profile plot
@@ -551,14 +556,29 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 	  target_date <- as.Date(target_date)
   }
   day <- which.min(abs(target_date-profileObj$dates))
-  colnum <- which(colnames(profileObj$profiles)==var_name)
-  if (length(dim(profileObj$profiles))>2) {
-	  dind <- which.min(abs(profileObj$dates-target_date))
-          values <- array(profileObj$profiles[, colnum, dind], length(profileObj$z_grid)-1)
-	  eta <- profileObj$eta[dind]
-  } else {
-	  values <- array(profileObj$profiles[, colnum])
-	  eta <- profileObj$eta
+  if (names(profileObj)[5]=="profiles") { 
+     colnum <- which(colnames(profileObj$profiles)==var_name)
+     if (length(dim(profileObj$profiles))>2) {
+	     dind <- which.min(abs(profileObj$dates-target_date)) 
+        values <- array(profileObj$profiles[, colnum, dind], length(profileObj$z_grid)-1)
+	     eta <- profileObj$eta[dind]
+     } else {
+	     values <- array(profileObj$profiles[, colnum])
+	     eta <- profileObj$eta
+     }
+  } else { 
+     # Only one variable
+     var_name <- names(profileObj)[5]
+     names(profileObj)[5] <- "profiles"
+     if (is.null(dim(profileObj$profiles))) {
+        # Only one time-step
+        values <- profileObj$profiles
+	     eta <- profileObj$eta
+     } else {
+	     dind <- which.min(abs(profileObj$dates-target_date)) 
+        values <- array(profileObj$profiles[, dind], length(profileObj$z_grid)-1)
+	     eta <- profileObj$eta[dind]
+     }
   }
   wet <- which(!is.na(values))
   values <- c(values[wet], values[max(wet)])
