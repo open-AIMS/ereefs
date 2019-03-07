@@ -194,8 +194,9 @@ substitute_filename <- function(input_file) {
 #'        Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852).
 #' @param layer is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 #'        value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
-#'        Defaults to 'surface'. Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
-#'        below the free surface instead of a layer number.
+#'        Specify a negative value to indicate a specified depth (in metres) below MSL.
+#'        Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
+#'        below the free surface instead of a layer number. Defaults to 'surface'.
 #' @param start_date date  for animation. Can either be a) a vector of integers in the format 
 #'	       c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'        formatted for input to as.Date(). Defaults to c(2010,12,31).
@@ -240,7 +241,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 {
   input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
+  if ((layer=='bottom')&&(length(location_latlon[,1])>1)) stop('Only one location can be given if layer==bottom')
+#  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
+  if (layer < 0) { 
+     z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
+     layer <- which.min(z_grid<layer)
+  }
   if (is.character(location_latlon)&&(location_latlon=="mmp")) {
      location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
      mmp <- TRUE
@@ -360,12 +366,14 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   numpoints <- dim(location_grid)[1]
   # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass all
   # provided geocoordinate points
+  print(paste("debug 1", location_grid[,1], location_grid[,2]))
   startv <- c(min(location_grid[,2]), min(location_grid[, 1]))
   countv <- c(max(location_grid[,2]), max(location_grid[, 1])) - startv + 1
 
   # Adjust grid locations so that they are relative to the region to be extracted instead of the whole model domain
   location_grid <- t(t(location_grid) - c(startv[2], startv[1])) + 1
   location_grid <- cbind(location_grid[,2], location_grid[,1])
+  print(paste("debug 2", location_grid[,1], location_grid[,2]))
 
   # Update grid_index so that it is also relative
   grid_index <- (location_grid[,2] - 1) * countv[1] + location_grid[,1]
@@ -444,14 +452,25 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
               dims <- nc$var[[var_names[j]]][['size']]
               if (is.null(dims)) stop(paste(var_names[j], ' not found in netcdf file.')) 
               ndims[j] <- length(dims)
-              if (layer == 'surface') {
-               layer_actual[j] <- dims[3]
-            } else {
-               layer_actual[j] <- layer
-            }
            }
+           if (layer == 'surface') { 
+              dims <- nc$var[[var_names[j]]][['size']]
+              layer_actual <- dims[3] 
+           } else if (layer == 'bottom') { 
+              # find the bottom layer -- assume it is the first layer that is not NA
+              if (ndims[j] == 4) { 
+                 dum1 <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,1)) 
+                 if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
+                 layer <- min(which(!is.na(dum1)))
+                 layer_actual <- layer
+                 if (verbosity>0) print(paste('bottom layer = ', layer))
+              } 
+           } else { 
+              layer_actual <- layer 
+           }
+
           if (ndims[j] == 4) {
-             wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual[j],from_day), count=c(countv,1,day_count))
+             wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual,from_day), count=c(countv,1,day_count))
              #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
           } else {
              wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
@@ -767,7 +786,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			                 override_positive=FALSE,
                           verbosity = 1)
 {
-
   input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file)
@@ -929,7 +947,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   botz <- zsign * as.numeric(safe_ncvar_get(nc, "botz", start=c(startv), count=c(countv)))
   #botz <- zsign * as.numeric(safe_ncvar_get(nc, "botz", start=c(location_grid[2], location_grid[1]), count=c(1,1)))
   ncdf4::nc_close(nc)
-print('alpha 1'); print('botz')
 
   # Loop through monthly eReefs files to extract the data
   i <- 0
@@ -1016,12 +1033,12 @@ print('alpha 1'); print('botz')
         dz[singlelayer] <- eta2[singlelayer] - botz
   
 
-        for (j in 1:length(var_names)) {
-          wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,day_count))
+        for (j in 1:length(var_names)) { 
+           wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,day_count))
           #wc <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
-	       if (dim(dz)[2] == 1) wc <- array(wc, dim=dim(dz))
-          # take the depth-integrated average over the water column
-          ts_frame[im1:i, j+1] <- colSums(dz * wc, na.rm=TRUE) / colSums(dz)
+	        if (dim(dz)[2] == 1) wc <- array(wc, dim=dim(dz))
+           # take the depth-integrated average over the water column
+           ts_frame[im1:i, j+1] <- colSums(dz * wc, na.rm=TRUE) / colSums(dz) 
         }
         ncdf4::nc_close(nc)
         if (!is.na(eta_stem)) ncdf4::nc_close(nc3)
@@ -1215,8 +1232,8 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      }
      if (ereefs_case == 4) { 
         fileslist <- 1
-        input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-	day_count <- day_count / as.numeric(ds[2]-ds[1])
+        input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc') 
+        day_count <- day_count / as.numeric(ds[2]-ds[1])
      } else if (ereefs_case == 1) {
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
@@ -1244,10 +1261,10 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
            d <- ds[from_day:(from_day + day_count - 1)]
         }
         if (!is.null(nc$var[['eta']])) { 
-          eta <- safe_ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
-	} else {
-          eta <- safe_ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count))
-	}
+          eta <- safe_ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+        } else {
+          eta <- safe_ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
+        }
         im1 = i+1
         i <- i + length(d)
         ts_frame$date[im1:i] <- d
@@ -1266,11 +1283,10 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         deeper_bottom <- (-zm1r > depth) | (bottom)  # The bottom of this layer is below the target depth or this is the bottom layer
         target <- (shallower_top & deeper_bottom)
    
-        for (j in 1:length(var_names)) {
-          wc <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count))
-
-	  if (dim(target)[2] == 1) wc <- array(wc, dim=dim(target))
-          ts_frame[im1:i, j+1] <- colSums(target * wc, na.rm=TRUE)
+        for (j in 1:length(var_names)) { 
+           wc <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_day), count=c(1,1,-1,day_count)) 
+           if (dim(target)[2] == 1) wc <- array(wc, dim=dim(target))
+           ts_frame[im1:i, j+1] <- colSums(target * wc, na.rm=TRUE) 
         }
         ncdf4::nc_close(nc)
         if (verbosity>0) setTxtProgressBar(pb,mcount)
