@@ -30,7 +30,8 @@
 #'       incorrect. Default FALSE
 #' @return a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
 #'       (cell_centres), the locations of the cell edge points where the line intersects the grid edges (cell_intersections), and the vertical grid 
-#'       (z_grid) and a data frame of tracer values from the model.
+#'       (z_grid) and a data frame of tracer values from the model (values) and 'crossref', which indicates the starting cell in the returned values
+#'       array associated with each input location.
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -75,16 +76,19 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   location_edges <- data.frame(latitude=NULL, longitude=NULL)
   intersected <- NULL
   llind <- NULL
+  crossref <- NULL
   for (i in 1:(dim(location_latlon)[1]-1)) {
      print(paste('transect section', i, 'of', dim(location_latlon)[1]-1))
      li <- find_intersections(location_latlon[i:(i+1),], x_grid, y_grid, latitude, longitude)
-	  if (dim(li[[1]])[1] > 0) {
+	  if ((dim(li[[1]])[1] > 1)||(i==1)) {
         location_ll <- rbind(location_ll, li[[1]])
 	     location_edges <- rbind(location_edges, li[[2]])
 	     intersected <- rbind(intersected, li[[3]])
 	     llind <- c(llind, li[[4]])
-	  }
+     }
+     crossref[i] <- length(llind)
   }
+  crossref <- c(1, crossref)
   location_latlon <- location_ll
 
   if (dim(location_latlon)[1]==0) stop("The line segment given does not intersect any model cells on this grid.")
@@ -241,7 +245,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
      values[,1:length(eta),] <- values[,ind,]
   }
 
-  return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, cell_centres=location_latlon, cell_intersections=location_edges)
+  return_list <- list(eta=eta, botz=botz, z_grid=z_grid, values=values, cell_centres=location_latlon, cell_intersections=location_edges, crossref = crossref)
 }
 
 #' Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.
@@ -773,6 +777,10 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
 	llind <- which(intersected)
    gx <- gx[intersected, ]
    gy <- gy[intersected, ]
+   if (length(llind)==1) {
+      gx <- t(gx)
+      gy <- t(gy)
+   }
 
    # Find the locations where the edge intersections occur (could have done this all in one go, but this is easier to follow)
    #Ax + b = a + cx -kc
@@ -808,25 +816,31 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
    yi <- yi[!is.na(xi)]
    xi <- xi[!is.na(xi)]
 
-   if (maxlon>=minlon) {
-      d <- sort(xi, index.return=TRUE)
-      yi <- c(yi[d$ix][seq(1,length(xi),3)], yi[d$ix[length(xi)]])
-      xi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
-      if (longitude[llind[length(llind)]] < longitude[llind[1]] ) {
-         yi <- yi[seq(length(xi), 1, -1)]
-         xi <- xi[seq(length(xi), 1, -1)]
-      }
+   if (length(xi)!=0) { 
+     # determine the order in which the lists are sorted from the direction of the slice
+     if (maxlon>=minlon) {
+        d <- sort(xi, index.return=TRUE)
+        yi <- c(yi[d$ix][seq(1,length(xi),3)], yi[d$ix[length(xi)]])
+        xi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
+        if (longitude[llind[length(llind)]] < longitude[llind[1]] ) {
+           yi <- yi[seq(length(xi), 1, -1)]
+           xi <- xi[seq(length(xi), 1, -1)]
+        }
+     } else {
+        d <- sort(yi, index.return=TRUE)
+        xi <- c(xi[d$ix][seq(1,length(xi),3)], xi[d$ix[length(xi)]])
+        yi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
+        if (latitude[llind[length(llind)]] < latitude[llind[1]] ) {
+           yi <- yi[seq(length(xi), 1, -1)]
+           xi <- xi[seq(length(xi), 1, -1)]
+        }
+     }
+     location_edges <- data.frame(latitude=yi, longitude=xi)
    } else {
-      d <- sort(yi, index.return=TRUE)
-      xi <- c(xi[d$ix][seq(1,length(xi),3)], xi[d$ix[length(xi)]])
-      yi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
-      if (latitude[llind[length(llind)]] < latitude[llind[1]] ) {
-         yi <- yi[seq(length(xi), 1, -1)]
-         xi <- xi[seq(length(xi), 1, -1)]
-      }
+     # no cell edges are intersected, so return the cell-centre of the nearest grid cell
+     llind <- apply(data.frame(latitude=lat1, longitude=lon1) ,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2))
+     location_edges <- NULL
    }
-
    location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
-   location_edges <- data.frame(latitude=yi, longitude=xi)
    return(list(location_latlon, location_edges, intersected, llind))
 }
