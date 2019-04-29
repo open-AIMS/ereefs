@@ -1,6 +1,6 @@
 Package: ereefs
 Title: Useful Functions to Handle eReefs and EMS model Output
-Version: 2.6.7
+Version: 2.6.10
 Encoding: UTF-8
 Authors@R: c(person("Barbara", "Robson", email="B.Robson@aims.gov.au",
                    role = c("aut", "cre")),
@@ -33,6 +33,8 @@ Description: A few useful functions to make accessing eReefs and other
       sp2raster()
     Wrapper to ncvar_get with failsafe in case of DAP errors:
       safe_ncvar_get()
+    Function to download discharge data from Qld. Govt servers:
+      download_discharge()
 Depends: R (>= 3.1.0)
 URL: https://ereefs.info
 Date: 2018-03-07

@@ -184,8 +184,8 @@ substitute_filename <- function(input_file) {
 #' If you run into memory constraints, consider grouping points to be extracted within regions, and calling this once
 #' for each region.
 #'
-#' @return a data frame containing the dates and values of extracted variables (for a single geolocation) or a
-#'        list of such data frames (one list item per location) if there are multiple locations.
+#' @return a data frame containing the dates and values of extracted variables and location(s) or a
+#'        list of such data frames (one list item per location) if return_list=TRUE (for backward compatibility).
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param location_latlon is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
@@ -219,6 +219,9 @@ substitute_filename <- function(input_file) {
 #'       time-series or a depth-specified (relative to the surface) time-series
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE. Not normally needed.
+#' @param verbosity How much information to display along the way (0 to 2. Default is 1).
+#' @param return_list Default FALSE. Set to true if you want a list of dataframes returned (one df per geolocation). Included for
+#'                    backward compatibility.
 #' @export
 #' @examples
 #' \dontrun{
@@ -237,7 +240,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           input_grid = NA,
                           eta_stem = NA,
                           override_positive=FALSE,
-                          verbosity = 1)
+                          verbosity = 1,
+                          return_list = FALSE)
 {
   input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))

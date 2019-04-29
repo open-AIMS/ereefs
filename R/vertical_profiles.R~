@@ -30,8 +30,7 @@
 #'       incorrect. Default FALSE
 #' @return a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
 #'       (cell_centres), the locations of the cell edge points where the line intersects the grid edges (cell_intersections), and the vertical grid 
-#'       (z_grid) and a data frame of tracer values from the model (values) and 'crossref', which indicates the starting cell in the returned values
-#'       array associated with each input location.
+#'       (z_grid) and a data frame of tracer values from the model.
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -79,8 +78,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   crossref <- NULL
   for (i in 1:(dim(location_latlon)[1]-1)) {
      print(paste('transect section', i, 'of', dim(location_latlon)[1]-1))
-     first_point <- (i==1)
-     li <- find_intersections(location_latlon[i:(i+1),], x_grid, y_grid, latitude, longitude, first_point)
+     li <- find_intersections(location_latlon[i:(i+1),], x_grid, y_grid, latitude, longitude)
 	  if ((dim(li[[1]])[1] > 1)||(i==1)) {
         location_ll <- rbind(location_ll, li[[1]])
 	     location_edges <- rbind(location_edges, li[[2]])
@@ -257,9 +255,6 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #' multiple months of eReefs output). If the data in eta_stem is output on a different interval from the data in input_file, the function
 #' will do its best, but surface elevation estimates may not exactly match the time-stamps in the main input file.
 #'
-#' Known bugs: currently only works for one time-step at a time for 4km hydrodynamic model output. As a work-around, either call
-#' once for each time-step or exctract hydrodynamic variables from the bgc model output.
-#'
 #' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
 #' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
 #' @param location_latlon Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)
@@ -294,7 +289,6 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 squeeze = TRUE,
 			 override_positive=FALSE)
 {
-  if (length(dim(location_latlon)) > 0) stop('get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() instead if appropriate.')
   input_file <- substitute_filename(input_file)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
@@ -730,7 +724,7 @@ d <- R * c
 return(d)
 }
 
-find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude, first_point = FALSE) {
+find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude) {
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
 	intersected <- array(FALSE, dim=c(a,b))
@@ -842,10 +836,8 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
      }
      location_edges <- data.frame(latitude=yi, longitude=xi)
    } else {
-     if (first_point) {
-       # no cell edges are intersected, so return the cell-centre of the nearest grid cell
-       llind <- apply(data.frame(latitude=lat1, longitude=lon1) ,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2))
-     }
+     # no cell edges are intersected, so return the cell-centre of the nearest grid cell
+     llind <- apply(data.frame(latitude=lat1, longitude=lon1) ,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2))
      location_edges <- NULL
    }
    location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
