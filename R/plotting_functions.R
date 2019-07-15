@@ -178,7 +178,7 @@ x_grid <- grids[['x_grid']]
 y_grid <- grids[['y_grid']]
 
 # Allow user to specify a depth below MSL by setting layer to a negative value
-if (layer<0) {
+if (layer<=0) {
    z_grid <- grids[['z_grid']]
    layer <- which.min(z_grid<layer)
 }
@@ -454,16 +454,30 @@ if (var_name=="true_colour") {
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
 	ggplot2::scale_fill_identity() 
 } else {
-  p <- p +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-        ggplot2::scale_fill_gradient(low=scale_col[1], 
-				     high=scale_col[2], 
-				     na.value="transparent", 
-				     guide="colourbar",
-				     limits=scale_lim,
-				     #name=expression(paste('cells m'^'-3')),
-				     name=var_units,
-				     oob=scales::squish)
+   if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
+   p <- p + ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
+   if (length(scale_col)==2) { 
+      p <- p +
+           ggplot2::scale_fill_gradient(low=scale_col[1], 
+                                        high=scale_col[2], 
+				                            na.value="transparent", 
+				                            guide="colourbar",
+				                            limits=scale_lim,
+				                            #name=expression(paste('cells m'^'-3')),
+				                            name=var_units,
+				                            oob=scales::squish)
+        } else { 
+           p <- p +
+           ggplot2::scale_fill_gradient2(low=scale_col[1], 
+                                         mid=scale_col[2], 
+                                         high=scale_col[3], 
+                                         na.value="transparent", 
+                                         guide="colourbar",
+				                             limits=scale_lim,
+				                             #name=expression(paste('cells m'^'-3')),
+				                             name=var_units,
+				                             oob=scales::squish)
+        }
 }
 
 if (label_towns) {
@@ -525,8 +539,11 @@ if (return_poly) {
 #'      x and y grids from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#' @param ggplot2::scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
-#'      from the ggplot2::ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+#' @param scale_col Vector of colours to use for the colour scale. This can be colours 
+#'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+#'      If one value is given, low colour is set to ivory and high colour to the value given.
+#'      If two values are given, these are used as low and high limit colours.
+#'      If three values are given, the middle value is used to set the mid-point of the scale.
 #'      Defaults to c('ivory', 'coral4').
 #' @param zoom Value of zoom passed to ggmap::ggmap(). Set to 5 if you want to show the entire extent 
 #'      of eReefs models. Defaults to 6. Higher values will zoom in further.
@@ -574,6 +591,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
+# Allow user to specify a depth below MSL by setting layer to a negative value
+if (layer<=0) {
+   z_grid <- grids[['z_grid']]
+   layer <- which.min(z_grid<layer)
+}
+
 
   # Dates to map:
   if (is.vector(start_date)) {
@@ -951,13 +974,27 @@ map_ereefs_movie <- function(var_name = "true_colour",
             } else {
                p <- p +
                ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-               ggplot2::scale_fill_gradient(low=scale_col[1],
-					                              high=scale_col[2],
-					                              na.value="transparent", 
-					                              guide="colourbar",
-					                              limits=scale_lim,
-					                              name=var_units,
-					                              oob=scales::squish)
+               if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
+               if (length(scale_col)==2) { 
+                  p <- p +
+                  ggplot2::scale_fill_gradient(low=scale_col[1],
+					                                high=scale_col[2],
+					                                na.value="transparent", 
+					                                guide="colourbar",
+					                                limits=scale_lim,
+					                                name=var_units,
+					                                oob=scales::squish)
+               } else {
+                  p <- p +
+                  ggplot2::scale_fill_gradient2(low=scale_col[1],
+                                                mid=scale_col[2],
+					                                high=scale_col[3],
+					                                na.value="transparent", 
+					                                guide="colourbar",
+					                                limits=scale_lim,
+					                                name=var_units,
+					                                oob=scales::squish)
+               }
             }
 
             if (label_towns) {
@@ -1003,8 +1040,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
 #'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
 #'      Default now FALSE.
-#' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
+#' @param scale_col Vector of colours to use for the colour scale. This can be colours 
 #'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+#'      If one value is given, low colour is set to ivory and high colour to the value given.
+#'      If two values are given, these are used as low and high limit colours.
+#'      If three values are given, the middle value is used to set the mid-point of the scale.
 #'      Defaults to c('ivory', 'coral4').
 #' @param scale_lim Upper and lower bounds for colour scale. Defaults to full range of data.
 #'      Ignored for true_colour plots.
@@ -1059,14 +1099,28 @@ plot_map <- function(datapoly,
 	     ggplot2::scale_fill_identity() 
   } else {
     p <- p +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-        ggplot2::scale_fill_gradient(low=scale_col[1], 
-				     high=scale_col[2], 
-				     na.value="transparent", 
-				     guide="colourbar",
-				     limits=scale_lim,
-				     name=var_units,
-				     oob=scales::squish)
+        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
+        if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
+        if (length(scale_col)==2) { 
+           p <- p +
+           ggplot2::scale_fill_gradient(low=scale_col[1], 
+				                             high=scale_col[2], 
+				                             na.value="transparent", 
+				                             guide="colourbar",
+				                             limits=scale_lim,
+				                             name=var_units,
+				                             oob=scales::squish)
+        } else {
+           p <- p +
+           ggplot2::scale_fill_gradient2(low=scale_col[1], 
+                                         mid=scale_col[2],
+				                             high=scale_col[3], 
+				                             na.value="transparent", 
+				                             guide="colourbar",
+				                             limits=scale_lim,
+				                             name=var_units,
+				                             oob=scales::squish)
+        }
   }
   p <- p + ggplot2::ggtitle(var_longname)
   print(p)
