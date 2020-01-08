@@ -123,7 +123,7 @@ substitute_filename <- function(input_file) {
                 "GBR1_BGC-v924",
                 "GBR4_BGC-v3.0 Dcrt",
                 "GBR4_BGC-v3.0 Dnrt",
-                "GBR4_BGC-v3.1"
+                "GBR4_BGC-v3.1",
                 "menu")
   if (is.numeric(input_file)) {
      input_file <- choices[input_file]
