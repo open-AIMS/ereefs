@@ -121,6 +121,8 @@ substitute_filename <- function(input_file) {
                 "GBR4_BGC-v924",
                 "GBR1-v1.71",
                 "GBR1_BGC-v924",
+                "GBR4_BGC-v3.0 Dcrt",
+                "GBR4_BGC-v3.0 Dnrt",
                 "menu")
   if (is.numeric(input_file)) {
      input_file <- choices[input_file]
@@ -140,7 +142,8 @@ substitute_filename <- function(input_file) {
                                 "Archived 4km bgc (v924, Sept 2010 - Sept 2017)",
                                 "Archived 1km hydro (v 1.71, Dec 2014 – Apr 2016)",
                                 "Archived 1km bgc (v924, Dec 2014 – pres.)",
-                                "4km biogeochemical model hindcast v3.0 (Nov 2016 - Nov 2019)"))
+                                "4km biogeochemical model hindcast v3.0 (Dec 2010 - Oct 2018)",
+                                "4km biogeochemical model nrt v3.0 (Nov 2016 - Nov 2019)"))
      input_file <- choices[selection]
   }
   input_file <- dplyr::case_when (
@@ -157,7 +160,8 @@ substitute_filename <- function(input_file) {
     input_file == "GBR4_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_924/gbr4_bgc_simple_2016-09.nc",
     input_file == "GBR1-v1.71" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1/gbr1_simple_2016-03-25.nc",
     input_file == "GBR1_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
-    input_file == "GBR1_BGC-v3.0" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
+    input_file == "GBR4_BGC-v3.0 Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B3p0_Chyd_Dcrt/gbr4_bgc_all_simple_2018-10.nc",
+    input_file == "GBR4_BGC-v3.0 Dnrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
 # additional shortcuts
     input_file == "GBR4HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
     input_file == "hd" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
