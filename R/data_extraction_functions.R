@@ -97,7 +97,10 @@ check_platform_ok <- function(input_stem)
   webserved <- stringi::stri_startswith_fixed(input_stem, "http:")
   if ((.Platform$OS.type=="windows")&&(webserved)) {
      ok <- FALSE
-     warning("Unfortunately, under Windows this function will only work with locally-stored netcdf files, not web-served files UNLESS you use a specially compiled version of the ncdf4 package -- contact b.robson@aims.gov.au for details.")
+     if (packageVersion("ncdf4")!="1.16.9001") {
+        warning("Please check that you have installed the mdsumner branch of the ncdf4 package. This package will not work reliably under Windows using the CRAN version of ncdf4.")
+        print("To install the mdsumner version, use: install('devtools'); devtools::install_github('mdsumner/ncdf4')")
+     }
   }
   return(ok)
 }
