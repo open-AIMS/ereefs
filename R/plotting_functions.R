@@ -481,7 +481,11 @@ if (var_name=="true_colour") {
 }
 
 if (label_towns) {
-   p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
+   towns <- towns[towns$latitude>=min(gy, na.rm=TRUE),]
+   towns <- towns[towns$latitude<=max(gy, na.rm=TRUE),]
+   towns <- towns[towns$longitude>=min(gx, na.rm=TRUE),]
+   towns <- towns[towns$longitude<=max(gx, na.rm=TRUE),]
+   if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
 }
 
 p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
@@ -954,7 +958,7 @@ if (layer<=0) {
         values <- data.frame(id = id, value = n)
         positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
         datapoly <- merge(values, positions, by = c("id"))
-        print('debug 1'); print(var_name)
+        #print('debug 1'); print(var_name)
     
         if (!suppress_print) {
             if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) { 
@@ -967,7 +971,7 @@ if (layer<=0) {
 	            p <- ggplot2::ggplot()
             }
             if (var_name=="true_colour") {
-        print('debug 2');
+        #print('debug 2');
 	            p <- p +
                ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
 	            ggplot2::scale_fill_identity()
@@ -998,11 +1002,13 @@ if (layer<=0) {
             }
 
             if (label_towns) {
-        print('debug 3');
-               p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
+              towns <- towns[towns$latitude>=min(gy, na.rm=TRUE),]
+              towns <- towns[towns$latitude<=max(gy, na.rm=TRUE),]
+              towns <- towns[towns$longitude>=min(gx, na.rm=TRUE),]
+              towns <- towns[towns$longitude<=max(gx, na.rm=TRUE),]
+              if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
-        print('debug 4');
             if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
             if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
             if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
