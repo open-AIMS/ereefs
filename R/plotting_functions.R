@@ -136,6 +136,7 @@ plume_class <- function(rsr) {
 #'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
+#' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
 #' @export
 #' @examples
 #' \dontrun{
@@ -158,7 +159,8 @@ map_ereefs <- function(var_name = "true_colour",
                        p = NA, 
                        suppress_print = FALSE, 
                        return_poly = FALSE,
-                       label_towns = TRUE)
+                       label_towns = TRUE,
+                       strict_bounds = FALSE)
 {
 
 input_file <- substitute_filename(input_file)
@@ -490,6 +492,13 @@ if (label_towns) {
 
 p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
     ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
+if (strict_bounds) {
+  if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
+  if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
+  if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
+  if (is.na(box_bounds[4])) box_bounds[4] <- max(positions$y)
+  p <- p + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
+}
 if (!suppress_print) print(p)
 if (return_poly) {
   return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
@@ -558,6 +567,8 @@ if (return_poly) {
 #' @param suppress_print Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.
 #' @param stride Default 'daily', but can otherwise be set to a numeric interval indicating how many time-steps to step forward for each frame.
 #' @param verbosity Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.
+#' @param label_towns Add labels for town locations to the figure. Default TRUE
+#' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
 #' @return a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
 #'       value of the variable specified in VAR_NAME over the selected interval.
 #' @export
@@ -580,7 +591,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              suppress_print=FALSE, 
                              stride = 'daily',
                              verbosity=0, 
-                             label_towns = TRUE)
+                             label_towns = TRUE,
+                             strict_bounds = FALSE)
 {
   input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
@@ -1009,11 +1021,14 @@ if (layer<=0) {
               if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
-            if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
-            if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
-            if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
-            if (is.na(box_bounds[4])) box_bounds[4] <- max(positions$y)
-            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
+            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") 
+            if (strict_bounds) {
+              if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
+              if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
+              if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
+              if (is.na(box_bounds[4])) box_bounds[4] <- max(positions$y)
+              p <- p + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
+            }
             icount <- icount + 1
             #print(p)
             if (!file.exists(output_dir)) {
