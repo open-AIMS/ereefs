@@ -137,6 +137,8 @@ plume_class <- function(rsr) {
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
+#'        [dev note: An alternative would be to provide a version that plots from cell centres rather than using polygons, which should be fine other
+#'         than near complex coastlines]
 #' @export
 #' @examples
 #' \dontrun{
@@ -164,6 +166,12 @@ map_ereefs <- function(var_name = "true_colour",
 {
 
 input_file <- substitute_filename(input_file)
+
+# Check whether this is a locally-stored netcdf file or a web-served file
+if (substr(input_file, 1, 4)=="http") {
+  local_file = FALSE
+} else local_file = TRUE
+
 if (length(p)!=1) Google_map_underlay <- FALSE
 if (suppress_print) Google_map_underlay <- FALSE
 
@@ -279,8 +287,9 @@ y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 
 if (var_name=="plume") {
-    inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
-    #inputfile <- filename
+    if (!local_file) {
+      inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+    } else inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     R_412 <- safe_ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_443 <- safe_ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
@@ -296,8 +305,9 @@ if (var_name=="plume") {
     var_longname <- 'Plume colour class'
 
 } else if (var_name=="true_colour") {
-    inputfile <- paste0(filename, '?R_470,R_555,R_645')
-    #inputfile <- filename
+    if (!local_file) {
+      inputfile <- paste0(filename, '?R_470,R_555,R_645')
+    } else inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     TCbright <- 10
     R_470 <- safe_ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
@@ -324,8 +334,9 @@ if (var_name=="plume") {
     var_longname <- "Simulated true colour"
     var_units <- ""
 } else if (var_name == 'ZooT') {
-    inputfile <- paste0(filename, '?ZooL_N,ZooS_N')
-    #inputfile <- filename
+    if (!local_file) {
+      inputfile <- paste0(filename, '?ZooL_N,ZooS_N')
+    } else inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     # We don't yet know the dimensions of the variable, so let's get them
     dims <- nc$var[['ZooL_N']][['size']]
@@ -335,8 +346,9 @@ if (var_name=="plume") {
     var_longname <- "Total zooplankton nitrogen"
     var_units <- "mg N m-3"
 } else if (var_name == 'speed') {
-    inputfile <- paste0(filename, '?u,v')
-    #inputfile <- filename
+    if (!local_file ) {
+      inputfile <- paste0(filename, '?u,v')
+    } else inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[['u']][['size']] 
@@ -346,8 +358,9 @@ if (var_name=="plume") {
     var_longname <- "Current speed"
     var_units <- "m s-1"
 } else { 
-    inputfile <- paste0(filename, '?', var_name)
-    #inputfile <- filename
+    if (!local_file) {
+      inputfile <- paste0(filename, '?', var_name)
+    } else inputfile <- filename
     nc <- ncdf4::nc_open(inputfile)
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[[var_name]][['size']] 
@@ -595,11 +608,17 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              strict_bounds = FALSE)
 {
   input_file <- substitute_filename(input_file)
+
+  # Check whether this is a locally-stored netcdf file or a web-served file
+  if (substr(input_file, 1, 4)=="http") {
+    local_file = FALSE
+  } else local_file = TRUE
+
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file) 
   if (ereefs_case==1) warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
-  if ((.Platform$OS.type=="windows")) warning('If using Windows, you will need a specially-compiled version of the ncdf4 package to use this function')
+  check_platform_ok(input_stem)
 
   towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
                       longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
@@ -818,11 +837,12 @@ if (layer<=0) {
       }
       if (verbosity>0) print(filename)
       if (var_name=="plume") {
-        slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
-                        '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
-                        '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
-        inputfile <- paste0(filename, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
-        #inputfile <- filename
+        if (!local_file) {
+          slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+                          '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
+                          '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
+          inputfile <- paste0(filename, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
+        } else inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
         R_412 <- safe_ncvar_get(nc, "R_412")
         R_443 <- safe_ncvar_get(nc, "R_443")
@@ -831,6 +851,11 @@ if (layer<=0) {
         R_547 <- safe_ncvar_get(nc, "R_547")
         R_667 <- safe_ncvar_get(nc, "R_667")
         R_678 <- safe_ncvar_get(nc, "R_678")
+        if (local_file) {
+          R_412 <- R_412[(start_array[1] - 1) : (start_array[1] + count_array[1] - 1),
+                         (start_array[2] - 1) : (start_array[2] + count_array[2] - 1),
+                         seq(from = start_array[3] - 1, to = start_array[3] + count_array[3] - 2, by = stride)]
+        }
         ems_var <- NA*R_678
         if (ereefs_case ==4) {
             for (day in 1:dim(R_412)[3]) {
@@ -848,8 +873,9 @@ if (layer<=0) {
         slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                         '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                         '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
-        inputfile <- paste0(filename, '?R_470', slice, ',R_555', slice, ',R_645', slice)
-        #inputfile <- filename
+        if (!local_file) {
+          inputfile <- paste0(filename, '?R_470', slice, ',R_555', slice, ',R_645', slice)
+        } else inputfile <- filename
         nc <- ncdf4::nc_open(inputfile)
         TCbright <- 10
         R_470 <- safe_ncvar_get(nc, "R_470") * TCbright
@@ -915,27 +941,44 @@ if (layer<=0) {
         }
         if (verbosity>1) print(paste('slice = ', slice))
         if (var_name == "speed") { 
-           inputfile <- paste0(filename, '?u', slice, ',v', slice)
+           if (!local_file) {
+             inputfile <- paste0(filename, '?u', slice, ',v', slice)
+           } else inputfile <- filename
            nc <- ncdf4::nc_open(inputfile)
            ems_var <- sqrt(safe_ncvar_get(nc, 'u')^2 + ncdf4::ncvar_get(nc, 'v')^2)
            vat <- ncdf4::ncatt_get(nc, 'u')
            var_longname <- 'Current speed'
            var_units <- vat$units
         } else if (var_name == "ZooT") {
-           inputfile <- paste0(filename, '?ZooL_N', slice, ',ZooS_N', slice)
+           if (!local_file) {
+             inputfile <- paste0(filename, '?ZooL_N', slice, ',ZooS_N', slice)
+           } else inputfile <- filename
            nc <- ncdf4::nc_open(inputfile)
            ems_var <- safe_ncvar_get(nc, 'ZooL_N') + ncdf4::ncvar_get(nc, 'ZooS_N')
            vat <- ncdf4::ncatt_get(nc, 'ZooL_N')
            var_longname <- 'Total Zooplankton'
            var_units <- vat$units
         } else {
-           inputfile <- paste0(filename, '?',var_name, slice)
+           if (!local_file) {
+             inputfile <- paste0(filename, '?',var_name, slice)
+           } else inputfile <- filename
            nc <- ncdf4::nc_open(inputfile)
            ems_var <- safe_ncvar_get(nc, var_name)
            vat <- ncdf4::ncatt_get(nc, var_name)
            var_longname <- vat$long_name
            var_units <- vat$units
         }
+        if (local_file) { 
+          if (ndims == 4) {
+            ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
+                               start_array[2] : (start_array[2] + count_array[2]),
+                               seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+          }  else {
+            ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
+                               start_array[2] : (start_array[2] + count_array[2]),
+                               layer,
+                               seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+          }
       }
       #ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     

@@ -314,13 +314,13 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (ereefs_case == 4) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	nc <- ncdf4::nc_open(input_file)
-	if (!is.null(nc$var[['t']])) { 
+	  nc <- ncdf4::nc_open(input_file)
+	  if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
 	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	}
-	ncdf4::nc_close(nc)
+	  }
+	  ncdf4::nc_close(nc)
         blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
 			  # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
@@ -337,6 +337,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+      if (verbosity > 1) {
+        print('times in input file:')
+        print(ds)
+        print(paste0('expected output length = ', blank_length))
+      }
       ncdf4::nc_close(nc)
   }
 
