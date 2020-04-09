@@ -850,4 +850,5 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
    }
    location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
    return(list(location_latlon, location_edges, intersected, llind))
+
 }
