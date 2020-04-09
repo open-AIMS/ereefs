@@ -20,23 +20,21 @@ poly2sp <- function(polydf) {
    val <- values
    nids <- ids
    count <- 0
-   mcount <- 0
 
    pb <- txtProgressBar(min = 0, max = length(values), style = 3)
    for (item in 1:num_ids) {
-      mcount <- mcount + 1
-      #d <- polydf[which(polydf$id == ids[mcount]),]
-      d <- polydf[(1+(mcount-1)*4):(mcount*4), ]
+      #d <- polydf[which(polydf$id == ids[item]),]
+      d <- polydf[(1+(item-1)*4):(item*4), ]
       x <- c(d$x, d$x[1])
       y <- c(d$y, d$y[1])
       if (!any(is.na(x))) {
          count <- count + 1
          sP <- sp::Polygon(cbind(x,y))
-         SP[[count]] <- sp::Polygons(list(sP), ids[mcount])
-         val[count] <- values[mcount]
-         nids[count] <- ids[mcount]
+         SP[[count]] <- sp::Polygons(list(sP), ids[item])
+         val[count] <- values[item]
+         nids[count] <- ids[item]
       }
-      setTxtProgressBar(pb,mcount)
+      setTxtProgressBar(pb,item)
    }
    close(pb)
    SP <- SP[1:count]
@@ -58,7 +56,7 @@ poly2sp <- function(polydf) {
 #' @return A SpatialPolygonsDataFrame object, as used in the package 'sp'
 #' @export
 
-sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=NA, r=NA) { 
+sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=NA, r=NULL) { 
    # Default settings line up with Dieter's grid but encompass full extent of eReefs domain
    bbox <- summary(sPdf)$bbox
    if (is.na(xmx)) xmx<-bbox['x','max']
@@ -67,6 +65,6 @@ sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=
    nrows <- as.integer((ymx-ymn)/resolution)
    xmx <- xmn + resolution * ncols
    ymx <- ymn + resolution * nrows
-   if (is.na(r)) r <- raster::raster(ncol=ncols, nrow=nrows, xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx)
+   if (is.null(r)) r <- raster::raster(ncol=ncols, nrow=nrows, xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx)
    r <- raster::rasterize(sPdf, r, field='value')
 }
