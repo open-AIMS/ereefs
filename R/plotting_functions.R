@@ -1087,6 +1087,7 @@ if (layer<=0) {
       }
     }
   }
+  }
   close(pb)
   values <- data.frame(id = id, value = temporal_sum/icount)
   datapoly <- merge(values, positions, by = c("id"))
