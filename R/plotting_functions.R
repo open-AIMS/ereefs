@@ -139,6 +139,7 @@ plume_class <- function(rsr) {
 #' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
 #'        [dev note: An alternative would be to provide a version that plots from cell centres rather than using polygons, which should be fine other
 #'         than near complex coastlines]
+#' @param mark_points Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.
 #' @export
 #' @examples
 #' \dontrun{
@@ -162,7 +163,8 @@ map_ereefs <- function(var_name = "true_colour",
                        suppress_print = FALSE, 
                        return_poly = FALSE,
                        label_towns = TRUE,
-                       strict_bounds = FALSE)
+                       strict_bounds = FALSE,
+                       mark_points = NULL)
 {
 
 input_file <- substitute_filename(input_file)
@@ -503,8 +505,12 @@ if (label_towns) {
    if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
 }
 
-p <- p + ggplot2::ggtitle(paste(var_longname, ds[day])) +
+p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[day])+0.000001), "%Y-%m-%d %H:%M"))) +
     ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
+if (!is.null(mark_points)) {
+  if (is.null(dim(mark_points))) mark_points <- data.frame(latitude = mark_points[1], longitude = mark_points[2])
+  p <- p + ggplot2::geom_point(data=mark_points, aes(x=longitude, y=latitude), shape=4)
+}
 if (strict_bounds) {
   if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
   if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
@@ -582,6 +588,7 @@ if (return_poly) {
 #' @param verbosity Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
+#' @param mark_points Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.
 #' @return a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
 #'       value of the variable specified in VAR_NAME over the selected interval.
 #' @export
@@ -605,8 +612,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              stride = 'daily',
                              verbosity=0, 
                              label_towns = TRUE,
-                             strict_bounds = FALSE)
+                             strict_bounds = FALSE,
+                             mark_points = NULL,
+                             gbr_poly = FALSE)
 {
+  plot_eta <- FALSE
   input_file <- substitute_filename(input_file)
 
   # Check whether this is a locally-stored netcdf file or a web-served file
@@ -626,11 +636,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
-# Allow user to specify a depth below MSL by setting layer to a negative value
-if (layer<=0) {
-   z_grid <- grids[['z_grid']]
-   layer <- which.min(z_grid<layer)
-}
+
+  # Allow user to specify a depth below MSL by setting layer to a negative value
+  if (layer<=0) {
+     z_grid <- grids[['z_grid']]
+     layer <- which.min(z_grid<layer)
+  }
 
 
   # Dates to map:
@@ -654,6 +665,17 @@ if (layer<=0) {
 
   if (start_date > end_date) {
     stop('start_date must preceed end_date')
+  }
+
+  if (!is.null(mark_points)) {
+   # If mark_points is a vector, change it into a data frame
+   if (is.null(dim(mark_points))) {
+     mark_points <- data.frame(latitude = mark_points[1], longitude = mark_points[2])
+     eta_data <- get_ereefs_ts(var_name='eta', input_file = input_file, start_date=start_date, end_date = end_date, location_latlon = mark_points)
+     names(eta_data) <- c('date', 'eta')
+     eta_plot <- ggplot2::ggplot(eta_data, ggplot2::aes(x=date, y=eta)) + ggplot2::geom_line() + ggplot2::ylab('surface elevation (m)')
+     plot_eta <- TRUE
+   }
   }
 
   # Check for ggmap::ggmap()
@@ -1063,8 +1085,22 @@ if (layer<=0) {
               towns <- towns[towns$longitude<=max(gx, na.rm=TRUE),]
               if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
-            p <- p + ggplot2::ggtitle(paste(var_longname, ds[jcount]))
+            p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.double(ds[jcount])+0.000001), "%Y-%m-%d %H:%M")))
             p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") 
+            if (!is.null(mark_points)) {
+              p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
+              if (plot_eta) {
+                dind <- which(ds[jcount]==eta_data$date)
+                p2 <- eta_plot + ggplot2::geom_point(data = eta_data[dind,], ggplot2::aes(x=date, y=eta), size=2)
+              }
+            }
+            if (gbr_poly) {
+              # save current x and y limits and restore them after adding the reef polygons
+              xrange <- ggplot_build(p)$layout$panel_params[[1]]$x.range
+              yrange <- ggplot_build(p)$layout$panel_params[[1]]$y.range
+              p <- p + geom_path(data=sdf.gbr, aes(y=lat, x=long, group=group)) +
+                xlim(xrange) + ylim(yrange)
+            }
             if (strict_bounds) {
               if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
               if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
@@ -1073,7 +1109,11 @@ if (layer<=0) {
               p <- p + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
             }
             icount <- icount + 1
-            #print(p)
+
+            if (plot_eta) {
+              p <- cowplot::plot_grid(p, p2, ncol=1, rel_heights=c(4,1), axis='lr', align='v')
+            }
+
             if (!file.exists(output_dir)) {
                dir.create(output_dir)
             }
@@ -1084,10 +1124,10 @@ if (layer<=0) {
             icount <- icount + 1
          }
          setTxtProgressBar(pb,icount/as.integer(end_date-start_date)/tstep*stride)
-      }
+      } # end jcount loop
     }
-  }
-  }
+  } # end fileslist loop
+  } # end month loop
   close(pb)
   values <- data.frame(id = id, value = temporal_sum/icount)
   datapoly <- merge(values, positions, by = c("id"))
