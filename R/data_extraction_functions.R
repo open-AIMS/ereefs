@@ -320,9 +320,14 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         } else {
 	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	  }
+    if (start_date < ds[1]) {
+      warn(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
+      start_date <- ds[1]
+    }
+
 	  ncdf4::nc_close(nc)
-        blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-			  # '.nc?latitude,longitude')
+    blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+		# '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
@@ -336,12 +341,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       } else {
         ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-      if (verbosity > 1) {
-        print('times in input file:')
-        print(ds)
-        print(paste0('expected output length = ', blank_length))
+      if (start_date < ds[1]) {
+        warn(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
+        start_date <- ds[1]
       }
+      if (end_date > ds[length(ds)]) {
+        warn(paste('end_date', end_date, ' is after the end of available data. Resetting end_date to', ds[length(ds)]))
+        end_date <- ds[length(ds)]
+      }
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
       ncdf4::nc_close(nc)
   }
 
@@ -431,15 +439,19 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
     }
     if (ereefs_case == 4) { 
-       fileslist <- 1
-       input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+      fileslist <- 1
+      input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
+      if (day_count > length(ds)) {
+        warn(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+        day_count <- length(ds)
+      }
     } else if (ereefs_case == 1) {
 	    fileslist <- from_day:(from_day+day_count-1)
 	    from_day <- 1
 	    day_count <- 1
     } else { 
-       from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+      from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
 	    if (from_day<1) from_day <-1
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
