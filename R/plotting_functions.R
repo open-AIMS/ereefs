@@ -164,7 +164,8 @@ map_ereefs <- function(var_name = "true_colour",
                        return_poly = FALSE,
                        label_towns = TRUE,
                        strict_bounds = FALSE,
-                       mark_points = NULL)
+                       mark_points = NULL,
+                       gbr_poly = FALSE)
 {
 
 input_file <- substitute_filename(input_file)
@@ -509,7 +510,14 @@ p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[
     ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
 if (!is.null(mark_points)) {
   if (is.null(dim(mark_points))) mark_points <- data.frame(latitude = mark_points[1], longitude = mark_points[2])
-  p <- p + ggplot2::geom_point(data=mark_points, aes(x=longitude, y=latitude), shape=4)
+  p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
+}
+if (gbr_poly) {
+  # save current x and y limits and restore them after adding the reef polygons
+  xrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range
+  yrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range
+  p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) +
+  ggplot2::xlim(xrange) + ggplot2::ylim(yrange)
 }
 if (strict_bounds) {
   if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
@@ -1096,10 +1104,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
             }
             if (gbr_poly) {
               # save current x and y limits and restore them after adding the reef polygons
-              xrange <- ggplot_build(p)$layout$panel_params[[1]]$x.range
-              yrange <- ggplot_build(p)$layout$panel_params[[1]]$y.range
-              p <- p + geom_path(data=sdf.gbr, aes(y=lat, x=long, group=group)) +
-                xlim(xrange) + ylim(yrange)
+              xrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range
+              yrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range
+              p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) +
+                ggplot2::xlim(xrange) + ggplot2::ylim(yrange)
             }
             if (strict_bounds) {
               if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
