@@ -321,7 +321,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	  }
     if (start_date < ds[1]) {
-      warn(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
+      warning(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
       start_date <- ds[1]
     }
 
@@ -342,11 +342,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
       if (start_date < ds[1]) {
-        warn(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
+        warning(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
         start_date <- ds[1]
       }
       if (end_date > ds[length(ds)]) {
-        warn(paste('end_date', end_date, ' is after the end of available data. Resetting end_date to', ds[length(ds)]))
+        warning(paste('end_date', end_date, ' is after the end of available data. Resetting end_date to', ds[length(ds)]))
         end_date <- ds[length(ds)]
       }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
@@ -443,7 +443,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
       if (day_count > length(ds)) {
-        warn(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
         day_count <- length(ds)
       }
     } else if (ereefs_case == 1) {
