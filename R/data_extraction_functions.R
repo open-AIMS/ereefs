@@ -125,7 +125,7 @@ substitute_filename <- function(input_file) {
                 "GBR1-v1.71",
                 "GBR1_BGC-v924",
                 "GBR4_BGC-v3.0 Dcrt",
-                "GBR4_BGC-v3.0 Dnrt",
+                #"GBR4_BGC-v3.0 Dnrt",
                 "GBR4_BGC-v3.1",
                 "menu")
   if (is.numeric(input_file)) {
@@ -253,6 +253,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           verbosity = 1,
                           return_list = FALSE)
 {
+  if (is.null(dim(location_latlon))) {
+     location_latlon <- array(location_latlon, c(1,2))
+  }
   input_file <- substitute_filename(input_file)
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if ((layer=='bottom')&&(length(location_latlon[,1])>1)) stop('Only one location can be given if layer==bottom')
@@ -320,7 +323,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         } else {
 	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	  }
-    if (start_date < ds[1]) {
+    if ((start_date + 0.5) < ds[1]) {
       warning(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
       start_date <- ds[1]
     }
@@ -353,9 +356,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       ncdf4::nc_close(nc)
   }
 
-  if (is.null(dim(location_latlon))) {
-     location_latlon <- array(location_latlon, c(1,2))
-  }
   if (is.integer(location_latlon)) {
      # We have specified grid coordinates rather than geocoordinates
      location_grid <- location_latlon
