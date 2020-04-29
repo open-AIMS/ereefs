@@ -946,7 +946,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
              dims <- nc$var[[var_name]][['size']]
           }
           if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
-          ndims <- length(dims)
+          ndims <- length(dims[dims!=1])
           if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
           ncdf4::nc_close(nc)
         }
@@ -999,7 +999,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
            var_units <- vat$units
         }
         if (local_file) { 
-          if (ndims == 4) {
+          if (ndims == 3) {
             ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
                                start_array[2] : (start_array[2] + count_array[2]),
                                seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
@@ -1184,6 +1184,7 @@ plot_map <- function(datapoly,
 		       p = NA,
              suppress_print = FALSE)
 {
+  if (is.list(datapoly)) datapoly <- datapoly$datapoly
   if (class(datapoly$value)=="factor") {
      var_name <- "true_colour"
   } else {
