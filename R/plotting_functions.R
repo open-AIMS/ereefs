@@ -1177,11 +1177,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
 plot_map <- function(datapoly,
              var_longname = '',
              var_units = '',
-		       Google_map_underlay = FALSE,
+  		       Google_map_underlay = FALSE,
              scale_col = c('ivory', 'coral4'),
-		       scale_lim = c(NA, NA),
+  		       scale_lim = c(NA, NA),
+             box_bounds = c(NA, NA, NA, NA), 
+             label_towns = TRUE,
              zoom = 6,
-		       p = NA,
+  		       p = NA,
              suppress_print = FALSE)
 {
   if (is.list(datapoly)) datapoly <- datapoly$datapoly
@@ -1207,12 +1209,12 @@ plot_map <- function(datapoly,
     p <- ggplot2::ggplot()
   }
   if (!suppress_print) {
-  if (var_name=="true_colour") {
-    p <- p +
+    if (var_name=="true_colour") {
+      p <- p +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-	     ggplot2::scale_fill_identity() 
-  } else {
-    p <- p +
+	      ggplot2::scale_fill_identity() 
+    } else {
+      p <- p +
         ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
         if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
         if (length(scale_col)==2) { 
@@ -1235,9 +1237,21 @@ plot_map <- function(datapoly,
 				                             name=var_units,
 				                             oob=scales::squish)
         }
-  }
-  p <- p + ggplot2::ggtitle(var_longname)
-  print(p)
+    }
+    p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North')
+    if (label_towns) {
+       towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
+                      longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
+                      town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
+       if (dim(towns)[1]>0) {
+         yrange <- ggplot2::layer_scales(p)$y$range$range
+         xrange <- ggplot2::layer_scales(p)$x$range$range
+         p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right")) +
+           ggplot2::ylim(yrange) + ggplot2::xlim(xrange)
+       }
+    }
+
+    print(p)
   }
   return(p)
 }
