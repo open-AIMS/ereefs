@@ -4,11 +4,19 @@
 \alias{get_ereefs_ts}
 \title{Extracts time series at specified locations from eReefs model output files}
 \usage{
-get_ereefs_ts(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852), layer = "surface",
-  start_date = c(2010, 12, 31), end_date = c(2016, 10, 31),
-  input_file = "menu", input_grid = NA, eta_stem = NA,
-  override_positive = FALSE, verbosity = 1)
+get_ereefs_ts(
+  var_names = c("Chl_a_sum", "TN"),
+  location_latlon = c(-23.39189, 150.88852),
+  layer = "surface",
+  start_date = c(2010, 12, 31),
+  end_date = c(2016, 10, 31),
+  input_file = "menu",
+  input_grid = NA,
+  eta_stem = NA,
+  override_positive = FALSE,
+  verbosity = 1,
+  return_list = FALSE
+)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
@@ -21,8 +29,9 @@ Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852).}
 
 \item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
-Defaults to 'surface'. Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
-below the free surface instead of a layer number.}
+Specify a negative value to indicate a specified depth (in metres) below MSL.
+Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
+below the free surface instead of a layer number. Defaults to 'surface'.}
 
 \item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
@@ -48,13 +57,18 @@ time-series or a depth-specified (relative to the surface) time-series}
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 incorrect. Default FALSE. Not normally needed.}
 
+\item{verbosity}{How much information to display along the way (0 to 2. Default is 1).}
+
+\item{return_list}{Default FALSE. Set to true if you want a list of dataframes returned (one df per geolocation). Included for
+backward compatibility.}
+
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 formatted for input to as.Date(). Defaults to c(2016,10,31).}
 }
 \value{
-a data frame containing the dates and values of extracted variables (for a single geolocation) or a
-       list of such data frames (one list item per location) if there are multiple locations.
+a data frame containing the dates and values of extracted variables and location(s) or a
+       list of such data frames (one list item per location) if return_list=TRUE (for backward compatibility).
 }
 \description{
 Create a time-series of values of one or more selected model output variables in a specified layer of the

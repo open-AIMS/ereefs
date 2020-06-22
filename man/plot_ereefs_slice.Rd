@@ -4,8 +4,12 @@
 \alias{plot_ereefs_slice}
 \title{Produces a coloured tile plot of a vertical slice already fetched from an eReefs or other EMS netcdf file.}
 \usage{
-plot_ereefs_slice(slice, var_name = "Chl_a_sum", scale_col = c("ivory",
-  "navy"), scale_lim = NA)
+plot_ereefs_slice(
+  slice,
+  var_name = "Chl_a_sum",
+  scale_col = c("ivory", "navy"),
+  scale_lim = NA
+)
 }
 \arguments{
 \item{slice}{A list object as output by get_ereefs_slice(), containing dates, eta, z_grid, botz,

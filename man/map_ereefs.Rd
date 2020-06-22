@@ -4,19 +4,45 @@
 \alias{map_ereefs}
 \title{Create a benthic layer map of eReefs model output.}
 \usage{
-map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
-  layer = "surface", Google_map_underlay = FALSE,
-  input_file = "menu", input_grid = NA, scale_col = c("ivory",
-  "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
-  NA, NA), p = NA, suppress_print = FALSE, return_poly = FALSE,
-  label_towns = TRUE)
+map_ereefs(
+  var_name = "true_colour",
+  target_date = c(2018, 1, 30),
+  layer = "surface",
+  Google_map_underlay = FALSE,
+  input_file = "menu",
+  input_grid = NA,
+  scale_col = c("ivory", "coral4"),
+  scale_lim = c(NA, NA),
+  zoom = 6,
+  box_bounds = c(NA, NA, NA, NA),
+  p = NA,
+  suppress_print = FALSE,
+  return_poly = FALSE,
+  label_towns = TRUE,
+  strict_bounds = FALSE,
+  mark_points = NULL,
+  gbr_poly = FALSE
+)
 
-map_ereefs(var_name = "true_colour", target_date = c(2018, 1, 30),
-  layer = "surface", Google_map_underlay = FALSE,
-  input_file = "menu", input_grid = NA, scale_col = c("ivory",
-  "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
-  NA, NA), p = NA, suppress_print = FALSE, return_poly = FALSE,
-  label_towns = TRUE)
+map_ereefs(
+  var_name = "true_colour",
+  target_date = c(2018, 1, 30),
+  layer = "surface",
+  Google_map_underlay = FALSE,
+  input_file = "menu",
+  input_grid = NA,
+  scale_col = c("ivory", "coral4"),
+  scale_lim = c(NA, NA),
+  zoom = 6,
+  box_bounds = c(NA, NA, NA, NA),
+  p = NA,
+  suppress_print = FALSE,
+  return_poly = FALSE,
+  label_towns = TRUE,
+  strict_bounds = FALSE,
+  mark_points = NULL,
+  gbr_poly = FALSE
+)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -35,61 +61,8 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
      complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
      relative to 1990-01-01 (this is not checked).}
 
-\item{layer}{Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.}
-
-\item{Google_map_underlay}{Set to TRUE (the default) to use ggmap to show a Google Map as
-an underlay for the model output plot. Requires the ggmap librray.}
-
-\item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2018-03.nc"
-If using Windows, you will need to set this to a local inputfile stem.}
-
-\item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
-coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
-x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load appropriate 
-x and y grids from data files stored in this package. Alternatively, you can provide the location of a full 
-(not simple-format) ereefs netcdf output file such as 
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
-
-\item{scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
-from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
-Defaults to c('ivory', 'coral4').}
-
-\item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.
-Ignored for true_colour plots.}
-
-\item{zoom}{Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
-of eReefs models. Defaults to 6. Higher values will zoom in further.}
-
-\item{box_bounds}{Minimum and maximum latitude and longitude coordinates to map. Defaults to the
-entire extent of the model output (though modified by the value of zoom). 
-Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
-
-\item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
-If p is provided, Google_map_underlay is over-ridden and set to FALSE.}
-
-\item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
-
-\item{label_towns}{Add labels for town locations to the figure. Default TRUE}
-
-\item{var_name}{Short name of the variable to plot. This can be any variable in the
-eReefs netcdf file that you are accessing (refer to eReefs model
-documentation or extract variable names from the netcdf file for a full 
-list). In addition, two special var_name values are supported: 'true_colour'
-and 'plume'. 'true_colour' provides a simulated MODIS true colour
-image (refer to Baird et al., 2016 for en explanation).'plume'
-provides a map of calculated plume colour class as per Devlin et al. (2012)
-and Baird et al. (2017). Defaults to true_colour.}
-
-\item{target_date}{Date to map. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2018,1,30). Be careful to choose the right
-     input file, as the function will plot the closest date in the file to the target date without
-     complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
-     relative to 1990-01-01 (this is not checked).}
-
-\item{layer}{Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.}
+\item{layer}{Either a (positive) integer layer number, a negative number indicating depth below MSL (not depth below the free surface) 
+or 'surface' to choose the surface layer. Defaults to 'surface'.}
 
 \item{Google_map_underlay}{Set to TRUE to use ggmap to show a Google Map as
 an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
@@ -125,6 +98,14 @@ Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
 If p is provided, Google_map_underlay is over-ridden and set to FALSE.}
 
 \item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
+
+\item{label_towns}{Add labels for town locations to the figure. Default TRUE}
+
+\item{strict_bounds}{TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
+[dev note: An alternative would be to provide a version that plots from cell centres rather than using polygons, which should be fine other
+ than near complex coastlines]}
+
+\item{mark_points}{Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.}
 }
 \value{
 a ggplot object

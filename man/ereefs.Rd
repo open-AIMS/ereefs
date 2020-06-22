@@ -3,7 +3,6 @@
 \docType{package}
 \name{ereefs}
 \alias{ereefs}
-\alias{ereefs-package}
 \title{ereefs: Some useful tools for exctracting and visualising eReefs and EMS netcdf data}
 \description{
 The ereefs package provides several functions:

@@ -5,9 +5,17 @@
 \title{A wrapper to ncdf4::ncvar_get() that will pause and try again up to 119 times
 if at first it fails, to overcome temporary net access errors or DAP errors.}
 \usage{
-safe_ncvar_get(nc, varid = NA, start = NA, count = NA,
-  verbose = FALSE, signedbyte = TRUE, collapse_degen = TRUE,
-  raw_datavals = FALSE, tries = 12)
+safe_ncvar_get(
+  nc,
+  varid = NA,
+  start = NA,
+  count = NA,
+  verbose = FALSE,
+  signedbyte = TRUE,
+  collapse_degen = TRUE,
+  raw_datavals = FALSE,
+  tries = 12
+)
 }
 \arguments{
 \item{tries}{number of times to retry (increasing pause length by one second each time. Default 12}

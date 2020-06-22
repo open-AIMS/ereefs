@@ -4,10 +4,17 @@
 \alias{get_ereefs_profile}
 \title{Extract vertical profiles of specified variables  from a specified latitude and longitude over a specified time-period from an eReefs or other EMS netcdf file.}
 \usage{
-get_ereefs_profile(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852), start_date = c(2016, 2,
-  4), end_date = c(2016, 3, 2), input_file = "menu", input_grid = NA,
-  eta_stem = NA, squeeze = TRUE, override_positive = FALSE)
+get_ereefs_profile(
+  var_names = c("Chl_a_sum", "TN"),
+  location_latlon = c(-23.39189, 150.88852),
+  start_date = c(2016, 2, 4),
+  end_date = c(2016, 3, 2),
+  input_file = "menu",
+  input_grid = NA,
+  eta_stem = NA,
+  squeeze = TRUE,
+  override_positive = FALSE
+)
 }
 \arguments{
 \item{location_latlon}{Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)}
@@ -50,4 +57,7 @@ See also plot_ereefs_profile(), which relies on output from this function.
 Note that this function assumes consistent frequency of model output, even if the time-series extends across multiple output files (e.g.
 multiple months of eReefs output). If the data in eta_stem is output on a different interval from the data in input_file, the function
 will do its best, but surface elevation estimates may not exactly match the time-stamps in the main input file.
+
+Known bugs: currently only works for one time-step at a time for 4km hydrodynamic model output. As a work-around, either call
+once for each time-step or exctract hydrodynamic variables from the bgc model output.
 }

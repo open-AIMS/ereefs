@@ -4,8 +4,15 @@
 \alias{sp2raster}
 \title{Convert a SpatialPolygonDataFrame to a raster. (Wrapper for raster::rasterize() with some reasonable defaults for the ereefs package)}
 \usage{
-sp2raster(sPdf, xmn = 142.45, ymn = -27.5, resolution = 0.01,
-  xmx = NA, ymx = NA, r = NA)
+sp2raster(
+  sPdf,
+  xmn = 142.45,
+  ymn = -27.5,
+  resolution = 0.01,
+  xmx = NA,
+  ymx = NA,
+  r = NULL
+)
 }
 \arguments{
 \item{sPdf}{SpatialPolygonDataFrame object, e.g. as output by poly2sp.}

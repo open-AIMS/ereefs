@@ -4,11 +4,16 @@
 \alias{get_ereefs_slice}
 \title{Extract a vertical slice or depth-resolved transect from an eReefs or other EMS netcdf output file.}
 \usage{
-get_ereefs_slice(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = data.frame(latitude = c(-20, -20), longitude =
-  c(148.5, 149)), target_date = c(2016, 2, 4), input_file = "menu",
-  input_grid = NA, eta_stem = NA, robust = FALSE,
-  override_positive = FALSE)
+get_ereefs_slice(
+  var_names = c("Chl_a_sum", "TN"),
+  location_latlon = data.frame(latitude = c(-20, -20), longitude = c(148.5, 149)),
+  target_date = c(2016, 2, 4),
+  input_file = "menu",
+  input_grid = NA,
+  eta_stem = NA,
+  robust = FALSE,
+  override_positive = FALSE
+)
 }
 \arguments{
 \item{location_latlon}{A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
@@ -45,7 +50,8 @@ incorrect. Default FALSE}
 \value{
 a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
       (cell_centres), the locations of the cell edge points where the line intersects the grid edges (cell_intersections), and the vertical grid 
-      (z_grid) and a data frame of tracer values from the model.
+      (z_grid) and a data frame of tracer values from the model (values) and 'crossref', which indicates the starting cell in the returned values
+      array associated with each input location.
 }
 \description{
 Extracts either a series of vertical profiles at points corresponding to a dataFrame of specified latitudes and longitudes (e.g. a cruise

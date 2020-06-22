@@ -2,6 +2,7 @@
 
 export(check_platform_ok)
 export(daysIn)
+export(download_discharge)
 export(get_ereefs_bottom_ts)
 export(get_ereefs_case)
 export(get_ereefs_depth_integrated_ts)

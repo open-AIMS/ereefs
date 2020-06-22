@@ -5,13 +5,32 @@
 \title{Create a series of map image files for an animation of eReefs model output AND calculate temporal
 mean values.}
 \usage{
-map_ereefs_movie(var_name = "true_colour", start_date = c(2015, 12, 1),
-  end_date = c(2016, 3, 31), layer = "surface",
-  output_dir = "ToAnimate", Google_map_underlay = FALSE,
-  input_file = "menu", input_grid = NA, scale_col = c("ivory",
-  "coral4"), scale_lim = c(NA, NA), zoom = 6, box_bounds = c(NA, NA,
-  NA, NA), suppress_print = FALSE, stride = "daily", verbosity = 0,
-  label_towns = TRUE)
+map_ereefs_movie(
+  var_name = "true_colour",
+  start_date = c(2015, 12, 1),
+  end_date = c(2016, 3, 31),
+  layer = "surface",
+  output_dir = "ToAnimate",
+  Google_map_underlay = FALSE,
+  input_file = "menu",
+  input_grid = NA,
+  scale_col = c("ivory", "coral4"),
+  scale_lim = c(NA, NA),
+  zoom = 6,
+  box_bounds = c(NA, NA, NA, NA),
+  suppress_print = FALSE,
+  stride = "daily",
+  verbosity = 0,
+  label_towns = TRUE,
+  strict_bounds = FALSE,
+  mark_points = NULL,
+  gbr_poly = FALSE,
+  add_arrows = FALSE,
+  max_u = NA,
+  scale_arrows = NA,
+  show_bathy = FALSE,
+  contour_breaks = c(5, 10, 20)
+)
 }
 \arguments{
 \item{var_name}{Short name of the variable to plot. This can be any variable in the
@@ -49,6 +68,13 @@ x and y grids from data files stored in this package. Alternatively, you can pro
 (not simple-format) ereefs netcdf output file such as 
 "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
 
+\item{scale_col}{Vector of colours to use for the colour scale. This can be colours 
+from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+If one value is given, low colour is set to ivory and high colour to the value given.
+If two values are given, these are used as low and high limit colours.
+If three values are given, the middle value is used to set the mid-point of the scale.
+Defaults to c('ivory', 'coral4').}
+
 \item{zoom}{Value of zoom passed to ggmap::ggmap(). Set to 5 if you want to show the entire extent 
 of eReefs models. Defaults to 6. Higher values will zoom in further.}
 
@@ -63,17 +89,32 @@ also specify an appropriate value for zoom if specifying box_bounds.}
 
 \item{verbosity}{Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.}
 
+\item{label_towns}{Add labels for town locations to the figure. Default TRUE}
+
+\item{strict_bounds}{TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.}
+
+\item{mark_points}{Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.}
+
+\item{gbr_poly}{TRUE to show contours of approximate reef areas. Default FALSE.}
+
+\item{add_arrows}{TRUE to show arrows indicating magnitude and direction of flow. Default FALSE.}
+
+\item{max_u}{Velocity at which to show maximum arrow length. Default NA, in which case it will use the maximum observed velocity.}
+
+\item{scale_arrows}{Factor by which to scale arrows. Values >1 result in longer arrows. Values <1 result in shorter arrows. Default 1.}
+
+\item{show_bathy}{TRUE to show contours based on the bathymetry as represented in the model. Default FALSE. Requires model file to contain botz (this 
+requirement may be dropped in future versions for GBR1 and GBR4 runs).}
+
+\item{contour_breaks}{Depths in metres to show with show_bathy. Default c(5, 10, 20).}
+
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2016,3,31).}
-
-\item{ggplot2::scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
-from the ggplot2::ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
-Defaults to c('ivory', 'coral4').}
 }
 \value{
-a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
-      value of the variable specified in VAR_NAME over the selected interval.
+a list that includes data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
+        value of the variable specified in VAR_NAME over the selected interval, plus the actual values and cell centre latitudes and longitudes.
 }
 \description{
 Creates and saves to disk a sequential series of colour map images showing concentrations of a specified 

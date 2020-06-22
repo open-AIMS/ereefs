@@ -386,11 +386,11 @@ if (var_name == 'ZooT') {
     var_longname <- 'Current speed'
     var_units <- 'm s-1'
     if (ndims == 4) {
-       ems_var <- safe_ncvar_get(nc, 'u', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
-       ems_var <- sqrt(ems_var^2 + safe_ncvar_get(nc, 'v', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))^2)
+       ems_var <- safe_ncvar_get(nc, 'u1', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))
+       ems_var <- sqrt(ems_var^2 + safe_ncvar_get(nc, 'u2', start=c(xmin,ymin,layer,day), count=c(xmax-xmin,ymax-ymin,1,1))^2)
     } else {
-       ems_var <- safe_ncvar_get(nc, 'u', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
-       ems_var <- ems_var + safe_ncvar_get(nc, 'v', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- safe_ncvar_get(nc, 'u1', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
+       ems_var <- ems_var + safe_ncvar_get(nc, 'u2', start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     }
 } else if (!((var_name == 'true_colour') || (var_name == 'plume'))) {
     vat <- ncdf4::ncatt_get(nc, var_name)
@@ -597,8 +597,15 @@ if (return_poly) {
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
 #' @param mark_points Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.
-#' @return a data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
-#'       value of the variable specified in VAR_NAME over the selected interval.
+#' @param gbr_poly TRUE to show contours of approximate reef areas. Default FALSE.
+#' @param add_arrows TRUE to show arrows indicating magnitude and direction of flow. Default FALSE.
+#' @param max_u Velocity at which to show maximum arrow length. Default NA, in which case it will use the maximum observed velocity.
+#' @param scale_arrows Factor by which to scale arrows. Values >1 result in longer arrows. Values <1 result in shorter arrows. Default 1.
+#' @param show_bathy TRUE to show contours based on the bathymetry as represented in the model. Default FALSE. Requires model file to contain botz (this 
+#'        requirement may be dropped in future versions for GBR1 and GBR4 runs).
+#' @param contour_breaks Depths in metres to show with show_bathy. Default c(5, 10, 20).
+#' @return a list that includes data.frame formatted for use in ggplot2::geom_polygon, containing a map of the temporally averaged
+#'         value of the variable specified in VAR_NAME over the selected interval, plus the actual values and cell centre latitudes and longitudes.
 #' @export
 #' @examples
 #' \dontrun{
@@ -622,7 +629,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              label_towns = TRUE,
                              strict_bounds = FALSE,
                              mark_points = NULL,
-                             gbr_poly = FALSE)
+                             gbr_poly = FALSE,
+                             add_arrows = FALSE,
+                             max_u = NA,
+                             scale_arrows = NA,
+                             show_bathy=FALSE,
+                             contour_breaks=c(5,10,20))
 {
   plot_eta <- FALSE
   input_file <- substitute_filename(input_file)
@@ -679,11 +691,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
    # If mark_points is a vector, change it into a data frame
    if (is.null(dim(mark_points))) {
      mark_points <- data.frame(latitude = mark_points[1], longitude = mark_points[2])
-     eta_data <- get_ereefs_ts(var_name='eta', input_file = input_file, start_date=start_date, end_date = end_date, location_latlon = mark_points)
-     names(eta_data) <- c('date', 'eta')
-     eta_plot <- ggplot2::ggplot(eta_data, ggplot2::aes(x=date, y=eta)) + ggplot2::geom_line() + ggplot2::ylab('surface elevation (m)')
-     plot_eta <- TRUE
    }
+   eta_data <- get_ereefs_ts(var_name='eta', input_file = input_file, start_date=start_date, end_date = end_date, location_latlon = mark_points)
+   names(eta_data) <- c('date', 'eta')
+   eta_plot <- ggplot2::ggplot(eta_data, ggplot2::aes(x=date, y=eta)) + ggplot2::geom_line() + ggplot2::ylab('surface elevation (m)')
+   plot_eta <- TRUE
   }
 
   # Check for ggmap::ggmap()
@@ -762,6 +774,27 @@ map_ereefs_movie <- function(var_name = "true_colour",
   x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
   y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
+  nc <- ncdf4::nc_open(input_file)
+  if (is.null(nc$var[['latitude']])) {
+  # Standard EMS output file
+    latitude <- safe_ncvar_get(nc, "y_centre")
+    longitude <- safe_ncvar_get(nc, "x_centre")
+    botz <- safe_ncvar_get(nc, 'botz')
+  } else { 
+    # Simple format netcdf file
+    latitude <- safe_ncvar_get(nc, "latitude")
+    longitude <- safe_ncvar_get(nc, "longitude")
+    botz <- NULL
+    if (show_bathy) warning('Can not show bathymetry: simple format netcdf file does not contain botz')
+  }
+  ncdf4::nc_close(nc)
+
+  if (add_arrows) {
+    idim <- dim(latitude)[1]
+    jdim <- dim(latitude)[2]
+    max_arrow <- max(max(abs(longitude[idim, jdim] - longitude[1,1])/idim), max(abs(latitude[idim, jdim] - latitude[1,1])/jdim))
+  }
+
   # Set up the polygon corners. 4 per polygon.
   a <- xmax - xmin + 1
   b <- ymax - ymin + 1
@@ -776,6 +809,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
   gy_ok <- !apply(is.na(gy),1, any)
   gx <- c(t(gx[gx_ok&gy_ok,]))
   gy <- c(t(gy[gx_ok&gy_ok,]))
+  longitude <- c(longitude)[gx_ok&gy_ok]
+  latitude <- c(latitude)[gx_ok&gy_ok]
   if (Google_map_underlay) { 
 	  MapLocation<-c(min(x_grid, na.rm=TRUE)-0.5, 
                     min(y_grid, na.rm=TRUE)-0.5, 
@@ -836,8 +871,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
        dum2 <- as.integer((day_count - 1) / tstep) +1
        ds <- ds[seq(from=dum1, by=as.integer(1/tstep), to=(dum1+dum2))]
        start_array <- c(xmin, ymin, dum1)
-	    count_array <- c(xmax-xmin, ymax-ymin, dum2)
-	    fileslist <- 1
+	     count_array <- c(xmax-xmin, ymax-ymin, dum2)
+	     fileslist <- 1
     } else if (ereefs_case == 1) { 
        #warning('Assuming that only one timestep is output per day/file')
 	    fileslist <- from_day:(from_day+day_count-1)
@@ -848,8 +883,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
 	    # filename <- paste0(input_stem, '.nc') # filename has been set previously 
-       tstep <- as.numeric(ds[2]-ds[1])
-       from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/tstep) + 1
+      tstep <- as.numeric(ds[2]-ds[1])
+      from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/tstep) + 1
 	    if (from_day<1) from_day <-1
 	    start_array <- c(xmin, ymin, from_day)
 	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
@@ -990,10 +1025,22 @@ map_ereefs_movie <- function(var_name = "true_colour",
            var_units <- vat$units
         } else {
            if (!local_file) {
-             inputfile <- paste0(filename, '?',var_name, slice)
+             if (add_arrows) {
+               inputfile <- paste0(filename, '?',var_name, 'u', 'v', slice)
+             } else {
+               inputfile <- paste0(filename, '?',var_name, slice)
+             }
            } else inputfile <- filename
            nc <- ncdf4::nc_open(inputfile)
            ems_var <- safe_ncvar_get(nc, var_name)
+           if (add_arrows) {
+             current_u <- ncvar_get(nc, 'u1')
+             current_v <- ncvar_get(nc, 'u2')
+             if ((i==1)&(is.na(max_u))) {
+               max_u <- max(max(abs(c(current_u)), na.rm = TRUE), max(abs(c(current_v)), na.rm=TRUE)) 
+               if (!is.na(scale_arrows)) max_u <- max_u / scale_arrows
+             }
+           }
            vat <- ncdf4::ncatt_get(nc, var_name)
            var_longname <- vat$long_name
            var_units <- vat$units
@@ -1009,12 +1056,29 @@ map_ereefs_movie <- function(var_name = "true_colour",
                                layer,
                                seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
           }
+          ds <- ds[seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+          if (add_arrows) {
+            current_u <- current_u[start_array[1] : (start_array[1] + count_array[1]),
+                                   start_array[2] : (start_array[2] + count_array[2]),
+                                   seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+            current_v <- current_v[start_array[1] : (start_array[1] + count_array[1]),
+                         start_array[2] : (start_array[2] + count_array[2]),
+                         seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+          }
       }
       #ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     
       dum1 <- length(dim(ems_var))
       if (dum1==2) {
         ems_var <- array(ems_var, dim=c(dim(ems_var), 1))
+        if (add_arrows) {
+          current_u <- array(current_u, dim=c(dim(current_u), 1))
+          current_v <- array(current_v, dim=c(dim(current_v), 1))
+        }
+      }
+      if (add_arrows) {
+        del_u <- current_u / max_u * max_arrow
+        del_v <- current_v / max_u * max_arrow
       }
     
       ncdf4::nc_close(nc)
@@ -1022,6 +1086,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
       d <- dim(ems_var)[3]
       for (jcount in 1:d) {
         ems_var2d <- ems_var[, , jcount]
+        if (add_arrows) {
+          del_u2d <- del_u[, , jcount]
+          del_v2d <- del_v[, , jcount]
+        }
         # Values associated with each polygon at chosen timestep
         n <- c(ems_var2d)[gx_ok&gy_ok]
         if (icount==0) {
@@ -1053,7 +1121,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
             if (Google_map_underlay) {
                p <- ggmap::ggmap(myMap)
 	         } else {
-	            p <- ggplot2::ggplot()
+	             p <- ggplot2::ggplot()
             }
             if (var_name=="true_colour") {
         #print('debug 2');
@@ -1086,6 +1154,19 @@ map_ereefs_movie <- function(var_name = "true_colour",
                }
             }
 
+            if (add_arrows) {
+              arrow_df <- data.frame(latitude = c(latitude), longitude = c(longitude), uend = c(del_u2d) + c(longitude), vend = c(del_v2d) + c(latitude))
+              p <- p + ggplot2::geom_segment(arrow_df, mapping = ggplot2::aes(x = longitude, y = latitude, xend = uend, yend = vend), arrow = ggplot2::arrow(length = ggplot2::unit(0.1, "cm")))
+            }
+            if ((show_bathy)&!is.null(botz)) {
+              bathy_df <- data.frame(latitude = c(latitude), longitude = c(longitude), depth = c(-botz))
+              reg <- marmap::griddify(bathy_df, as.integer(idim/2), as.integer(jdim/2))
+              bathy <- marmap::as.bathy(reg)
+              bathy_df <- marmap::as.xyz(bathy)
+              names(bathy_df) <- c('latitude', 'longitude', 'depth')
+              p <- p + ggplot2::geom_contour(bathy_df, mapping = ggplot2::aes(x = longitude, y = latitude, z = depth), colour='black', breaks=contour_breaks)
+            }
+
             if (label_towns) {
               towns <- towns[towns$latitude>=min(gy, na.rm=TRUE),]
               towns <- towns[towns$latitude<=max(gy, na.rm=TRUE),]
@@ -1099,7 +1180,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
               p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
               if (plot_eta) {
                 dind <- which(ds[jcount]==eta_data$date)
-                p2 <- eta_plot + ggplot2::geom_point(data = eta_data[dind,], ggplot2::aes(x=date, y=eta), size=2)
+                p2 <- eta_plot + ggplot2::geom_point(data = eta_data[dind,], ggplot2::aes(x=date, y=eta), size=2, color='red')
               }
             }
             if (gbr_poly) {
@@ -1126,10 +1207,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
                dir.create(output_dir)
             }
             fname <- paste0(output_dir, '/', var_name, '_', 100000 + icount, '.png', collapse='')
-            ggplot2::ggsave(fname, p)
+            ggplot2::ggsave(fname, p, dpi=100)
             rm('p')
          }  else {
             icount <- icount + 1
+            p <- NULL
          }
          setTxtProgressBar(pb,icount/as.integer(end_date-start_date)/tstep*stride)
       } # end jcount loop
@@ -1139,7 +1221,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   close(pb)
   values <- data.frame(id = id, value = temporal_sum/icount)
   datapoly <- merge(values, positions, by = c("id"))
-  return(list(datapoly=datapoly, value=values$value))
+  return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
 }
 
 #' Create a map using a dataframe in the format required by ggplot2::geom_plot, for instance from map_ereefs() or map_ereefs_movie()

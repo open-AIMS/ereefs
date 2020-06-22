@@ -4,13 +4,19 @@
 \alias{plot_ereefs_profile}
 \title{Plots a single vertical profile using output from get_ereefs_profile()}
 \usage{
-plot_ereefs_profile(profileObj, var_name = "Chl_a_sum",
-  target_date = c(2016, 1, 1), p = NA, colour = "blue")
+plot_ereefs_profile(
+  profileObj,
+  var_name = "Chl_a_sum",
+  target_date = c(2016, 1, 1),
+  p = NA,
+  colour = "blue"
+)
 }
 \arguments{
 \item{profileObj}{A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles}
 
-\item{var_name}{The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.}
+\item{var_name}{The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
+If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.}
 
 \item{target_date}{The target date (plot the profile closest in time to this).}
 

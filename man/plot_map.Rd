@@ -4,9 +4,19 @@
 \alias{plot_map}
 \title{Create a map using a dataframe in the format required by ggplot2::geom_plot, for instance from map_ereefs() or map_ereefs_movie()}
 \usage{
-plot_map(datapoly, var_longname = "", var_units = "",
-  Google_map_underlay = FALSE, scale_col = c("ivory", "coral4"),
-  scale_lim = c(NA, NA), zoom = 6, p = NA, suppress_print = FALSE)
+plot_map(
+  datapoly,
+  var_longname = "",
+  var_units = "",
+  Google_map_underlay = FALSE,
+  scale_col = c("ivory", "coral4"),
+  scale_lim = c(NA, NA),
+  box_bounds = c(NA, NA, NA, NA),
+  label_towns = TRUE,
+  zoom = 6,
+  p = NA,
+  suppress_print = FALSE
+)
 }
 \arguments{
 \item{datapoly}{A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().}
@@ -19,8 +29,11 @@ plot_map(datapoly, var_longname = "", var_units = "",
 an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
 Default now FALSE.}
 
-\item{scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
+\item{scale_col}{Vector of colours to use for the colour scale. This can be colours 
 from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+If one value is given, low colour is set to ivory and high colour to the value given.
+If two values are given, these are used as low and high limit colours.
+If three values are given, the middle value is used to set the mid-point of the scale.
 Defaults to c('ivory', 'coral4').}
 
 \item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.

@@ -5,11 +5,17 @@
 \title{Extracts time-series of selected variables from eReefs output files at a specified location and depth below the
 surface.}
 \usage{
-get_ereefs_depth_specified_ts(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852), depth = 1,
-  start_date = c(2010, 12, 31), end_date = c(2016, 12, 31),
-  input_file = "menu", input_grid = NA, eta_stem = NA,
-  verbosity = 1)
+get_ereefs_depth_specified_ts(
+  var_names = c("Chl_a_sum", "TN"),
+  location_latlon = c(-23.39189, 150.88852),
+  depth = 1,
+  start_date = c(2010, 12, 31),
+  end_date = c(2016, 12, 31),
+  input_file = "menu",
+  input_grid = NA,
+  eta_stem = NA,
+  verbosity = 1
+)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 

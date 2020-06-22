@@ -4,11 +4,17 @@
 \alias{get_ereefs_depth_integrated_ts}
 \title{Extracts depth-integrated time-series of selected variables at specified locations from eReefs output files}
 \usage{
-get_ereefs_depth_integrated_ts(var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852), start_date = c(2010, 12,
-  31), end_date = c(2016, 12, 31), input_file = "menu",
-  input_grid = NA, eta_stem = NA, override_positive = FALSE,
-  verbosity = 1)
+get_ereefs_depth_integrated_ts(
+  var_names = c("Chl_a_sum", "TN"),
+  location_latlon = c(-23.39189, 150.88852),
+  start_date = c(2010, 12, 31),
+  end_date = c(2016, 12, 31),
+  input_file = "menu",
+  input_grid = NA,
+  eta_stem = NA,
+  override_positive = FALSE,
+  verbosity = 1
+)
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
