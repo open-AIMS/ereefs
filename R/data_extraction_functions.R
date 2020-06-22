@@ -127,6 +127,8 @@ substitute_filename <- function(input_file) {
                 "GBR4_BGC-v3.0 Dcrt",
                 #"GBR4_BGC-v3.0 Dnrt",
                 "GBR4_BGC-v3.1",
+                "GBR4_BGC-v3.2surf",
+                "GBR4_BGC-3.2",
                 "menu")
   if (is.numeric(input_file)) {
      input_file <- choices[input_file]
@@ -135,9 +137,9 @@ substitute_filename <- function(input_file) {
      stop()
   } else if ((input_file == "menu")||(input_file == length(choices))) {
      selection <- utils::menu(c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
-                                "4km biogeochemical model hindcast v2.0 (Sept 2010 - Oct 2016)",
-                                "4km biogeochemical model near real time v2.0 (Oct 2016 - pres.)",
-                                "Pre-industrial catchment scanerio 4km BGC (Sept 2010 - Oct 2016)",
+                                "Archived 4km biogeochemical model hindcast v2.0 (Sept 2010 - Oct 2016)",
+                                "Archived 4km biogeochemical model near real time v2.0 (Oct 2016 - Nov 2019)",
+                                "Archived Pre-industrial catchment scenario 4km BGC (Sept 2010 - Oct 2016)",
                                 "Latest release passive river tracers (Sept 2010 - pres.)",
                                 "Latest release 1km grid hydrodynamic model (Dec 2014 - pres.)",
                                 "Latest release 1km grid passive river tracers (Dec 2014 - pres.)",
@@ -145,9 +147,16 @@ substitute_filename <- function(input_file) {
                                 "Archived 4km bgc (v926, Sept 2010 - Dec 2014)",
                                 "Archived 4km bgc (v924, Sept 2010 - Sept 2017)",
                                 "Archived 1km hydro (v 1.71, Dec 2014 – Apr 2016)",
-                                "Archived 1km bgc (v924, Dec 2014 – pres.)",
-                                "4km biogeochemical model hindcast v3.0 (Dec 2010 - Oct 2018)",
-                                "Latest release 4km biogeochemical model v3.1 (Dec 2010 - Apr 2019)"))
+                                "Archived 1km bgc (v924, Dec 2014 – Nov 2019)",
+                                "Archived 4km biogeochemical model hindcast v3.0 (Dec 2010 - Oct 2018)",
+                                "Latest release 4km biogeochemical model v3.1 (Dec 2010 - Apr 2019)",
+                                "CSIRO login required: GBR1 NRT BGC 3p0 3D (2018-09-02 to 2019-01-30)",
+                                "CSIRO login required: Latest release GBR1 NRT BGC 3p2 surface (16 Oct 2019 - pres., 3x/day)",
+                                "CSIRO login required: Latest release GBR1 NRT BGC 3p2 3D (16 Oct 2019 - pres., daily)",
+                                "CSIRO login required: Latest release GBR4 NRT BGC surface (Oct 2019 - May 2020, 4x/day)",
+                                "CSIRO login required: Latest release GBR4 NRT BGC 3D (Oct 2019 - May 2020, daily)"
+                               )
+     )
      input_file <- choices[selection]
   }
   input_file <- dplyr::case_when (
@@ -166,6 +175,11 @@ substitute_filename <- function(input_file) {
     input_file == "GBR1_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
     input_file == "GBR4_BGC-v3.0 Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B3p0_Chyd_Dcrt/gbr4_bgc_all_simple_2018-10.nc",
     input_file == "GBR4_BGC-v3.1" ~ "https://regional-models.ereefs.info/thredds/dodsC/GBR4_H2p0_B3p1_Cq3b_Dhnd/all/gbr4_bgc_all_simple_2012-10.nc",
+    input_file == "GBR4_BGC-v3.0" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/3.0/all/gbr1_bgc_all_2018-09-02.nc",
+    input_file == "GBR4_BGC-v3p2surf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/surf/gbr1_bgc_surf_2019-10-16.nc",
+    input_file == "GBR4_BGC-v3p2" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/all/gbr1_bgc_all_2019-10-16.nc",
+    input_file == "GBR4_BGC-v3p2nrtsurf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_surf_2019-10.nc",
+    input_file == "GBR4_BGC-v3p2nrt" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_all_2019-10.nc",
 # additional shortcuts
     input_file == "GBR4HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
     input_file == "hd" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
@@ -502,9 +516,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
              wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual,from_day), count=c(countv,1,day_count))
              #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
           } else {
+             #print(c(startv,from_day))
+             #print(c(countv,day_count))
              wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
              #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
           }
+          #print(wc)
           wc <- array(wc, c(countv[1]*countv[2], day_count))
           ts_frame[im1:i, j+1,] <- t(wc[grid_index,])
       }
@@ -516,6 +533,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
   if (mmp) names(ts_frame) <- mmp_sites$Name
   if (numpoints == 1) ts_frame <- ts_frame[[1]]
+  if (length(var_names)==1) names(ts_frame)[2] <- var_names
   return(ts_frame)
 }
 
@@ -963,7 +981,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Initialise
   blanks <- rep(NA, blank_length)
   ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  names(ts_frame) <- c("date", var_names)
+  if (!is.list(ts_frame))  names(ts_frame) <- c("date", var_names)
 
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
