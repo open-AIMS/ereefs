@@ -12,10 +12,13 @@ get_ereefs_case <- function(filename) {
   dashcount <- stringi::stri_count_fixed(lastfew, '-')
   if (dashcount==2) {
 	  ereefs_case <- 1
+    print('Appears to be daily output files')
   } else if (dashcount==1) {
 	  ereefs_case <- 4
+    print('Appears to be monthly output files')
   } else {
 	  ereefs_case <- 0
+    print('Appears to be single output file')
   }
   return(ereefs_case)
 }
@@ -127,8 +130,11 @@ substitute_filename <- function(input_file) {
                 "GBR4_BGC-v3.0 Dcrt",
                 #"GBR4_BGC-v3.0 Dnrt",
                 "GBR4_BGC-v3.1",
-                "GBR4_BGC-v3.2surf",
-                "GBR4_BGC-3.2",
+                "GBR4_BGC-v3.0",
+                "GBR1_BGC-v3p2surf",
+                "GBR1_BGC-v3p2",
+                "GBR4_BGC-v3p2nrtsurf",
+                "GBR4_BGC-v3p2nrt",
                 "menu")
   if (is.numeric(input_file)) {
      input_file <- choices[input_file]
@@ -176,8 +182,8 @@ substitute_filename <- function(input_file) {
     input_file == "GBR4_BGC-v3.0 Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B3p0_Chyd_Dcrt/gbr4_bgc_all_simple_2018-10.nc",
     input_file == "GBR4_BGC-v3.1" ~ "https://regional-models.ereefs.info/thredds/dodsC/GBR4_H2p0_B3p1_Cq3b_Dhnd/all/gbr4_bgc_all_simple_2012-10.nc",
     input_file == "GBR4_BGC-v3.0" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/3.0/all/gbr1_bgc_all_2018-09-02.nc",
-    input_file == "GBR4_BGC-v3p2surf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/surf/gbr1_bgc_surf_2019-10-16.nc",
-    input_file == "GBR4_BGC-v3p2" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/all/gbr1_bgc_all_2019-10-16.nc",
+    input_file == "GBR1_BGC-v3p2surf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/surf/gbr1_bgc_surf_2019-10-16.nc",
+    input_file == "GBR1_BGC-v3p2" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/all/gbr1_bgc_all_2019-10-16.nc",
     input_file == "GBR4_BGC-v3p2nrtsurf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_surf_2019-10.nc",
     input_file == "GBR4_BGC-v3p2nrt" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_all_2019-10.nc",
 # additional shortcuts
