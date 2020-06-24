@@ -317,7 +317,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   if (is.vector(start_date)) {
 	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-')) + 0.499
   } else if (is.character(start_date)) {
-	  start_date <- as.Date(start_date)
+	  start_date <- as.Date(start_date) + 0.499
   }
   start_day <- as.integer(format(start_date, '%d'))
   start_month <- as.integer(format(start_date, '%m'))
@@ -748,25 +748,43 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
 
 	# Define a line through the two points
 	#Y = A*x+b ; A*x +b - Y = 0
-	A <- (lat2 - lat1) / (lon2 - lon1)
-	b = lat1 - (A * lon1)
-	# For each edge, the line intersects the edge if the value of Ax+b-Y is +ve for one vertex and -ve for the other
-	# Ignore exact hits on vertices.
+  if (lon2!=lon1) {
+	  A <- (lat2 - lat1) / (lon2 - lon1)
+	  b = lat1 - (A * lon1)
+	  # For each edge, the line intersects the edge if the value of Ax+b-Y is +ve for one vertex and -ve for the other
+	  # Ignore exact hits on vertices.
+  
+	  # Find grid-cells along this line
+	  c1 <- (A * gx[,1] + b - gy[,1]) > 0
+	  c2 <- (A * gx[,2] + b - gy[,2]) > 0
+	  c3 <- (A * gx[,3] + b - gy[,3]) > 0
+	  c4 <- (A * gx[,4] + b - gy[,4]) > 0
 
-	# Find grid-cells along this line
-	c1 <- (A * gx[,1] + b - gy[,1]) > 0
-	c2 <- (A * gx[,2] + b - gy[,2]) > 0
-	c3 <- (A * gx[,3] + b - gy[,3]) > 0
-	c4 <- (A * gx[,4] + b - gy[,4]) > 0
+	  intersected[c1!=c2] <- TRUE
+	  intersected[c2!=c3] <- TRUE
+	  intersected[c3!=c4] <- TRUE
+	  intersected[c4!=c1] <- TRUE
+  } else {
+    # Special case of a latitudinal line (lon1==lon2)
+	  b = lon1
+	  # For each edge, the line intersects the edge if the value of Ay+b-x is +ve for one vertex and -ve for the other
+	  # Ignore exact hits on vertices.
+  
+	  # Find grid-cells along this line
+	  c1 <- (b - gx[,1]) > 0
+	  c2 <- (b - gx[,2]) > 0
+	  c3 <- (b - gx[,3]) > 0
+	  c4 <- (b - gx[,4]) > 0
 
-	intersected[c1!=c2] <- TRUE
-	intersected[c2!=c3] <- TRUE
-	intersected[c3!=c4] <- TRUE
-	intersected[c4!=c1] <- TRUE
+	  intersected[c1!=c2] <- TRUE
+	  intersected[c2!=c3] <- TRUE
+	  intersected[c3!=c4] <- TRUE
+	  intersected[c4!=c1] <- TRUE
+  }
 
 	# Exclude pesky NA values
+  intersected[is.na(c1+c2+c3+c4)] <- FALSE
 	intersected[is.na(latitude)] <- FALSE
-	intersected[is.na(c1+c2+c3+c4)] <- FALSE
 	intersected[is.na(rowSums(gx)+rowSums(gy))] <- FALSE
 
 	# Exclude grid-cells beyond the ends of the line segment
@@ -788,53 +806,121 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
    }
 
    # Find the locations where the edge intersections occur (could have done this all in one go, but this is easier to follow)
-   #Ax + b = a + cx -kc
-   c1 <- (gy[,2] - gy[,1]) / (gx[,2] - gx[,1])
-   xi <- (gy[,1] - b -gx[,1]*c1) / (A -c1)
-   d <- abs((xi<gx[,1]) + (xi<gx[,2]))
-   xi[d>1] <- NA
-   yi <- gy[,1] + (xi - gx[,1]) / (gx[,2] - gx[,1]) * (gy[,2] - gy[,1])
+   # We do this by running a line (y = cx + k) through each edge of each intersected grid cell and then finding
+   # where that line intersects the previously-defined y = Ax+b line between our two transect segment end-points.
+   # If lon1==lon2, y is not a function of x (which is always ==lon1)
 
-   c1 <- (gy[,3] - gy[,2]) / (gx[,3] - gx[,2])
-   x <- (gy[,2] - b -gx[,2]*c1) / (A -c1)
-   d <- abs((x<gx[,2]) + (x<gx[,3]))
-   x[d>1] <- NA
-   y <- gy[,2] + (gy[,3] - gy[,2]) * (x - gx[,2]) / (gx[,3] - gx[,2])
-   xi <- c(xi, x)
-   yi <- c(yi, y)
+  if (lon2!=lon1) {
+    # Intersects where Ax + b == cx + k
+    # y1 = c*x1 + k
+    # y2 = c*x2 + k where grid-cell edges run from (x1,y1) to (x2,y2).
+    # y1 - y2 = c*(x1 - x2)
+    # c = (y1 - y2) / (x1 - x2)
+    # We have four edges. For the first, x1 = gx[,2], x2 = gx[,1], y1 = gy[,2], y2 = gy[,1]
+    c1 <- (gy[,2] - gy[,1]) / (gx[,2] - gx[,1])
+    # k  = y1 - c*x1
+    # k <- gy[,2] - c1 * gx[,2]
+    # Intersects where Ax + b == cx + k
+    # (k - b)  = Ax - cx
+    # x = (k - b) / (A - c) 
+    #   = (gy[,2] - c1 * gx[,2] - b) / (A - c1)
+    xi <- (gy[,2] - b -gx[,2]*c1) / (A -c1)
+    # Check that the intersection occurs within the relevant segment (i.e. the cell edge)
+    d <- abs((xi<gx[,1]) + (xi<gx[,2]))
+    xi[d>1] <- NA                     
+    yi <- A * xi + b
 
-   c1 <- (gy[,4] - gy[,3]) / (gx[,4] - gx[,3])
-   x <- (gy[,3] - b -gx[,3]*c1) / (A -c1)
-   d <- abs((x<gx[,3]) + (x<gx[,4]))
-   x[d>1] <- NA
-   y <- gy[,3] + (gy[,4] - gy[,3]) * (x - gx[,3]) / (gx[,4] - gx[,3])
-   xi <- c(xi, x)
-   yi <- c(yi, y)
+    c1 <- (gy[,3] - gy[,2]) / (gx[,3] - gx[,2])
+    x <- (gy[,3] - b -gx[,3]*c1) / (A -c1)
+    d <- abs((x<gx[,3]) + (x<gx[,2]))
+    x[d>1] <- NA
+    y <- A * x + b
+    xi <- c(xi, x)
+    yi <- c(yi, y)
 
-   c1 <- (gy[,1] - gy[,4]) / (gx[,1] - gx[,4])
-   x <- (gy[,4] - b -gx[,4]*c1) / (A -c1)
-   d <- abs((x<gx[,4]) + (x<gx[,1]))
-   x[d>1] <- NA
-   y <- gy[,4] + (gy[,1] - gy[,4]) * (x - gx[,4]) / (gx[,1] - gx[,4])
-   xi <- c(xi, x)
-   yi <- c(yi, y)
-   yi <- yi[!is.na(xi)]
-   xi <- xi[!is.na(xi)]
+    c1 <- (gy[,4] - gy[,3]) / (gx[,4] - gx[,3])
+    x <- (gy[,4] - b -gx[,4]*c1) / (A -c1)
+    d <- abs((x<gx[,4]) + (x<gx[,3]))
+    x[d>1] <- NA
+    y <- A * x + b
+    xi <- c(xi, x)
+    yi <- c(yi, y)
+
+    c1 <- (gy[,1] - gy[,4]) / (gx[,1] - gx[,4])
+    x <- (gy[,1] - b -gx[,1]*c1) / (A -c1)
+    d <- abs((x<gx[,1]) + (x<gx[,4]))
+    x[d>1] <- NA
+    y <- A * x + b
+    xi <- c(xi, x)
+    yi <- c(yi, y)
+    yi <- yi[!is.na(xi)]
+    xi <- xi[!is.na(xi)]
+  } else {
+    # Special case of a latitudinal line (lon1==lon2)
+    #  x = lon1
+    #  On our transect, y is not a function of x but on our grid cell edge, it might be, unless the grid-cell edge is also a latitudinal (North-South) line.
+
+    c1 <- (gy[,2] - gy[,1]) / (gx[,2] - gx[,1])
+    # if !is.inf(c1)
+    # y1 = c*x1 + k and y2 = c*x2 + k
+    # k = y1 - c * x1
+    # yi = c * xi + y1 - c * x1
+    #    = c * (xi - x1) + y1
+    xi <- rep(lon1, length(llind))
+    yi <- c1 * (xi - gx[,2]) + gy[,2]
+    d <- abs((yi<gy[,2]) + (yi<gx[,1]))
+    yi[d>1] <- NA
+
+    c1 <- (gy[,3] - gy[,2]) / (gx[,3] - gx[,2])
+    x <- rep(lon1, length(llind))
+    y <- (gx[,3] - b -gy[,3]*c1) / (A -c1)
+    d <- abs((y<gy[,3]) + (y<gx[,2]))
+    y[d>1] <- NA
+    yi <- c(yi, y)
+    xi <- c(xi, x)
+
+    c1 <- (gy[,4] - gy[,3]) / (gx[,4] - gx[,3])
+    x <- rep(lon1, length(llind))
+    y <- (gx[,3] - b -gy[,4]*c1) / (A -c1)
+    d <- abs((y<gy[,4]) + (y<gx[,3]))
+    y[d>1] <- NA
+    yi <- c(yi, y)
+    xi <- c(xi, x)
+
+    c1 <- (gy[,1] - gy[,4]) / (gx[,1] - gx[,4])
+    x <- rep(lon1, length(llind))
+    y <- (gx[,4] - b -gy[,1]*c1) / (A -c1)
+    d <- abs((y<gy[,1]) + (y<gx[,4]))
+    y[d>1] <- NA
+    yi <- c(yi, y)
+    xi <- c(xi, x)
+
+    d <- abs((yi<lat1) + (yi<lat2))
+    yi[d>1] <- NA                     
+    d <- abs((yi>lat1) + (yi>lat2))
+    yi[d>1] <- NA                     
+    xi <- xi[!is.na(yi)&!is.infinite(yi)]
+    yi <- yi[!is.na(yi)&!is.infinite(yi)]
+  }
 
    if (length(xi)!=0) { 
      # determine the order in which the lists are sorted from the direction of the slice
-     if (maxlon>=minlon) {
+     if (maxlon>minlon) {
         d <- sort(xi, index.return=TRUE)
-        yi <- c(yi[d$ix][seq(1,length(xi),3)], yi[d$ix[length(xi)]])
-        xi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
+        yi <- yi[d$ix]
+        xi <- xi[d$ix]
+        #yi <- c(yi[d$ix][seq(1,length(xi),3)], yi[d$ix[length(xi)]])
+        #xi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
         if (longitude[llind[length(llind)]] < longitude[llind[1]] ) {
            yi <- yi[seq(length(xi), 1, -1)]
            xi <- xi[seq(length(xi), 1, -1)]
         }
      } else {
         d <- sort(yi, index.return=TRUE)
-        xi <- c(xi[d$ix][seq(1,length(xi),3)], xi[d$ix[length(xi)]])
-        yi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
+        yi <- yi[d$ix]
+        xi <- xi[d$ix]
+        #xi <- c(xi[d$ix][seq(1,length(xi),3)], xi[d$ix[length(xi)]])
+        #yi <- c(d$x[seq(1,length(xi),3)], d$x[length(xi)])
         if (latitude[llind[length(llind)]] < latitude[llind[1]] ) {
            yi <- yi[seq(length(xi), 1, -1)]
            xi <- xi[seq(length(xi), 1, -1)]
@@ -850,5 +936,4 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
    }
    location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
    return(list(location_latlon, location_edges, intersected, llind))
-
 }
