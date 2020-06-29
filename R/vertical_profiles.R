@@ -145,8 +145,22 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     } else {
         input_file <- input_file
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
+
     } 
     nc <- ncdf4::nc_open(input_file)
+	  if (!is.null(nc$var[['t']])) { 
+      ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+    } else { 
+      ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+    }
+    if (target_date < ds[1]) {
+      warning(paste('Target date (', target_date, ') is before start of data. Setting target_date to', ds[1]))
+      target_date <- ds[1]
+    }
+    if (target_date > ds[length(ds)]) {
+      warning(paste('Target date (', target_date, ') is after end of data. Setting target_date to', ds[length(ds)]))
+      target_date <- ds[length(ds)]
+    }
     if (!is.null(nc$var[['t']])) { 
       ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
     } else {
@@ -609,7 +623,7 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
 #' @export
-plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "navy"), scale_lim=NA) {
+plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "navy"), scale_lim=NA, var_units="") {
 	numprofiles <- dim(slice$values)[2]
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
@@ -639,9 +653,27 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 	mydata <- data.frame(xmin=dmin[ind], xmax=dmax[ind], ymin=zmin[ind], ymax=zmax[ind], z=values[ind])
 	p <- ggplot2::ggplot(data=mydata,ggplot2:: aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, fill=z)) + 
 		ggplot2::geom_rect() +
-		ggplot2::scale_fill_gradient(name=var_name, low=scale_col[1], high=scale_col[2], limits=scale_lim, oob=scales::squish) +
 		ggplot2::ylab('metres above msl') +
 		ggplot2::xlab('kilometres from start of transect')
+  if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
+  if (length(scale_col)==2) { 
+     p <- p + ggplot2::scale_fill_gradient(low=scale_col[1],
+                        high=scale_col[2],
+                        na.value="transparent", 
+                        guide="colourbar",
+                        limits=scale_lim,
+                        name=var_units,
+                        oob=scales::squish)
+  } else {
+     p <- p + ggplot2::scale_fill_gradient2(low=scale_col[1],
+                        mid=scale_col[2],
+                        high=scale_col[3],
+                        na.value="transparent", 
+                        guide="colourbar",
+                        limits=scale_lim,
+                        name=var_units,
+                        oob=scales::squish)
+  }
 	plot(p)
 	return(p)
 }
