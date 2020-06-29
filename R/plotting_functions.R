@@ -874,17 +874,26 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	     count_array <- c(xmax-xmin, ymax-ymin, dum2)
 	     fileslist <- 1
     } else if (ereefs_case == 1) { 
+	     filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
+	     nc <- ncdf4::nc_open(filename)
+	     if (!is.null(nc$var[['t']])) { 
+	        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+            } else {
+	        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	     }
+	     ncdf4::nc_close(nc)
+       dum1 <- which.min(abs(as.numeric(ds - (from_day + 0.4999999))))
        #warning('Assuming that only one timestep is output per day/file')
-	    fileslist <- from_day:(from_day+day_count-1)
-       start_array <- c(xmin, ymin, 1) 
-       count_array <- c(xmax-xmin, ymax-ymin, 1)
+	     fileslist <- from_day:(from_day+day_count-1)
+       start_array <- c(xmin, ymin, dum1) 
+       count_array <- c(xmax-xmin, ymax-ymin, dum1)
        tstep <- 1
     } else {
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
 	    # filename <- paste0(input_stem, '.nc') # filename has been set previously 
       tstep <- as.numeric(ds[2]-ds[1])
-      from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/tstep) + 1
+      from_day <- as.integer((as.Date(paste(year, month, day, sep="-")) - ds[1])/tstep) + 1
 	    if (from_day<1) from_day <-1
 	    start_array <- c(xmin, ymin, from_day)
 	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
@@ -1268,7 +1277,7 @@ plot_map <- function(datapoly,
   		       p = NA,
              suppress_print = FALSE)
 {
-  if (is.list(datapoly)) datapoly <- datapoly$datapoly
+  if ("datapoly" %in% names(datapoly)) datapoly <- datapoly$datapoly
   if (class(datapoly$value)=="factor") {
      var_name <- "true_colour"
   } else {
