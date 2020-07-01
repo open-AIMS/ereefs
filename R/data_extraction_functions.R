@@ -12,13 +12,10 @@ get_ereefs_case <- function(filename) {
   dashcount <- stringi::stri_count_fixed(lastfew, '-')
   if (dashcount==2) {
 	  ereefs_case <- 1
-    print('Appears to be daily output files')
   } else if (dashcount==1) {
 	  ereefs_case <- 4
-    print('Appears to be monthly output files')
   } else {
 	  ereefs_case <- 0
-    print('Appears to be single output file')
   }
   return(ereefs_case)
 }
@@ -31,13 +28,13 @@ get_ereefs_case <- function(filename) {
 #' @export
 get_ereefs_grids <- function(filename, input_grid=NA) {
 	if (!is.na(input_grid)) {
-		nc <- ncdf4::nc_open(input_grid)
+		nc <- safe_nc_open(input_grid)
 		x_grid <- safe_ncvar_get(nc, 'x_grid')
 		y_grid <- safe_ncvar_get(nc, 'y_grid')
 		z_grid <- safe_ncvar_get(nc, 'z_grid')
 		ncdf4::nc_close(nc)
 	} else {
-		nc <- ncdf4::nc_open(filename)
+		nc <- safe_nc_open(filename)
 		if (!is.null(nc$var[['x_grid']])) { 
 		  x_grid <- safe_ncvar_get(nc, 'x_grid')
 		  y_grid <- safe_ncvar_get(nc, 'y_grid')
@@ -337,7 +334,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (ereefs_case == 4) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	  nc <- ncdf4::nc_open(input_file)
+	  nc <- safe_nc_open(input_file)
 	  if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
@@ -358,7 +355,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  # '.nc?latitude,longitude')
   } else {
       input_file <- input_file
-      nc <- ncdf4::nc_open(input_file)
+      nc <- safe_nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
         ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
@@ -383,7 +380,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     # We have geocoordinates. Find the nearest grid-points to the sampling location
 
     # First, get the model grid
-    nc <- ncdf4::nc_open(input_file)
+    nc <- safe_nc_open(input_file)
     if (is.null(nc$var[['latitude']])) {
       # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
       latitude <- safe_ncvar_get(nc, "y_centre")
@@ -481,7 +478,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
       }
       #input_file <- paste0(input_file, '?', var_list, ',time')
-      nc <- ncdf4::nc_open(input_file)
+      nc <- safe_nc_open(input_file)
       if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
@@ -643,7 +640,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	nc <- ncdf4::nc_open(input_file)
+	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
@@ -660,7 +657,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
       input_file <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      nc <- ncdf4::nc_open(input_file)
+      nc <- safe_nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
         ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
@@ -675,8 +672,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
   names(ts_frame) <- c("date", var_names)
 
-  nc <- ncdf4::nc_open(input_file)
-  if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
+  nc <- safe_nc_open(input_file)
+  if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
 
   if (is.integer(location_latlon)) {
      location_grid <- location_latlon
@@ -747,8 +744,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
          if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
-        nc <- ncdf4::nc_open(input_file)
-        if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
+        nc <- safe_nc_open(input_file)
+        if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
         # Get dates
         if (ereefs_case > 0 ) { 
            if (!is.null(nc$var[['t']])) { 
@@ -890,7 +887,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if (verbosity>1) print(input_file)
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	nc <- ncdf4::nc_open(input_file)
+	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
@@ -911,7 +908,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       input_file <- input_file
       if (verbosity>1) print(input_file)
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      nc <- ncdf4::nc_open(input_file)
+      nc <- safe_nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
         ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
@@ -925,8 +922,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     if (dim(location_latlon)[1] > 1) stop('Currently, get_ereefs_depth_integrated_ts() only supports a single location. This is on my to-do list to fix in future. Let me know if you would like this feature. b.robson@aims.gov.au')
   }
 
-  nc <- ncdf4::nc_open(input_file)
-  if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
+  nc <- safe_nc_open(input_file)
+  if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
 
   if (is.null(dim(location_latlon))) {
      location_latlon <- array(location_latlon, c(1,2))
@@ -938,7 +935,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     # We have geocoordinates. Find the nearest grid-points to the sampling location
 
     # First, get the model grid
-    nc <- ncdf4::nc_open(input_file)
+    nc <- safe_nc_open(input_file)
     if (is.null(nc$var[['latitude']])) {
       # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
       latitude <- safe_ncvar_get(nc, "y_centre")
@@ -1045,8 +1042,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
          if (verbosity>1) print(input_file)
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
-        nc <- ncdf4::nc_open(input_file)
-        if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
+        nc <- safe_nc_open(input_file)
+        if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
         if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
@@ -1201,7 +1198,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	nc <- ncdf4::nc_open(input_file)
+	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
@@ -1220,7 +1217,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
       input_file <- input_file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      nc <- ncdf4::nc_open(input_file)
+      nc <- safe_nc_open(input_file)
       if (!is.null(nc$var[['t']])) {
         ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
       } else {
@@ -1235,7 +1232,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
   names(ts_frame) <- c("date", var_names)
 
-  nc <- ncdf4::nc_open(input_file)
+  nc <- safe_nc_open(input_file)
 
   if (is.integer(location_latlon)) {
      location_grid <- location_latlon
@@ -1302,8 +1299,8 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
-        nc <- ncdf4::nc_open(input_file)
-	if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
+        nc <- safe_nc_open(input_file)
+	if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
         if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
@@ -1361,12 +1358,33 @@ safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
  signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=12) {
    myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
    trywait = 1
-   while ((class(myvar)=='try-error')&&(trywait<=120)) { 
+   while ((class(myvar)=='try-error')&&(trywait<=(tries+1))) { 
       print(paste('retrying in ', trywait, 'second(s)')) 
       Sys.sleep(trywait) 
       trywait <- trywait+1 
       myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
    }
-   if (trywait>120) stop(paste('Cannot access netcdf file', nc$filename))
+   if (trywait>(tries+1)) stop(paste('Cannot access netcdf file', nc$filename))
    return(myvar)
+}
+
+#' A wrapper to ncdf4::nc_open() that will pause and try again up to 119 times
+#' if at first it fails, to overcome temporary net access errors or DAP errors.
+#'
+#' Parameters before 'tries' are passed through to ncvar_get
+#'
+#' @param tries number of times to retry (increasing pause length by one second each time. Default 12 
+#' @return variable extracted using ncvar_get()
+#' @export
+safe_nc_open <- function(filename, tries=12) {
+   nc <- try(ncdf4::nc_open(filename))
+   trywait = 1
+   while ((class(nc)=='try-error')&&(trywait<=(tries+1))) { 
+      print(paste('retrying in ', trywait, 'second(s)')) 
+      Sys.sleep(trywait) 
+      trywait <- trywait+1 
+      nc <- try(ncdf4::nc_open(filename))
+   }
+   if (trywait>(tries+1)) stop(paste('Cannot open netcdf file', filename))
+   return(nc)
 }
