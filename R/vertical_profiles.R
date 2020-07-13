@@ -639,6 +639,7 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 	   d[i] <- earth.dist(slice$cell_intersections[i,'longitude'],slice$cell_intersections[i,'latitude'], slice$cell_intersections[i+1,'longitude'], slice$cell_intersections[i+1,'latitude']) 
 	}
 
+  browser()
    d <- cumsum(d)
 	dmin <- c(0, d[1:(numprofiles-1)])
 	dmax <- d[1:numprofiles]
@@ -765,6 +766,7 @@ return(d)
 }
 
 find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude, first_point = FALSE) {
+  warning("Returned cell intersections are incorrect, as will be the plotted distance -- needs debugging")
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
 	intersected <- array(FALSE, dim=c(a,b))
