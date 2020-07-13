@@ -381,9 +381,11 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   nc <- ncdf4::nc_open(input_file)
   if (!is.null(nc$var[['t']])) { 
-    ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+    ds <- ncdf4::ncvar_get(nc, "t")
+    ds <- as.Date(ds, origin = as.Date("1990-01-01"))
   } else {
-    ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+    ds <- ncdf4::ncvar_get(nc, "time")
+    ds <- as.Date(ds, origin = as.Date("1990-01-01"))
   }
   if (!is.na(eta_stem)) {
     nc3 <- ncdf4::nc_open(etafile)
@@ -395,7 +397,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
     eta_ds <- ds
   }
-  if (length(ds)==1) {
+  if ((length(ds)==1)|((ds[2]-ds[1])<(10/86400))) { # if it's less than 10 seconds, assume there is a duplicate output as in input_file=12
     blank_length <- as.numeric(end_date - start_date + 1)
   } else {
     blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
