@@ -914,7 +914,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       } else {
         ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
       }
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) + 0.5/(as.numeric(ds[2] - ds[1]))
       ncdf4::nc_close(nc)
   }
 
@@ -984,7 +984,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Initialise
   blanks <- rep(NA, blank_length)
   ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
-  if (!is.list(ts_frame))  names(ts_frame) <- c("date", var_names)
+#  if (!is.list(ts_frame))  
+    names(ts_frame) <- c("date", var_names)
 
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
@@ -1030,10 +1031,16 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
      } else {
-       from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
-	    if (from_day<1) from_day <-1
-	    day_count <- day_count / as.numeric(ds[2]-ds[1])
-	    fileslist <- 1
+        from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+        if (month==12) {
+          to_day <- as.integer((as.Date(paste(year+1, 1, 1, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1]))
+        } else {
+          to_day <- as.integer((as.Date(paste(year, month+1, 1, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1]))
+        }
+        if (to_day>length(ds)) to_day <- length(ds)
+	      if (from_day<1) from_day <-1
+	      day_count <- to_day - from_day
+	      fileslist <- 1
      }
      for (dcount in fileslist) {
         if (ereefs_case == 1) {
@@ -1062,6 +1069,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         }
         im1 = i+1
         i <- i + length(d)
+        #browser()
         ts_frame$date[im1:i] <- d
         z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
         zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
@@ -1198,15 +1206,15 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-	nc <- safe_nc_open(input_file)
-	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	}
-	ncdf4::nc_close(nc)
-        blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-			  # '.nc?latitude,longitude')
+	    nc <- safe_nc_open(input_file)
+	    if (!is.null(nc$var[['t']])) { 
+	        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+            } else {
+	        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	    }
+	    ncdf4::nc_close(nc)
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+	    # '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
