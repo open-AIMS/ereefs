@@ -513,10 +513,11 @@ if (!is.null(mark_points)) {
 if (gbr_poly) {
   p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group))
 }
-if (all(!is.na(box_bounds))) { 
+if (all(is.na(box_bounds))) { 
   p <- p + ggplot2::coord_map()
 } else { 
-  p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4])
+  p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4]) + 
+    ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
 } 
 
 if (!suppress_print) print(p)
@@ -1190,10 +1191,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
             if (gbr_poly) {
               p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) 
             }
-            if (all(!is.na(box_bounds))) { 
+            if (all(is.na(box_bounds))) { 
               p <- p + ggplot2::coord_map()
             } else {
-              p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4])
+              p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4]) + 
+                ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
             }
 
             icount <- icount + 1
@@ -1328,10 +1330,11 @@ plot_map <- function(datapoly,
          p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
        }
     }
-    if (all(!is.na(box_bounds))) { 
+    if (all(is.na(box_bounds))) { 
       p <- p + ggplot2::coord_map()
     } else {
-      p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim=box_bounds[3:4])
+      p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim=box_bounds[3:4]) +
+        ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
     }
 
     print(p)
