@@ -123,7 +123,9 @@ plume_class <- function(rsr) {
 #'      (not simple-format) ereefs netcdf output file such as 
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
 #' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
-#'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+#'      from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
+#'      If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
+#'      If three values are given, uses scale_fill_gradient2 (spectrum from low to high through middle value).
 #'      Defaults to c('ivory', 'coral4').
 #' @param scale_lim Upper and lower bounds for colour scale. Defaults to full range of data.
 #'      Ignored for true_colour plots.
@@ -465,35 +467,40 @@ if (Google_map_underlay) {
 } else if (length(p)==1) {
   p <- ggplot2::ggplot()
 }
+
+p <-  p + ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) 
+
 if (var_name=="true_colour") {
-  p <- p +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-	ggplot2::scale_fill_identity() 
-} else {
-   if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
-   p <- p + ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
-   if (length(scale_col)==2) { 
-      p <- p +
-           ggplot2::scale_fill_gradient(low=scale_col[1], 
+  p <- p + ggplot2::scale_fill_identity() 
+} else if (scale_col[1] == "spectral") { 
+  p <- p + ggplot2::scale_fill_distiller(palette = 'Spectral',
+                                         na.value="transparent", 
+                                         guide="colourbar", 
+                                         limits=scale_lim, 
+                                         name=var_units, 
+                                         oob=scales::squish) 
+} else if (length(scale_col)<3) { 
+  if (length(scale_col)==1) scale_col <- c('ivory', scale_col) 
+  p <- p + ggplot2::scale_fill_gradient(low=scale_col[1], 
                                         high=scale_col[2], 
-				                            na.value="transparent", 
-				                            guide="colourbar",
-				                            limits=scale_lim,
-				                            #name=expression(paste('cells m'^'-3')),
-				                            name=var_units,
-				                            oob=scales::squish)
-        } else { 
-           p <- p +
-           ggplot2::scale_fill_gradient2(low=scale_col[1], 
+				                                na.value="transparent", 
+				                                guide="colourbar",
+				                                limits=scale_lim,
+				                                #name=expression(paste('cells m'^'-3')),
+				                                name=var_units,
+				                                oob=scales::squish) 
+} else { 
+  p <- p + ggplot2::scale_fill_gradient2(low=scale_col[1], 
                                          mid=scale_col[2], 
                                          high=scale_col[3], 
                                          na.value="transparent", 
                                          guide="colourbar",
-				                             limits=scale_lim,
-				                             #name=expression(paste('cells m'^'-3')),
-				                             name=var_units,
-				                             oob=scales::squish)
-        }
+     			                               limits=scale_lim,
+                                         midpoint=(scale_lim[2] - scale_lim[1])/2,
+                                         space="Lab",
+      		                               #name=expression(paste('cells m'^'-3')),
+  	    	                               name=var_units,
+  		                                   oob=scales::squish) 
 }
 
 if (label_towns) {
@@ -575,6 +582,7 @@ if (return_poly) {
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
 #' @param scale_col Vector of colours to use for the colour scale. This can be colours 
 #'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+#'      If set to "spectral", uses a colour spectrum from bluish to red (similar to jet but less vivid). Otherwise:
 #'      If one value is given, low colour is set to ivory and high colour to the value given.
 #'      If two values are given, these are used as low and high limit colours.
 #'      If three values are given, the middle value is used to set the mid-point of the scale.
@@ -1128,35 +1136,36 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	         } else {
 	             p <- ggplot2::ggplot()
             }
-            if (var_name=="true_colour") {
-        #print('debug 2');
-	            p <- p +
-               ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-	            ggplot2::scale_fill_identity()
+            p <- p + ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
+            if (var_name=="true_colour") { 
+              p <- p + ggplot2::scale_fill_identity()
+            } else if (scale_col[1] == 'spectral') { 
+              p <- p + ggplot2::scale_fill_distiller(palette = 'Spectral',
+                                                     na.value="transparent", 
+                                                     guide="colourbar", 
+                                                     limits=scale_lim, 
+                                                     name=var_units, 
+                                                     oob=scales::squish) 
+            } else if (length(scale_col)<3) { 
+              if (length(scale_col) == 1) scale_col <- c('ivory', scale_col)
+              p <- p + ggplot2::scale_fill_gradient(low=scale_col[1],
+					                                          high=scale_col[2],
+					                                          na.value="transparent", 
+					                                          guide="colourbar",
+					                                          limits=scale_lim,
+					                                          name=var_units,
+					                                          oob=scales::squish)
             } else {
-               p <- p +
-               ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-               if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
-               if (length(scale_col)==2) { 
-                  p <- p +
-                  ggplot2::scale_fill_gradient(low=scale_col[1],
-					                                high=scale_col[2],
-					                                na.value="transparent", 
-					                                guide="colourbar",
-					                                limits=scale_lim,
-					                                name=var_units,
-					                                oob=scales::squish)
-               } else {
-                  p <- p +
-                  ggplot2::scale_fill_gradient2(low=scale_col[1],
-                                                mid=scale_col[2],
-					                                high=scale_col[3],
-					                                na.value="transparent", 
-					                                guide="colourbar",
-					                                limits=scale_lim,
-					                                name=var_units,
-					                                oob=scales::squish)
-               }
+                  p <- p + ggplot2::scale_fill_gradient2(low=scale_col[1],
+                                                         mid=scale_col[2],
+					                                               high=scale_col[3],
+					                                               na.value="transparent", 
+                                                         midpoint=(scale_lim[2] - scale_lim[1])/2,
+                                                         space="Lab",
+					                                               guide="colourbar",
+					                                               limits=scale_lim,
+					                                               name=var_units,
+					                                               oob=scales::squish)
             }
 
             if (add_arrows) {
@@ -1237,8 +1246,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
 #'      Default now FALSE.
 #' @param scale_col Vector of colours to use for the colour scale. This can be colours 
-#'      from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
-#'      If one value is given, low colour is set to ivory and high colour to the value given.
+#'      from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
+#'      If set to "spectral", uses a colour spectrum from bluish to red (similar to jet but less vivid). Otherwise:
+#'      If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
 #'      If two values are given, these are used as low and high limit colours.
 #'      If three values are given, the middle value is used to set the mid-point of the scale.
 #'      Defaults to c('ivory', 'coral4').
@@ -1292,33 +1302,39 @@ plot_map <- function(datapoly,
     p <- ggplot2::ggplot()
   }
   if (!suppress_print) {
+    p <- p + ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
     if (var_name=="true_colour") {
-      p <- p +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly) +
-	      ggplot2::scale_fill_identity() 
+      p <- p + ggplot2::scale_fill_identity() 
     } else {
-      p <- p +
-        ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
-        if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
-        if (length(scale_col)==2) { 
-           p <- p +
-           ggplot2::scale_fill_gradient(low=scale_col[1], 
-				                             high=scale_col[2], 
-				                             na.value="transparent", 
-				                             guide="colourbar",
-				                             limits=scale_lim,
-				                             name=var_units,
-				                             oob=scales::squish)
+        if (scale_col[1] == 'spectral') { 
+          p <- p + ggplot2::scale_fill_distiller(palette = 'Spectral',
+                                                 na.value="transparent", 
+                                                 guide="colourbar", 
+                                                 limits=scale_lim, 
+                                                 name=var_units, 
+                                                 oob=scales::squish) 
         } else {
-           p <- p +
-           ggplot2::scale_fill_gradient2(low=scale_col[1], 
-                                         mid=scale_col[2],
-				                             high=scale_col[3], 
-				                             na.value="transparent", 
-				                             guide="colourbar",
-				                             limits=scale_lim,
-				                             name=var_units,
-				                             oob=scales::squish)
+          if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
+          if (length(scale_col)<3) { 
+            p <- p + ggplot2::scale_fill_gradient(low=scale_col[1], 
+				                                          high=scale_col[2], 
+				                                          na.value="transparent", 
+				                                          guide="colourbar",
+				                                          limits=scale_lim,
+				                                          name=var_units,
+				                                          oob=scales::squish) 
+          } else { 
+            p <- p + ggplot2::scale_fill_gradient2(low=scale_col[1], 
+                                                   mid=scale_col[2],
+				                                           high=scale_col[3], 
+				                                           na.value="transparent", 
+				                                           guide="colourbar",
+				                                           limits=scale_lim,
+                                                   midpoint=(scale_lim[2] - scale_lim[1])/2,
+                                                   space="Lab",
+				                                           name=var_units,
+				                                           oob=scales::squish) 
+          }
         }
     }
     p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North')
