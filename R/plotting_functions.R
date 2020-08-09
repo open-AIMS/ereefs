@@ -136,9 +136,7 @@ plume_class <- function(rsr) {
 #'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
-#' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
-#'        [dev note: An alternative would be to provide a version that plots from cell centres rather than using polygons, which should be fine other
-#'         than near complex coastlines]
+#' @param strict_bounds Obsolescent: ignored
 #' @param mark_points Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.
 #' @export
 #' @examples
@@ -507,7 +505,8 @@ if (label_towns) {
 }
 
 p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[day])+0.000001), "%Y-%m-%d %H:%M"))) +
-    ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
+    ggplot2::xlab('longitude') + ggplot2::ylab('latitude') +
+    ggplot2::coord_map()
 if (!is.null(mark_points)) {
   if (is.null(dim(mark_points))) mark_points <- data.frame(latitude = mark_points[1], longitude = mark_points[2])
   p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
@@ -517,14 +516,7 @@ if (gbr_poly) {
   xrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range
   yrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range
   p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) +
-  ggplot2::xlim(xrange) + ggplot2::ylim(yrange)
-}
-if (strict_bounds) {
-  if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
-  if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
-  if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
-  if (is.na(box_bounds[4])) box_bounds[4] <- max(positions$y)
-  p <- p + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
+           ggplot2::coord_map(xlim=xrange, ylim=yrange)
 }
 if (!suppress_print) print(p)
 if (return_poly) {
@@ -595,7 +587,7 @@ if (return_poly) {
 #' @param stride Default 'daily', but can otherwise be set to a numeric interval indicating how many time-steps to step forward for each frame.
 #' @param verbosity Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
-#' @param strict_bounds TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
+#' @param strict_bounds Obsolescent: ignored
 #' @param mark_points Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.
 #' @param gbr_poly TRUE to show contours of approximate reef areas. Default FALSE.
 #' @param add_arrows TRUE to show arrows indicating magnitude and direction of flow. Default FALSE.
@@ -990,7 +982,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
              dims <- nc$var[[var_name]][['size']]
           }
           if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
-          ndims <- length(dims[dims!=1])
+          ndims <- length(dims)
+          # If there's only one layer (e.g. a surf.nc file) then we want to reduce ndims accordingly, but not if there is only one time-step
+          if ((length(dims[dims!=1])!=ndims)&&(dims[length(dims)]!=1)) ndims <- ndims - 1
           if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
           ncdf4::nc_close(nc)
         }
@@ -1184,7 +1178,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
               if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.double(ds[jcount])+0.000001), "%Y-%m-%d %H:%M")))
-            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") 
+            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") + ggplot2::coord_map()
             if (!is.null(mark_points)) {
               p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
               if (plot_eta) {
@@ -1197,14 +1191,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
               xrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range
               yrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range
               p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) +
-                ggplot2::xlim(xrange) + ggplot2::ylim(yrange)
-            }
-            if (strict_bounds) {
-              if (is.na(box_bounds[1])) box_bounds[1] <- min(positions$x)
-              if (is.na(box_bounds[2])) box_bounds[2] <- max(positions$x)
-              if (is.na(box_bounds[3])) box_bounds[3] <- min(positions$y)
-              if (is.na(box_bounds[4])) box_bounds[4] <- max(positions$y)
-              p <- p + ggplot2::xlim(box_bounds[1],box_bounds[2])+ggplot2::ylim(box_bounds[3],box_bounds[4])
+                ggplot2::coord_map(xlim=xrange, ylim=yrange)
             }
             icount <- icount + 1
 
@@ -1329,7 +1316,7 @@ plot_map <- function(datapoly,
 				                             oob=scales::squish)
         }
     }
-    p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North')
+    p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North') + ggplot2::coord_map()
     if (label_towns) {
        towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
                       longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
@@ -1338,7 +1325,9 @@ plot_map <- function(datapoly,
          yrange <- ggplot2::layer_scales(p)$y$range$range
          xrange <- ggplot2::layer_scales(p)$x$range$range
          p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right")) +
-           ggplot2::ylim(yrange) + ggplot2::xlim(xrange)
+           ggplot2::coord_map(xlim=xrange, ylim=yrange)
+           
+          # ggplot2::ylim(yrange) + ggplot2::xlim(xrange)
        }
     }
 
