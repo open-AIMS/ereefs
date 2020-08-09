@@ -505,19 +505,20 @@ if (label_towns) {
 }
 
 p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[day])+0.000001), "%Y-%m-%d %H:%M"))) +
-    ggplot2::xlab('longitude') + ggplot2::ylab('latitude') +
-    ggplot2::coord_map()
+    ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
 if (!is.null(mark_points)) {
   if (is.null(dim(mark_points))) mark_points <- data.frame(latitude = mark_points[1], longitude = mark_points[2])
   p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
 }
 if (gbr_poly) {
-  # save current x and y limits and restore them after adding the reef polygons
-  xrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range
-  yrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range
-  p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) +
-           ggplot2::coord_map(xlim=xrange, ylim=yrange)
+  p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group))
 }
+if (all(!is.na(box_bounds))) { 
+  p <- p + ggplot2::coord_map()
+} else { 
+  p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4])
+} 
+
 if (!suppress_print) print(p)
 if (return_poly) {
   return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
@@ -1178,7 +1179,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
               if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.double(ds[jcount])+0.000001), "%Y-%m-%d %H:%M")))
-            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude") + ggplot2::coord_map()
+            p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
             if (!is.null(mark_points)) {
               p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
               if (plot_eta) {
@@ -1187,12 +1188,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
               }
             }
             if (gbr_poly) {
-              # save current x and y limits and restore them after adding the reef polygons
-              xrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$x.range
-              yrange <- ggplot2::ggplot_build(p)$layout$panel_params[[1]]$y.range
-              p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) +
-                ggplot2::coord_map(xlim=xrange, ylim=yrange)
+              p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) 
             }
+            if (all(!is.na(box_bounds))) { 
+              p <- p + ggplot2::coord_map()
+            } else {
+              p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4])
+            }
+
             icount <- icount + 1
 
             if (plot_eta) {
@@ -1316,19 +1319,19 @@ plot_map <- function(datapoly,
 				                             oob=scales::squish)
         }
     }
-    p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North') + ggplot2::coord_map()
+    p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North')
     if (label_towns) {
        towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
                       longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
                       town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
        if (dim(towns)[1]>0) {
-         yrange <- ggplot2::layer_scales(p)$y$range$range
-         xrange <- ggplot2::layer_scales(p)$x$range$range
-         p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right")) +
-           ggplot2::coord_map(xlim=xrange, ylim=yrange)
-           
-          # ggplot2::ylim(yrange) + ggplot2::xlim(xrange)
+         p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
        }
+    }
+    if (all(!is.na(box_bounds))) { 
+      p <- p + ggplot2::coord_map()
+    } else {
+      p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim=box_bounds[3:4])
     }
 
     print(p)
