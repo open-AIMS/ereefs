@@ -865,6 +865,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else if (is.character(start_date)) {
     start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
                                  origin=c(year=1990, month=1, day=1))
+  } else if (class(start_date)[1] == "Date") {
+    start_date <- chron::as.chron(start_date)
   }
   start_day <- as.integer(chron::days(start_date))
   start_tod <- as.numeric(start_date) - as.integer(start_date)
@@ -889,6 +891,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else if (is.character(end_date)) {
     end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
                                  origin=c(year=1990, month=1, day=1))
+  } else if (class(end_date)[1] == "Date") {
+    end_date <- chron::as.chron(end_date)
   }
   end_day <- as.integer(chron::days(end_date))
   end_month <- as.integer(months(end_date))
@@ -938,6 +942,17 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       blank_length <- end_date - start_date + 1
+      nc <- safe_nc_open(input_file)
+	    if (!is.null(nc$var[['t']])) { 
+        posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        #ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
+      } else { 
+        posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        #ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
+	    }
+	    ncdf4::nc_close(nc) 
 			  # '.nc?latitude,longitude')
   } else {
       input_file <- input_file
@@ -1094,7 +1109,11 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- safe_nc_open(input_file)
-        if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
+        if (!is.na(eta_stem)) {
+          nc3 <- safe_nc_open(etafile)
+        } else if (is.null(nc$var[['eta']])) { 
+          stop("Simple format files do not include surface elevation (needed for depth integration or depth below surface). Please either use a standard format file or provide another filename as eta_stem that contains matching eta data (e.g. from a hydrodynamic run).")
+        }
         if (ereefs_case > 0) {
           if (!is.null(nc$var[['t']])) {
             d <- (safe_ncvar_get(nc, "t") + ereefs_origin)[from_day:(from_day+day_count-1)]
@@ -1108,6 +1127,11 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           eta <- safe_ncvar_get(nc, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
           #eta <- safe_ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         } else {
+          if (!is.na(eta_stem)) {
+            nc3 <- safe_nc_open(etafile)
+          } else if (is.null(nc$var[['eta']])) { 
+            stop("Simple format files do not include surface elevation (needed for depth integration or depth below surface). Please either use a standard format file or provide another filename as eta_stem that contains matching eta data (e.g. from a hydrodynamic run).")
+          }
           eta <- safe_ncvar_get(nc3, 'eta', start=c(startv,from_day), count=c(countv,day_count)) 
           #eta <- safe_ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],from_day), count=c(1,1,day_count)) 
         }
