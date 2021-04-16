@@ -249,6 +249,7 @@ substitute_filename <- function(input_file) {
 #' @param verbosity How much information to display along the way (0 to 2. Default is 1).
 #' @param return_list Default FALSE. Set to true if you want a list of dataframes returned (one df per geolocation). Included for
 #'                    backward compatibility.
+#' @param date_format Default "date". Set to "chron" to have the date returned in chron format.
 #' @export
 #' @examples
 #' \dontrun{
@@ -268,7 +269,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           eta_stem = NA,
                           override_positive=FALSE,
                           verbosity = 1,
-                          return_list = FALSE)
+                          return_list = FALSE,
+                          date_format = "date")
 {
   if (is.null(dim(location_latlon))) {
      location_latlon <- array(location_latlon, c(1,2))
@@ -295,22 +297,55 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   # Dates to plot
   if (is.vector(start_date)) {
-	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
+    if ((length(start_date==2)) && is.character(start_date[1])) { 
+          start_date <- chron::chron(start_date[1], start_date[2], format=c('d-m-y', 'h:m:s'), 
+                                     origin=c(year=1990, month=1, day=1))
+    } else if (length(start_date==3)) { 
+      # Set time to midday
+      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+    } else if (length(start_date==4)) {
+       if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
+       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), start_date[4], format=c('d-m-y', 'h:m:s'), 
+                                  origin=c(year=1990, month=1, day=1)) 
+    } else {
+      stop("start_date format not recognised")
+    }
   } else if (is.character(start_date)) {
-	  start_date <- as.Date(start_date)
+    start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+  } else if (class(start_date)[1] == "Date") {
+    start_date <- chron::as.chron(start_date)
   }
-  start_day <- as.integer(format(start_date, '%d'))
-  start_month <- as.integer(format(start_date, '%m'))
-  start_year <- as.integer(format(start_date, '%Y'))
+  start_day <- as.integer(chron::days(start_date))
+  start_tod <- as.numeric(start_date) - as.integer(start_date)
+  start_month <- as.integer(months(start_date))
+  start_year <- as.integer(as.character(chron::years(start_date)))
 
   if (is.vector(end_date)) {
-	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
+    if (length(end_date==2) && is.character(end_date[1])) { 
+          end_date <- chron::chron(end_date[1], end_date[2], format=c('d-m-y', 'h:m:s'), 
+                                     origin=c(year=1990, month=1, day=1))
+    } else if (length(end_date==3)) { 
+      # Set time to midday
+      end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+    } else if (length(end_date==4)) {
+       if (!is.character(end_date[4])) end_date[4] <- paste0(end_date[4], ':00')
+       end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), end_date[4], format=c('d-m-y', 'h:m:s'), 
+                                  origin=c(year=1990, month=1, day=1)) 
+    } else {
+      stop("end_date format not recognised")
+    }
   } else if (is.character(end_date)) {
-	  end_date <- as.Date(end_date)
+    end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+  } else if (class(end_date)[1] == "Date") {
+    end_date <- chron::as.chron(end_date)
   }
-  end_day <- as.integer(format(end_date, '%d'))
-  end_month <- as.integer(format(end_date, '%m'))
-  end_year <- as.integer(format(end_date, '%Y'))
+  end_day <- as.integer(chron::days(end_date))
+  end_month <- as.integer(months(end_date))
+  end_year <- as.integer(as.character(chron::years(end_date)))
   
   if (start_date > end_date) {
     stop('start_date must preceed end_date')
@@ -335,41 +370,48 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
 	  nc <- safe_nc_open(input_file)
-	  if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	  }
-    if ((start_date) < ds[1]) {
-      warning(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
-      start_date <- ds[1]
+    if (!is.null(nc$var[['t']])) { 
+      posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+      ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
+    } else { 
+      posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+      ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
     }
-
-	  ncdf4::nc_close(nc)
+    ncdf4::nc_close(nc) 
     blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-		# '.nc?latitude,longitude')
   } else if (ereefs_case == 1) {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
+      if (verbosity>1) print(input_file)
+      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
+			  '.nc')
       blank_length <- end_date - start_date + 1
-			  # '.nc?latitude,longitude')
+      nc <- safe_nc_open(input_file)
+	    if (!is.null(nc$var[['t']])) { 
+        posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        #ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
+      } else { 
+        posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        #ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
+	    }
+	    ncdf4::nc_close(nc) 
   } else {
       input_file <- input_file
       nc <- safe_nc_open(input_file)
-      if (!is.null(nc$var[['t']])) {
-        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-      } else {
-        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-      }
-      if (start_date < ds[1]) {
-        warning(paste('start_date', start_date, ' is before start of available data. Resetting start_date to', ds[1]))
-        start_date <- ds[1]
-      }
-      if (end_date > ds[length(ds)]) {
-        warning(paste('end_date', end_date, ' is after the end of available data. Resetting end_date to', ds[length(ds)]))
-        end_date <- ds[length(ds)]
-      }
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+	    if (!is.null(nc$var[['t']])) { 
+        posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
+      } else { 
+        posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
+	    }
+      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
       ncdf4::nc_close(nc)
   }
 
@@ -398,7 +440,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        grid_index <- which.min(grid_index) 
     } else { 
        # Multiple locations
-       if (class(location_latlon) != "data.frame") {
+       if (class(location_latlon)[1] != "data.frame") {
           # location_latlon has been provided as an array/matrix. Coerce it into a data frame for consistency.
           location_latlon <- data.frame(latitude = location_latlon[,1], longitude = location_latlon[,2])
        }
@@ -430,6 +472,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Initialise
   blanks <- rep(NA, blank_length)
   ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
+  #ts_frame <- data.frame(blanks, array(blanks, dim=c(length(blanks), length(var_names))))
   colnames(ts_frame) <- c("date", var_names)
 
   # Loop through monthly eReefs files to extract the data
@@ -445,6 +488,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        from_day <- start_day
     } else {
        from_day <- 1
+        start_tod <- 0
     }
     if ((start_year==end_year)&&(start_month==end_month)) {
        day_count <- end_day - start_day + 1
@@ -468,9 +512,14 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    from_day <- 1
 	    day_count <- 1
     } else { 
-      from_day <- as.integer((as.Date(paste(year, month, from_day, sep="-")) - ds[1])/as.numeric(ds[2]-ds[1])) + 1
+      day_count <- day_count / as.numeric(ds[2]-ds[1])
+      if (day_count > length(ds)) {
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+        day_count <- length(ds)
+      }
+      from_day <- as.numeric((chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
+                                  origin=c(year=1990, month=1, day=1)) + start_tod - ds[1]) / as.numeric(ds[2] - ds[1])) + 1 
 	    if (from_day<1) from_day <-1
-	    day_count <- day_count / as.numeric(ds[2]-ds[1])
 	    fileslist <- 1
     }
     for (dcount in fileslist) {
@@ -533,9 +582,18 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     }
   }
   if (verbosity>0) close(pb)
-  ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
+
+  ts_frame = lapply(seq(dim(ts_frame)[3]),
+                   function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x] - as.numeric(ereefs_origin)), 
+                                    format=c('y-m-d', 'h:m:s'), 
+                                    origin = c(1, 1, 1990)),
+                                 ts_frame[, 2:dim(ts_frame)[2], x]))
+  if (date_format == "date") ts_frame$date <- as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date)))
+
+  #ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
+  #ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
   if (mmp) names(ts_frame) <- mmp_sites$Name
-  if (numpoints == 1) ts_frame <- ts_frame[[1]]
+  if (numpoints == 1) ts_frame <- data.frame(ts_frame[[1]])
   if (length(var_names)==1) names(ts_frame)[2] <- var_names
   return(ts_frame)
 }
@@ -822,7 +880,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE
 #' @param verbosity (Defailt 1) how much do you want to know about progress?
-#' @param mass (Default FASLE) Set to true if you want the mass per square metre rather than the mean concentration over depth returned
+#' @param mass (Default FALSE) Set to true if you want the mass per square metre rather than the mean concentration over depth returned
+#' @param date_format (Default "date"). Set to "chron" if you'd like the date returned in chron format.
 #' @export
 #' @examples
 #' \dontrun{
@@ -837,7 +896,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			                  eta_stem = NA,
 			                  override_positive=FALSE,
                         verbosity = 1,
-                        mass = FALSE)
+                        mass = FALSE,
+                        date_format = "date")
 {
   input_file <- substitute_filename(input_file)
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
@@ -1080,6 +1140,10 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc') 
         if (verbosity) print(input_file)
         day_count <- day_count / as.numeric(ds[2]-ds[1])
+        if (day_count > length(ds)) {
+          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+          day_count <- length(ds)
+        }
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
      } else if (ereefs_case == 1) {
         fileslist <- from_day:(from_day+day_count-1)
@@ -1177,6 +1241,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (verbosity>0) close(pb)
   ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
+  if (date_format == "date") ts_frame$date <- as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date)))
   return(ts_frame)
 }
 
