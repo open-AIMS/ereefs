@@ -372,11 +372,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	  nc <- safe_nc_open(input_file)
     if (!is.null(nc$var[['t']])) { 
       posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
+        chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+        #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
       ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
     } else { 
       posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
+        chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+        #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
       ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
     }
     ncdf4::nc_close(nc) 
@@ -391,11 +395,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       nc <- safe_nc_open(input_file)
 	    if (!is.null(nc$var[['t']])) { 
         posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
+          chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+          #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
         #ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
       } else { 
         posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
+          chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+          #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
         #ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
 	    }
 	    ncdf4::nc_close(nc) 
@@ -404,11 +412,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       nc <- safe_nc_open(input_file)
 	    if (!is.null(nc$var[['t']])) { 
         posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
+          chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+          #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
         ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
       } else { 
         posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
+        ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
+          chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+          #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
         ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
 	    }
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
@@ -517,8 +529,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
         day_count <- length(ds)
       }
-      from_day <- as.numeric((chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
-                                  origin=c(year=1990, month=1, day=1)) + start_tod - ds[1]) / as.numeric(ds[2] - ds[1])) + 1 
+      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
+                                  origin=c(year=1990, month=1, day=1)) - ds[1]) + 
+                              start_tod) / as.numeric(ds[2] - ds[1]) + 1 
 	    if (from_day<1) from_day <-1
 	    fileslist <- 1
     }
@@ -1201,7 +1214,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         }
         im1 = i+1
         i <- i + length(d)
-        #browser()
         ts_frame$date[im1:i] <- d
         z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta)))
         zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta)))
