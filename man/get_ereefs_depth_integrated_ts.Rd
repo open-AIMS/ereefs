@@ -13,7 +13,9 @@ get_ereefs_depth_integrated_ts(
   input_grid = NA,
   eta_stem = NA,
   override_positive = FALSE,
-  verbosity = 1
+  verbosity = 1,
+  mass = FALSE,
+  date_format = "date"
 )
 }
 \arguments{
@@ -47,6 +49,12 @@ only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc file
 
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 incorrect. Default FALSE}
+
+\item{verbosity}{(Defailt 1) how much do you want to know about progress?}
+
+\item{mass}{(Default FALSE) Set to true if you want the mass per square metre rather than the mean concentration over depth returned}
+
+\item{date_format}{(Default "date"). Set to "chron" if you'd like the date returned in chron format.}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 

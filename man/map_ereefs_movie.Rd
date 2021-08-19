@@ -11,7 +11,7 @@ map_ereefs_movie(
   end_date = c(2016, 3, 31),
   layer = "surface",
   output_dir = "ToAnimate",
-  Google_map_underlay = FALSE,
+  Land_map = FALSE,
   input_file = "menu",
   input_grid = NA,
   scale_col = c("ivory", "coral4"),
@@ -52,9 +52,7 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 to 'ToAnimate'. Images are created in this directory with filenames beginning with var_name, 
 followed by an underscore and then sequential numbers beginning with 100001.}
 
-\item{Google_map_underlay}{Set to TRUE to use ggmap to show a Google Map as
-an underlay for the model output plot. Requires the ggmap librray and an activated Google API key.
-Default now FALSE.}
+\item{Land_map}{Set to TRUE to show a land map of Queensland. Default now FALSE.}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
 Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
@@ -70,13 +68,11 @@ x and y grids from data files stored in this package. Alternatively, you can pro
 
 \item{scale_col}{Vector of colours to use for the colour scale. This can be colours 
 from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+If set to "spectral", uses a colour spectrum from bluish to red (similar to jet but less vivid). Otherwise:
 If one value is given, low colour is set to ivory and high colour to the value given.
 If two values are given, these are used as low and high limit colours.
 If three values are given, the middle value is used to set the mid-point of the scale.
 Defaults to c('ivory', 'coral4').}
-
-\item{zoom}{Value of zoom passed to ggmap::ggmap(). Set to 5 if you want to show the entire extent 
-of eReefs models. Defaults to 6. Higher values will zoom in further.}
 
 \item{box_bounds}{Minimum and maximum latitude and longitude coordinates to map. Defaults to the
 entire extent of the model output (though modified by the value of zoom). 
@@ -91,7 +87,7 @@ also specify an appropriate value for zoom if specifying box_bounds.}
 
 \item{label_towns}{Add labels for town locations to the figure. Default TRUE}
 
-\item{strict_bounds}{TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.}
+\item{strict_bounds}{Obsolescent: ignored}
 
 \item{mark_points}{Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.}
 
@@ -121,7 +117,7 @@ Creates and saves to disk a sequential series of colour map images showing conce
 eReefs model output variable at a specified model layer (by default, the surface layer). 
 Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
 be suppressed by setting suppress_print to TRUE if this is the primary desired output).
-Maps produced are optionally (and by default) overlain on a Google Earth map of the region. 
+Maps produced are optionally overlain on a map of Queensland.
 Can be more efficient than calling map_ereefs multiple times if you 
 want to produce an animation because it loads a month at a time for GBR4 runs. 
 If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.

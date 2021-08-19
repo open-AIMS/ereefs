@@ -15,7 +15,8 @@ get_ereefs_ts(
   eta_stem = NA,
   override_positive = FALSE,
   verbosity = 1,
-  return_list = FALSE
+  return_list = FALSE,
+  date_format = "date"
 )
 }
 \arguments{
@@ -61,6 +62,8 @@ incorrect. Default FALSE. Not normally needed.}
 
 \item{return_list}{Default FALSE. Set to true if you want a list of dataframes returned (one df per geolocation). Included for
 backward compatibility.}
+
+\item{date_format}{Default "date". Set to "chron" to have the date returned in chron format.}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 

@@ -68,8 +68,8 @@ plume_class <- function(rsr) {
 #' Create a surface map of eReefs model output.
 #'
 #' Creates a colour map showing concentrations of a specified eReefs model output variable at a specified
-#' model layer (by default, the surface layer). The map is optionally (and by default) overlain on a Google 
-#' Earth map of the region.
+#' model layer (by default, the surface layer). The map is optionally (and by default) overlain on a map
+#' of Queensland (if off the Queensland coast).
 #' By Barbara Robson (AIMS).
 #'
 #' References:
@@ -109,8 +109,8 @@ plume_class <- function(rsr) {
 #'      relative to 1990-01-01 (this is not checked).
 #' @param layer Either a (positive) integer layer number, a negative number indicating depth below MSL (not depth below the free surface) 
 #'        or 'surface' to choose the surface layer. Defaults to 'surface'.
-#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
+#' @param Land_map Set to TRUE to show a map of Queensland as an underlay for the model output plot. No longer requires the fgmap library 
+#'      and an activated Google API key but also doesn't show maps for other locations
 #'      Default now FALSE.
 #' @param input_file is the URI or file location of any of the EMS output files, 
 #'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
@@ -129,13 +129,11 @@ plume_class <- function(rsr) {
 #'      Defaults to c('ivory', 'coral4').
 #' @param scale_lim Upper and lower bounds for colour scale. Defaults to full range of data.
 #'      Ignored for true_colour plots.
-#' @param zoom Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
-#'      of eReefs models. Defaults to 6. Higher values will zoom in further.
 #' @param box_bounds Minimum and maximum latitude and longitude coordinates to map. Defaults to the
 #'        entire extent of the model output (though modified by the value of zoom). 
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max).
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
-#'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
+#'        If p is provided, Land_map is over-ridden and set to FALSE.
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @param strict_bounds Obsolescent: ignored
@@ -152,7 +150,7 @@ plume_class <- function(rsr) {
 map_ereefs <- function(var_name = "true_colour", 
                        target_date = c(2018,1,30), 
                        layer = 'surface', 
-                       Google_map_underlay = FALSE,
+                       Land_map = FALSE,
                        input_file = "menu",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'), 
@@ -175,12 +173,12 @@ if (substr(input_file, 1, 4)=="http") {
   local_file = FALSE
 } else local_file = TRUE
 
-if (length(p)!=1) Google_map_underlay <- FALSE
-if (suppress_print) Google_map_underlay <- FALSE
+if (length(p)!=1) Land_map <- FALSE
+if (suppress_print) Land_map <- FALSE
 
-towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
-                    longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
-                    town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
+towns <- data.frame(latitude = c(-15.47027987, -16.0899, -16.4840, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
+                    longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
+                    town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
 
 # Check whether this is a GBR1 or GBR4 ereefs file, or something else
 ereefs_case <- get_ereefs_case(input_file)
@@ -203,7 +201,7 @@ if (is.vector(target_date)) {
 } else if (is.character(target_date)) {
 	target_date <- as.Date(target_date)
 }
-if (ereefs_case == 4) { 
+if (ereefs_case[2] == '4km') { 
 	filename <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
 	nc <- safe_nc_open(filename)
 	if (!is.null(nc$var[['t']])) { 
@@ -213,7 +211,7 @@ if (ereefs_case == 4) {
 	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
-} else if (ereefs_case == 1) {
+} else if (ereefs_case[2] == '1km') {
 	day <- 1
 	ds <- target_date
 	filename <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
@@ -232,13 +230,6 @@ if (ereefs_case == 4) {
 # Allow for US English:
 if (var_name == "true_color") {
 	var_name <- "true_colour"
-}
-
-# Check for ggmap()
-if ((Google_map_underlay)&(!requireNamespace("ggmap", quietly = TRUE))) {
-  warning('Package ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
-  print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
-  Google_map_underlay = FALSE
 }
 
 # Get cell grid corners
@@ -457,13 +448,13 @@ if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) {
 	scale_lim <- c(min(n, na.rm=TRUE), max(n, na.rm=TRUE))
 }
 
-if (Google_map_underlay) {
+if (Land_map) {
   MapLocation<-c(min(gx, na.rm=TRUE)-0.5, 
  		min(gy, na.rm=TRUE)-0.5, 
  		max(gx, na.rm=TRUE)+0.5, 
  		max(gy, na.rm=TRUE)+0.5)
-  myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", zoom=zoom, crop=TRUE, scale=2))
-  p <- ggmap::ggmap(myMap)
+  p <- ggplot2::ggplot() +
+           ggplot2::geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
 } else if (length(p)==1) {
   p <- ggplot2::ggplot()
 }
@@ -508,7 +499,8 @@ if (label_towns) {
    towns <- towns[towns$latitude<=max(gy, na.rm=TRUE),]
    towns <- towns[towns$longitude>=min(gx, na.rm=TRUE),]
    towns <- towns[towns$longitude<=max(gx, na.rm=TRUE),]
-   if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
+   if (dim(towns)[1]>0) p <- p + ggplot2::geom_text(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"), nudge_x=-0.1) +
+                                 ggplot2::geom_point(data=towns, ggplot2::aes(x=longitude, y=latitude))
 }
 
 p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[day])+0.000001), "%Y-%m-%d %H:%M"))) +
@@ -521,7 +513,7 @@ if (gbr_poly) {
   p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group))
 }
 if (all(is.na(box_bounds))) { 
-  p <- p + ggplot2::coord_map()
+  p <- p + ggplot2::coord_map(xlim = c(min(gx, na.rm=TRUE), max(gx, na.rm=TRUE)), ylim = c(min(gy, na.rm=TRUE), max(gy, na.rm=TRUE)))
 } else { 
   p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4]) + 
     ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
@@ -542,7 +534,7 @@ if (return_poly) {
 #' eReefs model output variable at a specified model layer (by default, the surface layer). 
 #' Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
 #' be suppressed by setting suppress_print to TRUE if this is the primary desired output).
-#' Maps produced are optionally (and by default) overlain on a Google Earth map of the region. 
+#' Maps produced are optionally overlain on a map of Queensland.
 #' Can be more efficient than calling map_ereefs multiple times if you 
 #' want to produce an animation because it loads a month at a time for GBR4 runs. 
 #' If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.
@@ -567,9 +559,7 @@ if (return_poly) {
 #' @param output_dir Path to directory in which to store images for animation. Created if necessary. Defaults
 #'      to 'ToAnimate'. Images are created in this directory with filenames beginning with var_name, 
 #'      followed by an underscore and then sequential numbers beginning with 100001.
-#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap librray and an activated Google API key.
-#'      Default now FALSE.
+#' @param Land_map Set to TRUE to show a land map of Queensland. Default now FALSE.
 #' @param input_file is the URI or file location of any of the EMS output files, 
 #'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
 #'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
@@ -587,8 +577,6 @@ if (return_poly) {
 #'      If two values are given, these are used as low and high limit colours.
 #'      If three values are given, the middle value is used to set the mid-point of the scale.
 #'      Defaults to c('ivory', 'coral4').
-#' @param zoom Value of zoom passed to ggmap::ggmap(). Set to 5 if you want to show the entire extent 
-#'      of eReefs models. Defaults to 6. Higher values will zoom in further.
 #' @param box_bounds Minimum and maximum latitude and longitude coordinates to map. Defaults to the
 #'        entire extent of the model output (though modified by the value of zoom). 
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
@@ -618,7 +606,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              end_date = c(2016,3,31), 
                              layer = 'surface', 
                              output_dir = 'ToAnimate', 
-                             Google_map_underlay = FALSE, 
+                             Land_map = FALSE, 
                              input_file = "menu",
                              input_grid = NA, 
                              scale_col = c('ivory', 'coral4'), 
@@ -648,13 +636,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
   # Check whether this is a GBR1 or GBR4 ereefs file, or something else
   ereefs_case <- get_ereefs_case(input_file) 
-  if (ereefs_case==1) warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
+  if (ereefs_case[2]=='1km') warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
   check_platform_ok(input_stem)
 
-  towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
-                      longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
-                      town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
+  towns <- data.frame(latitude = c(-15.47027987, -16.0899, -16.4840, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
+                    longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
+                    town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
   grids <- get_ereefs_grids(input_file, input_grid)
   x_grid <- grids[['x_grid']]
   y_grid <- grids[['y_grid']]
@@ -700,13 +688,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
    plot_eta <- TRUE
   }
 
-  # Check for ggmap::ggmap()
-  if ((Google_map_underlay)&(!requireNamespace("ggmap", quietly = TRUE))) {
-    warning('Package ggmap::ggmap is required to show a Google map underlay. Preparing plot with no underlay.')
-    print('To avoid this message, either install ggmap or set Google_map_underlay = FALSE.')
-    Google_map_underlay <- FALSE
-  }
-  if (suppress_print) Google_map_underlay <- FALSE
+  if (suppress_print) Land_map <- FALSE
   
   if (start_year==end_year) {
       mths <- start_month:end_month
@@ -813,14 +795,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
   gy <- c(t(gy[gx_ok&gy_ok,]))
   longitude <- c(longitude)[gx_ok&gy_ok]
   latitude <- c(latitude)[gx_ok&gy_ok]
-  if (Google_map_underlay) { 
-	  MapLocation<-c(min(x_grid, na.rm=TRUE)-0.5, 
-                    min(y_grid, na.rm=TRUE)-0.5, 
-                    max(x_grid, na.rm=TRUE)+0.5, 
-                    max(y_grid, na.rm=TRUE)+0.5) 
-     myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", crop=TRUE, zoom=zoom, scale=2))
-     #myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="stamen", maptype="watercolor"))
-  }
 
   # Main routine
   ndims <- 0
@@ -833,8 +807,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
     if (mcount == 1) {
        from_day <- start_day
-       if (ereefs_case == 0) {
-	      filename <- paste0(input_stem, '.nc')
+       if (!is.na(ereefs_case[2])) {
+         if (ereefs_case[2] == "4km") { 
+           filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m'), '.nc')
+         } else {
+           filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
+         }
 	      nc <- safe_nc_open(filename)
 	      if (!is.null(nc$var[['t']])) { 
 	          ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
@@ -856,7 +834,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
     }
 
-    if (ereefs_case == 4) { 
+    if (ereefs_case[2] == '4km') { 
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    nc <- safe_nc_open(filename)
 	    if (!is.null(nc$var[['t']])) { 
@@ -875,7 +853,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
        start_array <- c(xmin, ymin, dum1)
 	     count_array <- c(xmax-xmin, ymax-ymin, dum2)
 	     fileslist <- 1
-    } else if (ereefs_case == 1) { 
+    } else if (ereefs_case[2] == '1km') { 
 	     filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
 	     nc <- safe_nc_open(filename)
 	     if (!is.null(nc$var[['t']])) { 
@@ -907,7 +885,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
     stride <- as.integer(stride)
 
     for (i in fileslist) {
-      if (ereefs_case == 1) { 
+      if (ereefs_case[2] == '1km') { 
          filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc') 
          ds <- as.Date(paste(year, month, i, sep="-", '%Y-%m-%d'))
       }
@@ -933,7 +911,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                          seq(from = start_array[3] - 1, to = start_array[3] + count_array[3] - 2, by = stride)]
         }
         ems_var <- NA*R_678
-        if (ereefs_case ==4) {
+        if (ereefs_case[2] == '4km') {
             for (day in 1:dim(R_412)[3]) {
               rsr <- list(R_412[,,day], R_443[,,day], R_488[,,day], R_531[,,day], R_547[,,day], R_667[,,day], R_678[,,day])
               ems_var[,,day] <- plume_class(rsr)
@@ -1124,15 +1102,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
         values <- data.frame(id = id, value = n)
         positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
         datapoly <- merge(values, positions, by = c("id"))
-        #print('debug 1'); print(var_name)
     
         if (!suppress_print) {
             if ((var_name!="true_colour")&&(is.na(scale_lim[1]))) { 
 	            scale_lim <- c(min(n, na.rm=TRUE), max(n, na.rm=TRUE))
             }
   
-            if (Google_map_underlay) {
-               p <- ggmap::ggmap(myMap)
+            if (Land_map) {
+               p <- ggplot2::gplot() + geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
 	         } else {
 	             p <- ggplot2::ggplot()
             }
@@ -1186,7 +1163,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
               towns <- towns[towns$latitude<=max(gy, na.rm=TRUE),]
               towns <- towns[towns$longitude>=min(gx, na.rm=TRUE),]
               towns <- towns[towns$longitude<=max(gx, na.rm=TRUE),]
-              if (dim(towns)[1]>0) p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
+              if (dim(towns)[1]>0) p <- p + ggplot2::geom_text(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"), nudge_x=-0.1) +
+                                 ggplot2::geom_point(data=towns, ggplot2::aes(x=longitude, y=latitude))
             }
             p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.double(ds[jcount])+0.000001), "%Y-%m-%d %H:%M")))
             p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
@@ -1201,7 +1179,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
               p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) 
             }
             if (all(is.na(box_bounds))) { 
-              p <- p + ggplot2::coord_map()
+              p <- p + ggplot2::coord_map(xlim = c(min(gx, na.rm=TRUE), max(gx, na.rm=TRUE)), ylim = c(min(gy, na.rm=TRUE), max(gy, na.rm=TRUE)))
             } else {
               p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim = box_bounds[3:4]) + 
                 ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
@@ -1242,9 +1220,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @param datapoly A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().
 #' @param var_longname Character vector to use for the figure title.
 #' @param var_units Units to include in the figure labelling.
-#' @param Google_map_underlay Set to TRUE to use ggmap to show a Google Map as
-#'      an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
-#'      Default now FALSE.
+#' @param Land_map Set to TRUE to show a land mapof Queensland.  Default now FALSE.
 #' @param scale_col Vector of colours to use for the colour scale. This can be colours 
 #'      from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
 #'      If set to "spectral", uses a colour spectrum from bluish to red (similar to jet but less vivid). Otherwise:
@@ -1254,11 +1230,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #'      Defaults to c('ivory', 'coral4').
 #' @param scale_lim Upper and lower bounds for colour scale. Defaults to full range of data.
 #'      Ignored for true_colour plots.
-#' @param zoom Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
-#'      of eReefs models. Defaults to 6. Higher values will zoom in further.
 #' @param suppress_print Default FALSE. If true, don't prdocue the map image.
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
-#'        If p is provided, Google_map_underlay is over-ridden and set to FALSE.
+#'        If p is provided, Land_map is over-ridden and set to FALSE.
 #' @return p Handle for the figure generated.
 #' @export
 #' @examples
@@ -1270,14 +1244,15 @@ map_ereefs_movie <- function(var_name = "true_colour",
 plot_map <- function(datapoly,
              var_longname = '',
              var_units = '',
-  		       Google_map_underlay = FALSE,
+  		       Land_map = FALSE,
              scale_col = c('ivory', 'coral4'),
   		       scale_lim = c(NA, NA),
              box_bounds = c(NA, NA, NA, NA), 
              label_towns = TRUE,
              zoom = 6,
   		       p = NA,
-             suppress_print = FALSE)
+             suppress_print = FALSE,
+             gbr_poly = FALSE)
 {
   if ("datapoly" %in% names(datapoly)) datapoly <- datapoly$datapoly
   if (class(datapoly$value)=="factor") {
@@ -1289,15 +1264,10 @@ plot_map <- function(datapoly,
 	  scale_lim <- c(min(datapoly$value, na.rm=TRUE), max(datapoly$value, na.rm=TRUE))
   }
 
-  if (suppress_print) Google_map_underlay <- FALSE
-  if (length(p)!=1) Google_map_underlay <- FALSE
-  if (Google_map_underlay) {
-    MapLocation<-c(min(datapoly$x, na.rm=TRUE)-0.5, 
- 		min(datapoly$y, na.rm=TRUE)-0.5, 
- 		max(datapoly$x, na.rm=TRUE)+0.5, 
- 		max(datapoly$y, na.rm=TRUE)+0.5)
-    myMap<-suppressWarnings(ggmap::get_map(location=MapLocation, source="google", maptype="satellite", zoom=zoom, crop=TRUE, scale=2))
-    p <- ggmap::ggmap(myMap)
+  if (suppress_print) Land_map <- FALSE
+  if (length(p)!=1) Land_map <- FALSE
+  if (Land_map) {
+    p <- ggplot2::gplot() + geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
   } else if (length(p)==1) {
     p <- ggplot2::ggplot()
   }
@@ -1339,18 +1309,22 @@ plot_map <- function(datapoly,
     }
     p <- p + ggplot2::ggtitle(var_longname) + ggplot2::xlab('degrees East') + ggplot2::ylab('degrees North')
     if (label_towns) {
-       towns <- data.frame(latitude = c(-15.47027987, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
-                      longitude = c(145.2498605, 145.7662482, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
-                      town = c('Cooktown', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
+       towns <- data.frame(latitude = c(-15.47027987, -16.0899, -16.4840, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
+                    longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
+                    town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
        if (dim(towns)[1]>0) {
-         p <- p + ggplot2::geom_label(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"))
+         p <- p + ggplot2::geom_text(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"), nudge_x=-0.1) +
+                                 ggplot2::geom_point(data=towns, ggplot2::aes(x=longitude, y=latitude))
        }
     }
     if (all(is.na(box_bounds))) { 
-      p <- p + ggplot2::coord_map()
+      p <- p + ggplot2::coord_map(xlim = c(min(gx, na.rm=TRUE), max(gx, na.rm=TRUE)), ylim = c(min(gy, na.rm=TRUE), max(gy, na.rm=TRUE)))
     } else {
       p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim=box_bounds[3:4]) +
         ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
+    }
+    if (gbr_poly) {
+      p <- p + ggplot2::geom_path(data=sdf.gbr, ggplot2::aes(y=lat, x=long, group=group)) 
     }
 
     print(p)

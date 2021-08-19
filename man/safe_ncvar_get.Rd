@@ -2,8 +2,8 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{safe_ncvar_get}
 \alias{safe_ncvar_get}
-\title{A wrapper to ncdf4::ncvar_get() that will pause and try again up to 119 times
-if at first it fails, to overcome temporary net access errors or DAP errors.}
+\title{A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
+if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.}
 \usage{
 safe_ncvar_get(
   nc,
@@ -14,11 +14,11 @@ safe_ncvar_get(
   signedbyte = TRUE,
   collapse_degen = TRUE,
   raw_datavals = FALSE,
-  tries = 12
+  tries = 11
 )
 }
 \arguments{
-\item{tries}{number of times to retry (increasing pause length by one second each time. Default 12}
+\item{tries}{number of times to retry (increasing pause length by one second each time. Default 4}
 }
 \value{
 variable extracted using ncvar_get()

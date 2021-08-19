@@ -106,7 +106,7 @@ if (is.vector(target_date)) {
 } else if (is.character(target_date)) {
 	target_date <- as.Date(target_date)
 }
-if (ereefs_case == 4) { 
+if (ereefs_case[2] == '4km') { 
 	filename <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
 	nc <- ncdf4::nc_open(filename)
 	if (!is.null(nc$var[['t']])) { 
@@ -116,7 +116,7 @@ if (ereefs_case == 4) {
 	}
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
-} else if (ereefs_case == 1) {
+} else if (ereefs_case[2] == '1km') {
 	day <- 1
 	ds <- target_date
 	filename <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')

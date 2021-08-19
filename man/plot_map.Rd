@@ -8,14 +8,15 @@ plot_map(
   datapoly,
   var_longname = "",
   var_units = "",
-  Google_map_underlay = FALSE,
+  Land_map = FALSE,
   scale_col = c("ivory", "coral4"),
   scale_lim = c(NA, NA),
   box_bounds = c(NA, NA, NA, NA),
   label_towns = TRUE,
   zoom = 6,
   p = NA,
-  suppress_print = FALSE
+  suppress_print = FALSE,
+  gbr_poly = FALSE
 )
 }
 \arguments{
@@ -25,13 +26,12 @@ plot_map(
 
 \item{var_units}{Units to include in the figure labelling.}
 
-\item{Google_map_underlay}{Set to TRUE to use ggmap to show a Google Map as
-an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
-Default now FALSE.}
+\item{Land_map}{Set to TRUE to show a land mapof Queensland.  Default now FALSE.}
 
 \item{scale_col}{Vector of colours to use for the colour scale. This can be colours 
-from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
-If one value is given, low colour is set to ivory and high colour to the value given.
+from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
+If set to "spectral", uses a colour spectrum from bluish to red (similar to jet but less vivid). Otherwise:
+If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
 If two values are given, these are used as low and high limit colours.
 If three values are given, the middle value is used to set the mid-point of the scale.
 Defaults to c('ivory', 'coral4').}
@@ -39,11 +39,8 @@ Defaults to c('ivory', 'coral4').}
 \item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.
 Ignored for true_colour plots.}
 
-\item{zoom}{Value of zoom passed to ggmap(). Set to 5 if you want to show the entire extent 
-of eReefs models. Defaults to 6. Higher values will zoom in further.}
-
 \item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
-If p is provided, Google_map_underlay is over-ridden and set to FALSE.}
+If p is provided, Land_map is over-ridden and set to FALSE.}
 
 \item{suppress_print}{Default FALSE. If true, don't prdocue the map image.}
 }

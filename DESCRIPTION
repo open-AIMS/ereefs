@@ -1,6 +1,6 @@
 Package: ereefs
 Title: Useful Functions to Handle eReefs and EMS model Output
-Version: 2.7.20
+Version: 2.8.0
 Encoding: UTF-8
 Authors@R: c(person("Barbara", "Robson", email="B.Robson@aims.gov.au",
                    role = c("aut", "cre")),
@@ -34,19 +34,20 @@ Description: A few useful functions to make accessing eReefs and other
       safe_ncvar_get()
     Function to download discharge data from Qld. Govt servers:
       download_discharge()
-Depends: R (>= 3.4.0)
+Depends: R (>= 4.0.3)
 URL: https://ereefs.info
-Date: 2018-03-07
+Date: 2021-08-18
 License: MIT + file LICENSE
 LazyData: true
 Imports: ncdf4 (>= 1.16),
          plyr (>= 1.8.4),
          dplyr (>= 0.7.6),
-         stringi (>= 1.1.6),
-	 ggplot2 (>= 2.2.1),
-         cowplot(>= 1.0.0),
+	       ggplot2 (>= 3.3.5),
+         raster (>= 2.6),
+         cowplot(>= 1.1.1),
+         utils (>= 4.0.3),
          chron (>= 2.3-55),
-         raster (>= 2.6)
-Suggests: ggmap (>= 2.6.1),
-         sp (>= 1.2)
-RoxygenNote: 7.0.2
+         marmap (>= 1.0.5),
+         stringi (>= 1.1.6)
+Suggests: sp (>= 1.2)
+RoxygenNote: 7.1.1

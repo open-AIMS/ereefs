@@ -8,7 +8,7 @@ map_ereefs(
   var_name = "true_colour",
   target_date = c(2018, 1, 30),
   layer = "surface",
-  Google_map_underlay = FALSE,
+  Land_map = FALSE,
   input_file = "menu",
   input_grid = NA,
   scale_col = c("ivory", "coral4"),
@@ -28,7 +28,7 @@ map_ereefs(
   var_name = "true_colour",
   target_date = c(2018, 1, 30),
   layer = "surface",
-  Google_map_underlay = FALSE,
+  Land_map = FALSE,
   input_file = "menu",
   input_grid = NA,
   scale_col = c("ivory", "coral4"),
@@ -64,8 +64,8 @@ c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character s
 \item{layer}{Either a (positive) integer layer number, a negative number indicating depth below MSL (not depth below the free surface) 
 or 'surface' to choose the surface layer. Defaults to 'surface'.}
 
-\item{Google_map_underlay}{Set to TRUE to use ggmap to show a Google Map as
-an underlay for the model output plot. Requires the ggmap library and an activated Google API key.
+\item{Land_map}{Set to TRUE to show a map of Queensland as an underlay for the model output plot. No longer requires the fgmap library 
+and an activated Google API key but also doesn't show maps for other locations
 Default now FALSE.}
 
 \item{input_file}{is the URI or file location of any of the EMS output files, 
@@ -81,7 +81,9 @@ x and y grids from data files stored in this package. Alternatively, you can pro
 "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
 
 \item{scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
-from the ggplot colour palette or a RGB hash code. Ignored for true_colour plots. 
+from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
+If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
+If three values are given, uses scale_fill_gradient2 (spectrum from low to high through middle value).
 Defaults to c('ivory', 'coral4').}
 
 \item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.
@@ -95,17 +97,18 @@ entire extent of the model output (though modified by the value of zoom).
 Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
 
 \item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
-If p is provided, Google_map_underlay is over-ridden and set to FALSE.}
+If p is provided, Land_map is over-ridden and set to FALSE.}
 
 \item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
 
 \item{label_towns}{Add labels for town locations to the figure. Default TRUE}
 
-\item{strict_bounds}{TRUE to strictly enforce the box_bounds; FALSE for prettier edges conforming to x and y grids. Default FALSE.
-[dev note: An alternative would be to provide a version that plots from cell centres rather than using polygons, which should be fine other
- than near complex coastlines]}
+\item{strict_bounds}{Obsolescent: ignored}
 
 \item{mark_points}{Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.}
+
+\item{Google_map_underlay}{Set to TRUE (the default) to use ggmap to show a Google Map as
+an underlay for the model output plot. Requires the ggmap librray.}
 }
 \value{
 a ggplot object
@@ -120,8 +123,8 @@ handle opendap served files under Windows, unfortunately, but can be used under 
 model output files. By Barbara Robson (AIMS).
 
 Creates a colour map showing concentrations of a specified eReefs model output variable at a specified
-model layer (by default, the surface layer). The map is optionally (and by default) overlain on a Google 
-Earth map of the region.
+model layer (by default, the surface layer). The map is optionally (and by default) overlain on a map
+of Queensland (if off the Queensland coast).
 By Barbara Robson (AIMS).
 }
 \details{

@@ -8,7 +8,8 @@ plot_ereefs_slice(
   slice,
   var_name = "Chl_a_sum",
   scale_col = c("ivory", "navy"),
-  scale_lim = NA
+  scale_lim = NA,
+  var_units = ""
 )
 }
 \arguments{

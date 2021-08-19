@@ -7,15 +7,22 @@
 #' @return 1 for daily, 4 for monthly, 0 for other
 #' @export
 get_ereefs_case <- function(filename) {
-  ext <- stringi::stri_locate_last(filename, regex='.nc')[1]
-  lastfew <- substr(filename, start=ext-10, stop=ext-1)
+  ext <- stringi::stri_locate_last(filename, regex='.m*nc')
+  if ((ext[2] - ext[1])==3) {
+    ereefs_case <- 'mnc'
+  } else if ((ext[2] - ext[1])==2) {
+    ereefs_case <- 'nc'
+  } else {
+    ereefs_case <- NA
+  }
+  lastfew <- substr(filename, start=ext[1]-10, stop=ext[1]-1)
   dashcount <- stringi::stri_count_fixed(lastfew, '-')
   if (dashcount==2) {
-	  ereefs_case <- 1
+	  ereefs_case <- c(ereefs_case, '1km')
   } else if (dashcount==1) {
-	  ereefs_case <- 4
+	  ereefs_case <- c(ereefs_case, '4km')
   } else {
-	  ereefs_case <- 0
+	  ereefs_case <- c(ereefs_case, NA)
   }
   return(ereefs_case)
 }
@@ -75,14 +82,19 @@ get_ereefs_grids <- function(filename, input_grid=NA) {
 #' @export
 get_file_stem <- function(filename) {
 	case <- get_ereefs_case(filename)
-	if (case==0) {
-		file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-1)
-	} else if (case==1) {
-		file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-11)
-	} else {
-		file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-8)
-	}
-	return(file_stem)
+  if (case[1]!='nc') {
+    return(NA)
+  }
+  if (is.na(case[2])) {
+     # A netcdf filename, but not obviously 1km or 4km eReefs. Might be RECOM or another application
+	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-1)
+  } else if (case[2]=='1km') {
+	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-11)
+  } else {
+     # must be 4km
+	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-8)
+  }
+ return(file_stem)
 }
 
 #' Check whether the platform is Windows and the filename contains "http": if so, return a warning
@@ -293,7 +305,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
-  check_platform_ok(input_stem)
 
   # Dates to plot
   if (is.vector(start_date)) {
@@ -366,7 +377,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
 
-  if (ereefs_case == 4) {
+  if (ereefs_case[2] == '4km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
 	  nc <- safe_nc_open(input_file)
@@ -385,7 +396,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     }
     ncdf4::nc_close(nc) 
     blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-  } else if (ereefs_case == 1) {
+  } else if (ereefs_case[2] == '1km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (verbosity>1) print(input_file)
@@ -511,7 +522,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     } else {
        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
     }
-    if (ereefs_case == 4) { 
+    if (ereefs_case[2] == '4km') { 
       fileslist <- 1
       input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
@@ -519,7 +530,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
         day_count <- length(ds)
       }
-    } else if (ereefs_case == 1) {
+    } else if (ereefs_case[2] == '1km') {
 	    fileslist <- from_day:(from_day+day_count-1)
 	    from_day <- 1
 	    day_count <- 1
@@ -536,12 +547,12 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    fileslist <- 1
     }
     for (dcount in fileslist) {
-      if (ereefs_case == 1) {
+      if (ereefs_case[2] == '1km') {
 	    input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
       }
       #input_file <- paste0(input_file, '?', var_list, ',time')
       nc <- safe_nc_open(input_file)
-      if (ereefs_case > 0) {
+      if (!is.na(ereefs_case[2])) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
@@ -706,7 +717,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
 
-  if (ereefs_case == 4) {
+  if (ereefs_case[2] == '4km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
@@ -719,7 +730,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	}
 	ncdf4::nc_close(nc) 
    blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-  } else if (ereefs_case == 1) {
+  } else if (ereefs_case[2] == '1km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
@@ -794,12 +805,12 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      } else {
         day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
      }
-     if (ereefs_case == 4) { 
+     if (ereefs_case[2] == '4km') { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	     day_count <- day_count / as.numeric(ds[2]-ds[1])
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-     } else if (ereefs_case == 1) {
+     } else if (ereefs_case[2] == '1km') {
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
@@ -810,7 +821,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    fileslist <- 1
      }
      for (dcount in fileslist) {
-        if (ereefs_case == 1) {
+        if (ereefs_case[2] == '1km') {
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
          if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
         }
@@ -818,7 +829,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         nc <- safe_nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
         # Get dates
-        if (ereefs_case > 0 ) { 
+        if (!is.na(ereefs_case[2])) { 
            if (!is.null(nc$var[['t']])) { 
               ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01")) 
            } else { 
@@ -990,7 +1001,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
  # Note that origin format must be m/d/y
-  if (ereefs_case == 4) {
+  if (ereefs_case[2] == '4km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (verbosity>1) print(input_file)
@@ -1008,7 +1019,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    }
 	    ncdf4::nc_close(nc) 
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-  } else if (ereefs_case == 1) {
+  } else if (ereefs_case[2] == '1km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (verbosity>1) print(input_file)
@@ -1148,7 +1159,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      } else {
         day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
      }
-     if (ereefs_case == 4) { 
+     if (ereefs_case[2] == '4km') { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc') 
         if (verbosity) print(input_file)
@@ -1158,7 +1169,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           day_count <- length(ds)
         }
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-     } else if (ereefs_case == 1) {
+     } else if (ereefs_case[2] == '1km') {
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
@@ -1179,7 +1190,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	      fileslist <- 1
      }
      for (dcount in fileslist) {
-        if (ereefs_case == 1) {
+        if (ereefs_case[2] == '1km') {
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
          if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
          if (verbosity>1) print(input_file)
@@ -1191,7 +1202,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         } else if (is.null(nc$var[['eta']])) { 
           stop("Simple format files do not include surface elevation (needed for depth integration or depth below surface). Please either use a standard format file or provide another filename as eta_stem that contains matching eta data (e.g. from a hydrodynamic run).")
         }
-        if (ereefs_case > 0) {
+        if (!is.na(ereefs_case[2])) {
           if (!is.null(nc$var[['t']])) {
             d <- (safe_ncvar_get(nc, "t") + ereefs_origin)[from_day:(from_day+day_count-1)]
           } else {
@@ -1351,7 +1362,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   var_list <- paste(var_names, collapse=",")
 
-  if (ereefs_case == 4) {
+  if (ereefs_case[2] == '4km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
@@ -1365,7 +1376,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    ncdf4::nc_close(nc)
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
 	    # '.nc?latitude,longitude')
-  } else if (ereefs_case == 1) {
+  } else if (ereefs_case[2] == '1km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
@@ -1438,11 +1449,11 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      } else {
         day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
      }
-     if (ereefs_case == 4) { 
+     if (ereefs_case[2] == '4km') { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc') 
         day_count <- day_count / as.numeric(ds[2]-ds[1])
-     } else if (ereefs_case == 1) {
+     } else if (ereefs_case[2] == '1km') {
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
@@ -1453,13 +1464,13 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    fileslist <- 1
      }
      for (dcount in fileslist) {
-        if (ereefs_case == 1) {
+        if (ereefs_case[2] == '1km') {
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- safe_nc_open(input_file)
 	if (!is.na(eta_stem)) nc3 <- safe_nc_open(etafile)
-        if (ereefs_case > 0) {
+        if (!is.na(ereefs_case[2])) {
           if (!is.null(nc$var[['t']])) {
             d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           } else {
@@ -1504,25 +1515,29 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     return(ts_frame)
 }
 
-#' A wrapper to ncdf4::ncvar_get() that will pause and try again up to 119 times
-#' if at first it fails, to overcome temporary net access errors or DAP errors.
+#' A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
+#' if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.
 #'
 #' Parameters before 'tries' are passed through to ncvar_get
 #'
-#' @param tries number of times to retry (increasing pause length by one second each time. Default 12 
+#' @param tries number of times to retry (increasing pause length by one second each time. Default 4 
 #' @return variable extracted using ncvar_get()
 #' @export
 safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
- signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=12) {
-   myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
-   trywait = 1
-   while ((class(myvar)=='try-error')&&(trywait<=(tries+1))) { 
-      print(paste('retrying in ', trywait, 'second(s)')) 
-      Sys.sleep(trywait) 
-      trywait <- trywait+1 
-      myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+ signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=11) {
+   if (substr(nc$filename, 1, 4)!="http") {
+     myvar <- ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals)
+   } else {
+     myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+     trywait = 1
+     while ((class(myvar)=='try-error')&&(trywait<=(tries+1))) { 
+        print(paste('retrying in ', trywait, 'second(s)')) 
+        Sys.sleep(trywait) 
+        trywait <- trywait+1 
+        myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+     }
+     if (trywait>(tries+1)) stop(paste('Cannot access netcdf file', nc$filename))
    }
-   if (trywait>(tries+1)) stop(paste('Cannot access netcdf file', nc$filename))
    return(myvar)
 }
 
@@ -1531,18 +1546,25 @@ safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
 #'
 #' Parameters before 'tries' are passed through to ncvar_get
 #'
-#' @param tries number of times to retry (increasing pause length by one second each time. Default 12 
+#' @param tries number of times to retry (increasing pause length by one second each time. Default 4 
 #' @return variable extracted using ncvar_get()
 #' @export
-safe_nc_open <- function(filename, tries=12) {
-   nc <- try(ncdf4::nc_open(filename))
-   trywait = 1
-   while ((class(nc)=='try-error')&&(trywait<=(tries+1))) { 
-      print(paste('retrying in ', trywait, 'second(s)')) 
-      Sys.sleep(trywait) 
-      trywait <- trywait+1 
-      nc <- try(ncdf4::nc_open(filename))
+safe_nc_open <- function(filename, tries=4) {
+   
+   if (substr(filename, 1, 4)!="http") {
+    nc <- ncdf4::nc_open(filename)
+   } else {
+    nc <- try(ncdf4::nc_open(filename))
+    trywait = 1
+    while ((class(nc)=='try-error')&&(trywait<=(tries+1))) { 
+       warning(paste('This probably means the netcdf file name is incorrect or target date out of range for this eReefs run,\n',
+                     'but could be a network connection issue...\n', 
+                     '  Retrying in ', trywait, 'second(s). This will be attempt', trywait+1, 'of', tries+1)) 
+       Sys.sleep(trywait) 
+       trywait <- trywait+1 
+       nc <- try(ncdf4::nc_open(filename))
+    }
+    if (trywait>(tries+1)) stop(paste('Cannot open netcdf file', filename))
    }
-   if (trywait>(tries+1)) stop(paste('Cannot open netcdf file', filename))
    return(nc)
 }

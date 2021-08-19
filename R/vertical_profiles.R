@@ -132,12 +132,12 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     location_grid <- cbind(floor((llind+dim(latitude)[1]-1)/dim(latitude)[1]),
 		       (llind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
 
-    if (ereefs_case == 4) {
+    if (ereefs_case[2] == '4km') {
         input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
         if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-    } else if (ereefs_case == 1) {
+    } else if (ereefs_case[2] == '1km') {
         input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(target_year, target_month, target_day, sep='-')), '%Y-%m-%d'), 
@@ -365,12 +365,12 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 
   #var_list <- paste(var_names, collapse=",")
 
-  if (ereefs_case == 4) {
+  if (ereefs_case[2] == '4km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc')
-  } else if (ereefs_case == 1) {
+  } else if (ereefs_case[2] == '1km') {
       input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc')
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
@@ -452,11 +452,11 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      } else {
         day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
      }
-     if (ereefs_case == 4) { 
+     if (ereefs_case[2] == '4km') { 
         fileslist <- 1
         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
         if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-     } else if (ereefs_case == 1) {
+     } else if (ereefs_case[2] == '1km') {
         fileslist <- 1:day_count
        day_count <- 1
      } else {
@@ -472,14 +472,14 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      }
 
      for (dcount in fileslist) {
-        if (ereefs_case == 1) {
+        if (ereefs_case[2] == '1km') {
 	      input_file <- paste0(input_stem, format(start_date+dcount-1, sep="-", '%Y-%m-%d'), '.nc')
               if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(start_date+dcount-1, sep="-", '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- ncdf4::nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-        if (ereefs_case == 0) {
+        if (!is.na(ereefs_case)) {
           d <- ncdf4::ncvar_get(nc, "time", start=from_record, count=day_count)
           d <- as.Date(d, origin = as.Date("1990-01-01"))
         } else {
