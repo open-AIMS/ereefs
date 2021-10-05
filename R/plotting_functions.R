@@ -404,12 +404,12 @@ if (!is.null(nc$var[['botz']])) {
 }
 if (is.null(nc$var[['latitude']])) {
 # Standard EMS output file
-  latitude <- safe_ncvar_get(nc, "y_centre")
-  longitude <- safe_ncvar_get(nc, "x_centre")
+  latitude <- safe_ncvar_get(nc, "y_centre", start=c(xmin,ymin), count=c(xmax-xmin, ymax-ymin))
+  longitude <- safe_ncvar_get(nc, "x_centre", start=c(xmin,ymin), count=c(xmax-xmin, ymax-ymin))
 } else { 
   # Simple format netcdf file
-  latitude <- safe_ncvar_get(nc, "latitude")
-  longitude <- safe_ncvar_get(nc, "longitude")
+  latitude <- safe_ncvar_get(nc, "latitude", start=c(xmin,ymin), count=c(xmax-xmin, ymax-ymin))
+  longitude <- safe_ncvar_get(nc, "longitude", start=c(xmin,ymin), count=c(xmax-xmin, ymax-ymin))
 }
 ncdf4::nc_close(nc)
 
@@ -440,7 +440,7 @@ botz <- c(botz)[gx_ok&gy_ok]
 id <- 1:length(n)
 
 id <- as.factor(id)
-values <- data.frame(id = id, value = n, depth=botz)
+values <- data.frame(id = id, value = n, depth=botz, x_centre=longitude, y_centre=latitude)
 positions <- data.frame(id=rep(id, each=4), x = gx, y = gy)
 datapoly <- merge(values, positions, by = c("id"))
 
