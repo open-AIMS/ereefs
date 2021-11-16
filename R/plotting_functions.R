@@ -151,7 +151,7 @@ map_ereefs <- function(var_name = "true_colour",
                        target_date = c(2018,1,30), 
                        layer = 'surface', 
                        Land_map = FALSE,
-                       input_file = "oldmenu",
+                       input_file = "old_menu",
                        input_grid = NA,
                        scale_col = c('ivory', 'coral4'), 
                        scale_lim =c(NA, NA),
@@ -607,7 +607,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              layer = 'surface', 
                              output_dir = 'ToAnimate', 
                              Land_map = FALSE, 
-                             input_file = "oldmenu",
+                             input_file = "old_menu",
                              input_grid = NA, 
                              scale_col = c('ivory', 'coral4'), 
                              scale_lim = c(NA, NA), 
@@ -807,23 +807,18 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
     if (mcount == 1) {
        from_day <- start_day
-       if (!is.na(ereefs_case[2])) {
-         if (ereefs_case[2] == "4km") { 
-           filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m'), '.nc')
-         } else {
-           filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
-         }
-	      nc <- safe_nc_open(filename)
-	      if (!is.null(nc$var[['t']])) { 
-	          ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-              } else {
-	          ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	      }
-	      ncdf4::nc_close(nc)
+       if (ereefs_case[2] == "4km") { 
+         filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m'), '.nc')
+       } else if (ereefs_case[2] == "1km") {
+         filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
+       } else {
+         filename <- input_file
        }
+       ds <- get_origin_and_times(filename, as_chron="FALSE")[[2]]
     } else {
        from_day <- 1
     }
+
     if (mcount == (length(mths))) {
        day_count <- end_day
     } else if (mcount == 1) {
@@ -836,32 +831,20 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
     if (ereefs_case[2] == '4km') { 
 	    filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-	    nc <- safe_nc_open(filename)
-	    if (!is.null(nc$var[['t']])) { 
-	        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-            } else {
-	        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	    }
-	    ncdf4::nc_close(nc)
-       if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
-       if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
-       if(ds[2]==ds[1]) stop(paste('Error reading time from', filename, '(t[2]==t[1])'))
-       tstep <- as.numeric(ds[2]-ds[1])
-       dum1 <- as.integer((from_day - 0.4999999)/tstep + 1)
-       dum2 <- as.integer((day_count - 1) / tstep) +1
-       ds <- ds[seq(from=dum1, by=as.integer(1/tstep), to=(dum1+dum2))]
-       start_array <- c(xmin, ymin, dum1)
-	     count_array <- c(xmax-xmin, ymax-ymin, dum2)
-	     fileslist <- 1
+      ds <- get_origin_and_times(filename, as_chron="FALSE")[[2]]
+      if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
+      if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
+      if(ds[2]==ds[1]) stop(paste('Error reading time from', filename, '(t[2]==t[1])'))
+      tstep <- as.numeric(ds[2]-ds[1])
+      dum1 <- as.integer((from_day - 0.4999999)/tstep + 1)
+      dum2 <- as.integer((day_count - 1) / tstep) +1
+      ds <- ds[seq(from=dum1, by=as.integer(1/tstep), to=(dum1+dum2))]
+      start_array <- c(xmin, ymin, dum1)
+	    count_array <- c(xmax-xmin, ymax-ymin, dum2)
+	    fileslist <- 1
     } else if (ereefs_case[2] == '1km') { 
 	     filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
-	     nc <- safe_nc_open(filename)
-	     if (!is.null(nc$var[['t']])) { 
-	        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-            } else {
-	        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	     }
-	     ncdf4::nc_close(nc)
+       ds <- get_origin_and_times(filename, as_chron="FALSE")[[2]]
        dum1 <- which.min(abs(as.numeric(ds - (from_day + 0.4999999))))
        #warning('Assuming that only one timestep is output per day/file')
 	     fileslist <- from_day:(from_day+day_count-1)
@@ -873,7 +856,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	    # Output may be more than daily, or possibly less
 	    # filename <- paste0(input_stem, '.nc') # filename has been set previously 
       tstep <- as.numeric(ds[2]-ds[1])
-      from_day <- as.integer((as.Date(paste(year, month, day, sep="-")) - ds[1])/tstep) + 1
+      from_day <- as.integer(as.numeric((as.Date(paste(year, month, from_day, sep="-")) - ds[1]))/tstep) + 1
 	    if (from_day<1) from_day <-1
 	    start_array <- c(xmin, ymin, from_day)
 	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
@@ -884,10 +867,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
     } 
     stride <- as.integer(stride)
 
-    for (i in fileslist) {
+    for (i in 1:length(fileslist)) {
       if (ereefs_case[2] == '1km') { 
-         filename <- paste0(input_stem, format(as.Date(paste(year, month, i, sep="-")), '%Y-%m-%d'), '.nc') 
-         ds <- as.Date(paste(year, month, i, sep="-", '%Y-%m-%d'))
+         filename <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[i], sep="-")), '%Y-%m-%d'), '.nc') 
+         ds <- as.Date(paste(year, month, fileslist[i], sep="-", '%Y-%m-%d'))
       }
       if (verbosity>0) print(filename)
       if (var_name=="plume") {
@@ -1110,7 +1093,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   
             if (Land_map) {
                p <- ggplot2::gplot() + geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
-	         } else {
+	          } else {
 	             p <- ggplot2::ggplot()
             }
             p <- p + ggplot2::geom_polygon(ggplot2::aes(x=x, y=y, fill=value, group=id), data = datapoly)
@@ -1196,7 +1179,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
             }
             fname <- paste0(output_dir, '/', var_name, '_', 100000 + icount, '.png', collapse='')
             ggplot2::ggsave(fname, p, dpi=100)
-            rm('p')
+            #rm('p')
          }  else {
             icount <- icount + 1
             p <- NULL
