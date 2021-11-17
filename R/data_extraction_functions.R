@@ -200,6 +200,14 @@ substitute_filename <- function(input_file = "menu") {
                     "GBR4_BGC-v3p2nrtsurf",
                     "GBR4_BGC-v3p2nrt",
                     "menu")
+    } else if ((stringr::str_ends(input_file, "catalog.html"))|((stringr::str_starts(input_file, "http")&(stringr::str_ends(input_file, "/"))))) {
+      services <- thredds::tds_list_datasets(input_file)
+      # Trim the list to only show the catalogues
+      services <- services[which(services$type=="catalog"), ]
+      choices <- services$dataset
+      #choices[length(choices) + 1] <- "menu"
+      # I'm probably missing something, but the following returns paths that will work:
+      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
     } else {
       # Get the list of eReefs data sevices from the NCI server:
       services <- thredds::tds_list_datasets("https://dapds00.nci.org.au/thredds/catalogs/fx3/catalog.html")
