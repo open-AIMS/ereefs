@@ -175,7 +175,8 @@ check_platform_ok <- function(input_stem)
 #' @return input_file
 #' @export
 substitute_filename <- function(input_file = "menu") {
-  if ((input_file == "menu")||(input_file == "old_menu")||is.numeric(input_file)) {
+  choices <- NA
+  if ((input_file == "menu")|(input_file == "old_menu")|(input_file == "choices") | is.numeric(input_file)) {
     # Set up the menu of choices to display for interactive input, or to select from if the user has specified an option number
     if (input_file == "old_menu") {
       choices  <- c("GBR4-v2.0",
@@ -207,17 +208,17 @@ substitute_filename <- function(input_file = "menu") {
       choices <- services$dataset
       #choices[length(choices) + 1] <- "menu"
       # I'm probably missing something, but the following returns paths that will work:
-      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "")
+      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
     }
   }
   if (is.numeric(input_file)) {
      input_file <- choices[input_file]
   } else if (input_file == "choices") {
-    # The user just wants a list of options
-     print(choices)
-     stop()
+  # The user just wants a list of options
+   print(choices)
+   stop()
   } else if (input_file=="old_menu") {
-    selection <- utils::menu(c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
+      selection <- utils::menu(c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
                                "Archived 4km biogeochemical model hindcast v2.0 (Sept 2010 - Oct 2016)",
                                "Archived 4km biogeochemical model near real time v2.0 (Oct 2016 - Nov 2019)",
                                "Archived Pre-industrial catchment scenario 4km BGC (Sept 2010 - Oct 2016)",
@@ -238,7 +239,7 @@ substitute_filename <- function(input_file = "menu") {
                                "CSIRO login required: Latest release GBR4 NRT BGC 3D (Oct 2019 - May 2020, daily)"
                               ))
     input_file <- choices[selection]
-  } else if ((input_file == "menu")||(input_file == length(choices))) {
+  } else if ((input_file == "menu")|(input_file == length(choices))) {
     # We are using the NCI catalog to provide options
     print("Refer to https://research.csiro.au/ereefs/models/models-about/biogeochemical-simulation-naming-protocol/ for naming conventions.")
     selection <- utils::menu(choices)
