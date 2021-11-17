@@ -45,22 +45,24 @@ get_ereefs_case <- function(filename) {
 #' @param input_file The name of the netcdf file (in standard or simple EMS netcdf format) from which
 #' to extract the data
 #' @return A list containing ereefs_origin (the reference data/time used in the netcdf file) and the time series, ds
-get_origin_and_times <- function(input_file) {
+get_origin_and_times <- function(input_file, as_chron="TRUE") {
 	  nc <- safe_nc_open(input_file)
     if (!is.null(nc$var[['t']])) { 
       posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
-        chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
-        #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
-      ds <- ereefs_origin + safe_ncvar_get(nc, "t") 
+      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 
+      ds <- safe_ncvar_get(nc, "t") 
     } else { 
       posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 + 
-        chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
-        #chron::chron('1990-01-01', origin=attributes(start_date)$origin, format='y-m-d')
-      ds <- ereefs_origin + safe_ncvar_get(nc, "time") 
+      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 
+      ds <- safe_ncvar_get(nc, "time") 
     }
     ncdf4::nc_close(nc) 
+    if (as_chron) {
+      ereefs_origin <- ereefs_origin + chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+      ds <- ds + ereefs_origin
+    } else {
+      ds <- as.Date(ds, origin = as.Date("1990-01-01"))
+    }
     return(list(ereefs_origin, ds))
 }
 
