@@ -1,6 +1,6 @@
 Package: ereefs
 Title: Useful Functions to Handle eReefs and EMS model Output
-Version: 2.9.3
+Version: 2.9.4
 Encoding: UTF-8
 Authors@R: c(person("Barbara", "Robson", email="B.Robson@aims.gov.au",
                    role = c("aut", "cre")),
