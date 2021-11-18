@@ -202,8 +202,8 @@ if (is.vector(target_date)) {
 	target_date <- as.Date(target_date)
 }
 if (ereefs_case[2] == '4km') { 
-	filename <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
-	nc <- safe_nc_open(filename)
+	input_file <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
+	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
@@ -214,10 +214,10 @@ if (ereefs_case[2] == '4km') {
 } else if (ereefs_case[2] == '1km') {
 	day <- 1
 	ds <- target_date
-	filename <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
+	input_file <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
 } else {
-	filename <- paste0(input_stem, '.nc')
-	nc <- safe_nc_open(filename)
+	input_file <- paste0(input_stem, '.nc')
+	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
@@ -282,9 +282,9 @@ y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 if (var_name=="plume") {
     if (!local_file) {
-      inputfile <- paste0(filename, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
-    } else inputfile <- filename
-    nc <- safe_nc_open(inputfile)
+      input_file <- paste0(input_file, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
+    } else input_file <- input_file
+    nc <- safe_nc_open(input_file)
     R_412 <- safe_ncvar_get(nc, "R_412", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_443 <- safe_ncvar_get(nc, "R_443", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
     R_488 <- safe_ncvar_get(nc, "R_488", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1))
@@ -300,9 +300,9 @@ if (var_name=="plume") {
 
 } else if (var_name=="true_colour") {
     if (!local_file) {
-      inputfile <- paste0(filename, '?R_470,R_555,R_645')
-    } else inputfile <- filename
-    nc <- safe_nc_open(inputfile)
+      input_file <- paste0(input_file, '?R_470,R_555,R_645')
+    } else input_file <- input_file
+    nc <- safe_nc_open(input_file)
     TCbright <- 10
     R_470 <- safe_ncvar_get(nc, "R_470", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
     R_555 <- safe_ncvar_get(nc, "R_555", start=c(xmin,ymin,day), count=c(xmax-xmin,ymax-ymin,1)) * TCbright
@@ -329,9 +329,9 @@ if (var_name=="plume") {
     var_units <- ""
 } else if (var_name == 'ZooT') {
     if (!local_file) {
-      inputfile <- paste0(filename, '?ZooL_N,ZooS_N')
-    } else inputfile <- filename
-    nc <- safe_nc_open(inputfile)
+      input_file <- paste0(input_file, '?ZooL_N,ZooS_N')
+    } else input_file <- input_file
+    nc <- safe_nc_open(input_file)
     # We don't yet know the dimensions of the variable, so let's get them
     dims <- nc$var[['ZooL_N']][['size']]
     if (is.null(dims)) stop(paste('ZooL_N', ' not found in netcdf file.')) 
@@ -341,9 +341,9 @@ if (var_name=="plume") {
     var_units <- "mg N m-3"
 } else if (var_name == 'speed') {
     if (!local_file ) {
-      inputfile <- paste0(filename, '?u,v')
-    } else inputfile <- filename
-    nc <- safe_nc_open(inputfile)
+      input_file <- paste0(input_file, '?u,v')
+    } else input_file <- input_file
+    nc <- safe_nc_open(input_file)
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[['u']][['size']] 
     if (is.null(dims)) stop(paste('u', ' not found in netcdf file.')) 
@@ -353,9 +353,9 @@ if (var_name=="plume") {
     var_units <- "m s-1"
 } else { 
     if (!local_file) {
-      inputfile <- paste0(filename, '?', var_name)
-    } else inputfile <- filename
-    nc <- safe_nc_open(inputfile)
+      input_file <- paste0(input_file, '?', var_name)
+    } else input_file <- input_file
+    nc <- safe_nc_open(input_file)
     # We don't yet know the dimensions of the variable, so let's get them 
     dims <- nc$var[[var_name]][['size']] 
     if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
@@ -396,7 +396,7 @@ if (var_name == 'ZooT') {
 
 ncdf4::nc_close(nc)
 
-nc <- safe_nc_open(filename)
+nc <- safe_nc_open(input_file)
 if (!is.null(nc$var[['botz']])) {
    botz <- safe_ncvar_get(nc, 'botz', start=c(xmin,ymin), count=c(xmax-xmin,ymax-ymin))
 } else {
@@ -541,6 +541,8 @@ if (return_poly) {
 #' To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
 #' or imageJ.  Barbara Robson (AIMS).
 #'
+#' TODO: Update to use chron dates as has been done for functions in data_extraction_functions.R
+#'
 #' @param var_name Short name of the variable to plot. This can be any variable in the
 #'                 eReefs netcdf file that you are accessing (refer to eReefs model
 #'                 documentation or extract variable names from the netcdf file for a full 
@@ -550,19 +552,18 @@ if (return_poly) {
 #'                 provides a map of calculated plume colour class as per Devlin et al. (2012)
 #'                 and Baird et al. (2017). Defaults to true_colour.
 #' @param start_date date  for animation. Can either be a) a vector of integers in the format 
-#'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2015,2,1).
+#'	c(year, month, day, hour), c(year, month, day) or (year, month); b) a date obtained e.g. 
+#'  from as.Date(); or c) a character string formatted for input to as.Date(). Defaults to c(2015,2,1).
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,3,31).
 #' @param layer Either an integer layer number or 'surface' to choose the surface layer. Defaults to 'surface'.
 #' @param output_dir Path to directory in which to store images for animation. Created if necessary. Defaults
-#'      to 'ToAnimate'. Images are created in this directory with filenames beginning with var_name, 
+#'      to 'ToAnimate'. Images are created in this directory with input_files beginning with var_name, 
 #'      followed by an underscore and then sequential numbers beginning with 100001.
 #' @param Land_map Set to TRUE to show a land map of Queensland. Default now FALSE.
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URI or file location of any of the EMS output files, or location of a THREDDS catalogue.
+#'        Defaults to a menu selection. Set to "old_menu" to use the (faster but less up-to-date) old version of the menu.
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -607,7 +608,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              layer = 'surface', 
                              output_dir = 'ToAnimate', 
                              Land_map = FALSE, 
-                             input_file = "old_menu",
+                             input_file = "menu",
                              input_grid = NA, 
                              scale_col = c('ivory', 'coral4'), 
                              scale_lim = c(NA, NA), 
@@ -656,23 +657,56 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
   # Dates to map:
   if (is.vector(start_date)) {
-	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
+    if ((length(start_date==2)) && is.character(start_date[1])) { 
+          start_date <- chron::chron(start_date[1], start_date[2], format=c('d-m-y', 'h:m:s'), 
+                                     origin=c(year=1990, month=1, day=1))
+    } else if (length(start_date==3)) { 
+      # Set time to midday
+      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+    } else if (length(start_date==4)) {
+       if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
+       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), start_date[4], format=c('d-m-y', 'h:m:s'), 
+                                  origin=c(year=1990, month=1, day=1)) 
+    } else {
+      stop("start_date format not recognised")
+    }
   } else if (is.character(start_date)) {
-	  start_date <- as.Date(start_date)
+    start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+  } else if (class(start_date)[1] == "Date") {
+    start_date <- chron::as.chron(start_date)
   }
-  start_day <- as.integer(format(start_date, '%d'))
-  start_month <- as.integer(format(start_date, '%m'))
-  start_year <- as.integer(format(start_date, '%Y'))
-  
-  if (is.vector(end_date)) {
-	end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
-  } else if (is.character(end_date)) {
-	end_date <- as.Date(end_date)
-  }
-  end_day <- as.integer(format(end_date, '%d'))
-  end_month <- as.integer(format(end_date, '%m'))
-  end_year <- as.integer(format(end_date, '%Y'))
+  start_day <- as.integer(chron::days(start_date))
+  start_tod <- as.numeric(start_date) - as.integer(start_date)
+  start_month <- as.integer(months(start_date))
+  start_year <- as.integer(as.character(chron::years(start_date)))
 
+  if (is.vector(end_date)) {
+    if (length(end_date==2) && is.character(end_date[1])) { 
+          end_date <- chron::chron(end_date[1], end_date[2], format=c('d-m-y', 'h:m:s'), 
+                                     origin=c(year=1990, month=1, day=1))
+    } else if (length(end_date==3)) { 
+      # Set time to midday
+      end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+    } else if (length(end_date==4)) {
+       if (!is.character(end_date[4])) end_date[4] <- paste0(end_date[4], ':00')
+       end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), end_date[4], format=c('d-m-y', 'h:m:s'), 
+                                  origin=c(year=1990, month=1, day=1)) 
+    } else {
+      stop("end_date format not recognised")
+    }
+  } else if (is.character(end_date)) {
+    end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+  } else if (class(end_date)[1] == "Date") {
+    end_date <- chron::as.chron(end_date)
+  }
+  end_day <- as.integer(chron::days(end_date))
+  end_month <- as.integer(months(end_date))
+  end_year <- as.integer(as.character(chron::years(end_date)))
+  
   if (start_date > end_date) {
     stop('start_date must preceed end_date')
   }
@@ -808,79 +842,167 @@ map_ereefs_movie <- function(var_name = "true_colour",
     if (mcount == 1) {
        from_day <- start_day
        if (ereefs_case[2] == "4km") { 
-         filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m'), '.nc')
+         input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
        } else if (ereefs_case[2] == "1km") {
-         filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
+         input_file <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
+       } else if (ereefs_case[1] == "thredds_catalog") {
+         # (We are currently in map_ereefs_movie())
+           if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
+           catalog_list <- thredds::tds_list_datasets(input_file)
+           catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
+           catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
+           # Special case to remove unwanted additional files from certain catalogues
+           in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
+           catalog_list <- catalog_list[in_range]
+           catalog_startdates <- chron::chron(rep(1, length(catalog_list)), origin=c(year=1990,month=1,day=1), format="y-m-d")
+           catalog_enddates <- catalog_startdates
+     
+           # Pare down the catalog_list to include only those that cover the date range of interest, and set up a list of
+           # the times of outputs in each of these relevant files. This is slow.
+           # We could save this time by saving the results to sysdata.rda so we can look them up for known catalogs and only 
+           # doing this if we encounter an unknown catalog. Alternatively, we could save some time by assuming that the list is
+           # in temporal order and only looking for the first and last file needed.
+           if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
+           catalog_times <- vector("list", length(catalog_list))
+           in_range <- rep(FALSE, length(catalog_list))
+           for (i in 1:length(catalog_list)) {
+              if (verbosity >1) print(paste("File", i, catalog_list[i]))
+              catalog_times[[i]] <- get_origin_and_times(catalog_list[i])[[2]]
+              catalog_startdates[i] <- catalog_times[[i]][1]
+              catalog_enddates[i] <- catalog_times[[i]][length(catalog_times[[i]])]
+              dum1 <- length(which((catalog_times[[i]] >= start_date)&(catalog_times[[i]] <= end_date)))
+              if (dum1 >0) {
+                in_range[i] <- TRUE
+              }
+           }
+     
+           # Let's make sure these are in temporal order. Note that sort.chron() ignores index.return so we need to convert to numeric.
+           ix <- sort(as.numeric(catalog_startdates[in_range]), index.return=TRUE)$ix
+           ix <- which(in_range)[ix]
+           catalog_list <- catalog_list[ix]
+           catalog_times <- catalog_times[ix]
+           catalog_startdates <- catalog_startdates[ix]
+           catalog_enddates <- catalog_enddates[ix]
+           icatalog <- 1
+           input_file <- catalog_list[icatalog]
+           ds <- catalog_times[[icatalog]]
        } else {
-         filename <- input_file
+         #input_file <- input_file
+         ds<- get_origin_and_times(input_file)[[2]]
        }
-       ds <- get_origin_and_times(filename, as_chron="FALSE")[[2]]
     } else {
        from_day <- 1
+       start_tod <- 0
     }
 
-    if (mcount == (length(mths))) {
-       day_count <- end_day
+    if ((start_year==end_year)&&(start_month==end_month)) {
+       day_count <- end_day - start_day + 1
     } else if (mcount == 1) {
        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
-    } else if ((start_year==end_year)&&(start_month==end_month)) {
-       day_count <- end_day - start_day
+    } else if (mcount == (length(mths))) {
+       day_count <- end_day
     } else {
        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
     }
 
     if (ereefs_case[2] == '4km') { 
-	    filename <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-      ds <- get_origin_and_times(filename, as_chron="FALSE")[[2]]
+      fileslist <- 1
+	    input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+      ds <- get_origin_and_times(input_file)[[2]]
       if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
       if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
-      if(ds[2]==ds[1]) stop(paste('Error reading time from', filename, '(t[2]==t[1])'))
+      if(ds[2]==ds[1]) stop(paste('Error reading time from', input_file, '(t[2]==t[1])'))
       tstep <- as.numeric(ds[2]-ds[1])
-      dum1 <- as.integer((from_day - 0.4999999)/tstep + 1)
-      dum2 <- as.integer((day_count - 1) / tstep) +1
-      ds <- ds[seq(from=dum1, by=as.integer(1/tstep), to=(dum1+dum2))]
-      start_array <- c(xmin, ymin, dum1)
-	    count_array <- c(xmax-xmin, ymax-ymin, dum2)
+      day_count <- day_count / tstep
+      if (day_count > length(ds)) {
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+        day_count <- length(ds)
+      }
+      #dum1 <- as.integer((from_day - 0.4999999)/tstep + 1)
+      #dum2 <- as.integer((day_count - 1) / tstep) +1
+      #ds <- ds[seq(from=dum1, by=as.integer(1/tstep), to=(dum1+dum2))]
+      #start_array <- c(xmin, ymin, dum1)
+	    #count_array <- c(xmax-xmin, ymax-ymin, dum2)
+      ds <- ds[from_day:day_count]
+      start_array <- c(xmin, ymin, from_day)
+	    count_array <- c(xmax-xmin, ymax-ymin, day_count)
 	    fileslist <- 1
     } else if (ereefs_case[2] == '1km') { 
-	     filename <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
-       ds <- get_origin_and_times(filename, as_chron="FALSE")[[2]]
-       dum1 <- which.min(abs(as.numeric(ds - (from_day + 0.4999999))))
-       #warning('Assuming that only one timestep is output per day/file')
-	     fileslist <- from_day:(from_day+day_count-1)
-       start_array <- c(xmin, ymin, dum1) 
-       count_array <- c(xmax-xmin, ymax-ymin, dum1)
-       tstep <- 1
-    } else {
+	    fileslist <- from_day:(from_day+day_count-1)
+	    from_day <- 1
+	    day_count <- 1
+
+	    input_file <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
+      ds <- get_origin_and_times(input_file, as_chron="FALSE")[[2]]
+      dum1 <- which.min(abs(as.numeric(ds - (from_day + 0.4999999))))
+      start_array <- c(xmin, ymin, dum1) 
+      count_array <- c(xmax-xmin, ymax-ymin, dum1)
+      tstep <- 1
+    } else if (ereefs_case[2] == "recom") {
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
-	    # filename <- paste0(input_stem, '.nc') # filename has been set previously 
+	    # input_file <- paste0(input_stem, '.nc') # input_file has been set previously 
       tstep <- as.numeric(ds[2]-ds[1])
-      from_day <- as.integer(as.numeric((as.Date(paste(year, month, from_day, sep="-")) - ds[1]))/tstep) + 1
+      day_count <- day_count / tstep
+      if (day_count > length(ds)) {
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+        day_count <- length(ds)
+      }
+      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
+                                  origin=c(year=1990, month=1, day=1)) - ds[1]) + 
+                              start_tod) / tstep + 1 
 	    if (from_day<1) from_day <-1
 	    start_array <- c(xmin, ymin, from_day)
 	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
 	    fileslist <- 1
-    }
+    } else if (ereefs_case[1] == "thredds_catalog") { 
+      month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
+                                      origin=c(year=1990, month=1, day=1))
+      month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
+                                      origin=c(year=1990, month=1, day=1))
+      day_count <- day_count / as.numeric(ds[2]-ds[1])
+      ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
+      icatalog <- ix[1]
+      fileslist <- catalog_list[ix]
+      if (end_date > catalog_enddates[length(catalog_enddates)]) {
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
+        day_count <- day_count - (end_date - catalog_enddates[length(catalog_enddates)])
+      }
+      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
+                               origin=c(year=1990, month=1, day=1)) - catalog_startdates[ix[1]]) 
+                   + start_tod) / as.numeric(ds[2] - ds[1]) + 1 
+      if (from_day<1) from_day <- 1
+	    start_array <- c(xmin, ymin, from_day)
+	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
+    } else stop("Shouldn't happen: ereefs_case not recognised")
+
     if (stride == 'daily') {
+      if (tstep <= 1.0) {
        stride <- 1/tstep
+      } else {
+        stop("Minimum timestep in netcdf file is greater than daily.")
+      }
     } 
     stride <- as.integer(stride)
 
-    for (i in 1:length(fileslist)) {
+    for (dcount in 1:length(fileslist)) {
       if (ereefs_case[2] == '1km') { 
-         filename <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[i], sep="-")), '%Y-%m-%d'), '.nc') 
-         ds <- as.Date(paste(year, month, fileslist[i], sep="-", '%Y-%m-%d'))
+         input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc') 
+         #ds <- as.Date(paste(year, month, fileslist[dcount], sep="-", '%Y-%m-%d'))
+      } else if (ereefs_case[1] == "thredds_catalog") {
+         icatalog <- icatalog[dcount]
+         input_file <- catalog_list[icatalog]
+         ds <- catalog_times[[icatalog]]
       }
-      if (verbosity>0) print(filename)
+      if (verbosity>0) print(input_file)
       if (var_name=="plume") {
         if (!local_file) {
           slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                           '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
-          inputfile <- paste0(filename, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
-        } else inputfile <- filename
-        nc <- safe_nc_open(inputfile)
+          input_file <- paste0(input_file, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
+        } else input_file <- input_file
+        nc <- safe_nc_open(input_file)
         R_412 <- safe_ncvar_get(nc, "R_412")
         R_443 <- safe_ncvar_get(nc, "R_443")
         R_488 <- safe_ncvar_get(nc, "R_488")
@@ -895,13 +1017,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
         }
         ems_var <- NA*R_678
         if (ereefs_case[2] == '4km') {
-            for (day in 1:dim(R_412)[3]) {
-              rsr <- list(R_412[,,day], R_443[,,day], R_488[,,day], R_531[,,day], R_547[,,day], R_667[,,day], R_678[,,day])
-              ems_var[,,day] <- plume_class(rsr)
-            }
+           for (day in 1:dim(R_412)[3]) {
+             rsr <- list(R_412[,,day], R_443[,,day], R_488[,,day], R_531[,,day], R_547[,,day], R_667[,,day], R_678[,,day])
+             ems_var[,,day] <- plume_class(rsr)
+           }
         } else {
-	     rsr <- list(R_412, R_433, R_488, R_532, R_547, R_668, R_678)
-	     ems_var <- plume_class(rsr)
+	         rsr <- list(R_412, R_433, R_488, R_532, R_547, R_668, R_678)
+	         ems_var <- plume_class(rsr)
         }
         dims <- dim(ems_var)
 	     var_longname <- "Plume optical class"
@@ -911,9 +1033,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
                         '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                         '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
         if (!local_file) {
-          inputfile <- paste0(filename, '?R_470', slice, ',R_555', slice, ',R_645', slice)
-        } else inputfile <- filename
-        nc <- safe_nc_open(inputfile)
+          input_file <- paste0(input_file, '?R_470', slice, ',R_555', slice, ',R_645', slice)
+        } else input_file <- input_file
+        nc <- safe_nc_open(input_file)
         TCbright <- 10
         R_470 <- safe_ncvar_get(nc, "R_470") * TCbright
         R_555 <- safe_ncvar_get(nc, "R_555") * TCbright
@@ -943,7 +1065,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       } else { 
 
         if (ndims == 0) {
-          nc <- safe_nc_open(filename)
+          nc <- safe_nc_open(input_file)
           # We don't yet know the dimensions of the variable, so let's get them
           if (var_name == "speed") {
              dims <- nc$var[['u']][['size']]
@@ -981,18 +1103,18 @@ map_ereefs_movie <- function(var_name = "true_colour",
         if (verbosity>1) print(paste('slice = ', slice))
         if (var_name == "speed") { 
            if (!local_file) {
-             inputfile <- paste0(filename, '?u', slice, ',v', slice)
-           } else inputfile <- filename
-           nc <- safe_nc_open(inputfile)
+             input_file <- paste0(input_file, '?u', slice, ',v', slice)
+           } else input_file <- input_file
+           nc <- safe_nc_open(input_file)
            ems_var <- sqrt(safe_ncvar_get(nc, 'u')^2 + safe_ncvar_get(nc, 'v')^2)
            vat <- ncdf4::ncatt_get(nc, 'u')
            var_longname <- 'Current speed'
            var_units <- vat$units
         } else if (var_name == "ZooT") {
            if (!local_file) {
-             inputfile <- paste0(filename, '?ZooL_N', slice, ',ZooS_N', slice)
-           } else inputfile <- filename
-           nc <- safe_nc_open(inputfile)
+             input_file <- paste0(input_file, '?ZooL_N', slice, ',ZooS_N', slice)
+           } else input_file <- input_file
+           nc <- safe_nc_open(input_file)
            ems_var <- safe_ncvar_get(nc, 'ZooL_N') + safe_ncvar_get(nc, 'ZooS_N')
            vat <- ncdf4::ncatt_get(nc, 'ZooL_N')
            var_longname <- 'Total Zooplankton'
@@ -1000,17 +1122,17 @@ map_ereefs_movie <- function(var_name = "true_colour",
         } else {
            if (!local_file) {
              if (add_arrows) {
-               inputfile <- paste0(filename, '?',var_name, 'u', 'v', slice)
+               input_file <- paste0(input_file, '?',var_name, 'u', 'v', slice)
              } else {
-               inputfile <- paste0(filename, '?',var_name, slice)
+               input_file <- paste0(input_file, '?',var_name, slice)
              }
-           } else inputfile <- filename
-           nc <- safe_nc_open(inputfile)
+           } else input_file <- input_file
+           nc <- safe_nc_open(input_file)
            ems_var <- safe_ncvar_get(nc, var_name)
            if (add_arrows) {
              current_u <- ncvar_get(nc, 'u1')
              current_v <- ncvar_get(nc, 'u2')
-             if ((i==1)&(is.na(max_u))) {
+             if ((dcount==1)&(is.na(max_u))) {
                max_u <- max(max(abs(c(current_u)), na.rm = TRUE), max(abs(c(current_v)), na.rm=TRUE)) 
                if (!is.na(scale_arrows)) max_u <- max_u / scale_arrows
              }
@@ -1019,6 +1141,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
            var_longname <- vat$long_name
            var_units <- vat$units
         }
+      }
         if (local_file) { 
           if (ndims == 3) {
             ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
@@ -1068,13 +1191,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
         n <- c(ems_var2d)[gx_ok&gy_ok]
         if (icount==0) {
            if (var_name=='true_colour') {
-              temporal_sum <- as.integer(stringi::stri_sub(n,2,6))
+              temporal_sum <- col2rgb(n)^2
            } else { 
               temporal_sum <- n
            }
         } else {
            if (var_name=='true_colour') {
-              temporal_sum <- as.integer(stringi::stri_sub(n,2,6)) + temporal_sum
+              temporal_sum <- col2rgb(n)^2 + temporal_sum
            } else { 
               temporal_sum <- temporal_sum + n
            }
@@ -1149,7 +1272,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
               if (dim(towns)[1]>0) p <- p + ggplot2::geom_text(data=towns, ggplot2::aes(x=longitude, y=latitude, label=town, hjust="right"), nudge_x=-0.1) +
                                  ggplot2::geom_point(data=towns, ggplot2::aes(x=longitude, y=latitude))
             }
-            p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.double(ds[jcount])+0.000001), "%Y-%m-%d %H:%M")))
+            #p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.double(ds[jcount])+0.000001), "%Y-%m-%d %H:%M")))
+            p <- p + ggplot2::ggtitle(paste(var_longname, format(ds[jcount], format=c('d-m-yyyy', 'h:m'))))
             p <- p + ggplot2::xlab("longitude") + ggplot2::ylab("latitude")
             if (!is.null(mark_points)) {
               p <- p + ggplot2::geom_point(data=mark_points, ggplot2::aes(x=longitude, y=latitude), shape=4)
@@ -1186,11 +1310,15 @@ map_ereefs_movie <- function(var_name = "true_colour",
          }
          setTxtProgressBar(pb,icount/as.integer(end_date-start_date)/tstep*stride)
       } # end jcount loop
-    }
   } # end fileslist loop
   } # end month loop
   close(pb)
-  values <- data.frame(id = id, value = temporal_sum/icount)
+  if (var_name=='true_colour') {
+    temporal_sum <- rgb(sqrt(temporal_sum)/icount, maxColorValue=255)
+    values <- data.frame(id = id, value = temporal_sum)
+  } else {
+    values <- data.frame(id = id, value = temporal_sum/icount)
+  }
   datapoly <- merge(values, positions, by = c("id"))
   return(list(p=p, datapoly=datapoly, longitude=longitude, latitude=latitude))
 }
@@ -1198,7 +1326,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' Create a map using a dataframe in the format required by ggplot2::geom_plot, for instance from map_ereefs() or map_ereefs_movie()
 #'
 #' Plots a map figure in the same format as would be given by map_ereefs(), but using a pre-generated dataframe, instead of
-#' processing data directly from ereefs netcdf files.
+#' processing data directly from ereefs netcdf files. Doesn't work for true_color maps.
 #' 
 #' @param datapoly A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().
 #' @param var_longname Character vector to use for the figure title.
@@ -1220,7 +1348,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @export
 #' @examples
 #' \dontrun{
-#' a <- map_ereefs('TN', return_poly=TRUE)
+#' a <- plot_map(p)
 #' plot_map(a[[2]])
 #'}
 
@@ -1301,7 +1429,7 @@ plot_map <- function(datapoly,
        }
     }
     if (all(is.na(box_bounds))) { 
-      p <- p + ggplot2::coord_map(xlim = c(min(gx, na.rm=TRUE), max(gx, na.rm=TRUE)), ylim = c(min(gy, na.rm=TRUE), max(gy, na.rm=TRUE)))
+      p <- p + ggplot2::coord_map(xlim = c(min(datapoly$x, na.rm=TRUE), max(datapoly$x, na.rm=TRUE)), ylim = c(min(datapoly$y, na.rm=TRUE), max(datapoly$y, na.rm=TRUE)))
     } else {
       p <- p + ggplot2::coord_map(xlim = box_bounds[1:2], ylim=box_bounds[3:4]) +
         ggplot2::theme(panel.border = ggplot2::element_rect(linetype = "solid", colour="grey", fill=NA))
