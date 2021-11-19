@@ -532,11 +532,11 @@ if (return_poly) {
 #'
 #' Creates and saves to disk a sequential series of colour map images showing concentrations of a specified 
 #' eReefs model output variable at a specified model layer (by default, the surface layer). 
-#' Also calculates the temporal mean value of each cell over the specified time (visualisation of maps can
+#' ALSO CALCULATES THE TEMPORAL MEAN value of each cell over the specified time (visualisation of maps can
 #' be suppressed by setting suppress_print to TRUE if this is the primary desired output).
 #' Maps produced are optionally overlain on a map of Queensland.
 #' Can be more efficient than calling map_ereefs multiple times if you 
-#' want to produce an animation because it loads a month at a time for GBR4 runs. 
+#' want to produce an animation because it loads a month at a time for GBR4 runs (unless selected via catalog). 
 #' If output files contain multiple outputs per day, chooses the step closest to midday and uses only daily output.
 #' To stitch together the images into an animation, you will need other software such as ImageMagick (recommended)
 #' or imageJ.  Barbara Robson (AIMS).
@@ -629,31 +629,24 @@ map_ereefs_movie <- function(var_name = "true_colour",
 {
   plot_eta <- FALSE
   input_file <- substitute_filename(input_file)
+  if (verbosity > 1) print(paste('After substitute_filename() input_file = ', input_file))
 
   # Check whether this is a locally-stored netcdf file or a web-served file
   if (substr(input_file, 1, 4)=="http") {
     local_file = FALSE
   } else local_file = TRUE
 
-  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
+  # Check whether this is a GBR1 or GBR4 ereefs file, a THREDDS catalog or something else
   ereefs_case <- get_ereefs_case(input_file) 
+  if (verbosity > 1) print(paste('ereefs_case = ', ereefs_case[1], ereefs_case[2]))
   if (ereefs_case[2]=='1km') warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
   input_stem <- get_file_stem(input_file)
+  if (verbosity > 1) print(paste('input_stem = ', input_stem))
   #check_platform_ok(input_stem)
 
   towns <- data.frame(latitude = c(-15.47027987, -16.0899, -16.4840, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
                     longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
                     town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
-  grids <- get_ereefs_grids(input_file, input_grid)
-  x_grid <- grids[['x_grid']]
-  y_grid <- grids[['y_grid']]
-
-  # Allow user to specify a depth below MSL by setting layer to a negative value
-  if (layer<=0) {
-     z_grid <- grids[['z_grid']]
-     layer <- which.min(z_grid<layer)
-  }
-
 
   # Dates to map:
   if (is.vector(start_date)) {
@@ -662,11 +655,17 @@ map_ereefs_movie <- function(var_name = "true_colour",
                                      origin=c(year=1990, month=1, day=1))
     } else if (length(start_date==3)) { 
       # Set time to midday
-      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+      if (verbosity > 1) {
+        print('Setting time to midday. start_date = ')
+        print(start_date)
+      }
+      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), 
+                                 "12:00:00", format=c('d-m-y', 'h:m:s'), 
                                  origin=c(year=1990, month=1, day=1))
     } else if (length(start_date==4)) {
        if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
-       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), start_date[4], format=c('d-m-y', 'h:m:s'), 
+       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), 
+                                  start_date[4], format=c('d-m-y', 'h:m:s'), 
                                   origin=c(year=1990, month=1, day=1)) 
     } else {
       stop("start_date format not recognised")
@@ -740,96 +739,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
   # Allow for US English:
   if (var_name == "true_color") {
-	var_name <- "true_colour"
+	  var_name <- "true_colour"
   }
   
-  dims <- dim(x_grid) - 1
-
-  # Work out which parts of the grid are within box_bounds and which are outside
-  outOfBox <- array(FALSE, dim=dim(x_grid))
-  if (!is.na(box_bounds[1])) {
-    outOfBox <- apply(x_grid,2,function(x){ (x<box_bounds[1]|is.na(x)) } )
-  }
-  if (!is.na(box_bounds[2])) {
-    outOfBox <- outOfBox | apply(x_grid,2,function(x){(x>box_bounds[2]|is.na(x))})
-  }
-  if (!is.na(box_bounds[3])) {
-    outOfBox <- outOfBox | apply(y_grid,2,function(x){(x<box_bounds[3]|is.na(x))})
-  }
-  if (!is.na(box_bounds[4])) {
-    outOfBox <- outOfBox | apply(y_grid,2,function(x){(x>box_bounds[4]|is.na(x))})
-  }
-         
-  # Find the subset of x_grid and y_grid that is inside the box and crop the grids
-  # to the box_bounds
-  if (is.na(box_bounds[1])) { 
-   xmin <- 1
-  } else {
-   xmin <- which(apply(!outOfBox, 1, any))[1]
-   if (length(xmin)==0) xmin <- 1
-  }
-  if (is.na(box_bounds[2])) {
-   xmax <- dims[1]
-  } else {
-    xmax <- which(apply(!outOfBox, 1, any))
-    xmax <- xmax[length(xmax)]
-    if ((length(xmax)==0)|(xmax > dims[1])) xmax <- dims[1]
-  }
-  if (is.na(box_bounds[3])) { 
-    ymin <- 1
-  } else {
-    ymin <- which(apply(!outOfBox, 2, any))[1]
-    if (length(ymin)==0) ymin <- 1
-  }
-  if (is.na(box_bounds[4])) {
-    ymax <- dims[2]
-  } else {
-    ymax <- which(apply(!outOfBox, 2, any))
-    ymax <- ymax[length(ymax)]
-    if ((length(ymax)==0)|(ymax > dims[2])) ymax <- dims[2]
-  }
-
-  x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
-  y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
-
-  nc <- safe_nc_open(input_file)
-  if (is.null(nc$var[['latitude']])) {
-  # Standard EMS output file
-    latitude <- safe_ncvar_get(nc, "y_centre")
-    longitude <- safe_ncvar_get(nc, "x_centre")
-    botz <- safe_ncvar_get(nc, 'botz')
-  } else { 
-    # Simple format netcdf file
-    latitude <- safe_ncvar_get(nc, "latitude")
-    longitude <- safe_ncvar_get(nc, "longitude")
-    botz <- NULL
-    if (show_bathy) warning('Can not show bathymetry: simple format netcdf file does not contain botz')
-  }
-  ncdf4::nc_close(nc)
-
-  if (add_arrows) {
-    idim <- dim(latitude)[1]
-    jdim <- dim(latitude)[2]
-    max_arrow <- max(max(abs(longitude[idim, jdim] - longitude[1,1])/idim), max(abs(latitude[idim, jdim] - latitude[1,1])/jdim))
-  }
-
-  # Set up the polygon corners. 4 per polygon.
-  a <- xmax - xmin + 1
-  b <- ymax - ymin + 1
-
-  gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
-  gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
-  gx <- array(gx, dim=c(a*b,4))
-  gy <- array(gy, dim=c(a*b,4))
-
-  # Find and exclude points where not all corners are defined
-  gx_ok <- !apply(is.na(gx),1, any)
-  gy_ok <- !apply(is.na(gy),1, any)
-  gx <- c(t(gx[gx_ok&gy_ok,]))
-  gy <- c(t(gy[gx_ok&gy_ok,]))
-  longitude <- c(longitude)[gx_ok&gy_ok]
-  latitude <- c(latitude)[gx_ok&gy_ok]
-
   # Main routine
   ndims <- 0
   icount <- 0
@@ -846,11 +758,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
        } else if (ereefs_case[2] == "1km") {
          input_file <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
        } else if (ereefs_case[1] == "thredds_catalog") {
+         if (verbosity != 70) {
          # (We are currently in map_ereefs_movie())
-           if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
            catalog_list <- thredds::tds_list_datasets(input_file)
            catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
            catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
+
            # Special case to remove unwanted additional files from certain catalogues
            in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
            catalog_list <- catalog_list[in_range]
@@ -864,6 +777,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
            # in temporal order and only looking for the first and last file needed.
            if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
            catalog_times <- vector("list", length(catalog_list))
+
            in_range <- rep(FALSE, length(catalog_list))
            for (i in 1:length(catalog_list)) {
               if (verbosity >1) print(paste("File", i, catalog_list[i]))
@@ -883,6 +797,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
            catalog_times <- catalog_times[ix]
            catalog_startdates <- catalog_startdates[ix]
            catalog_enddates <- catalog_enddates[ix]
+           save(file='tmp.rda', list=c('catalog_list', 'catalog_startdates', 'catalog_enddates', 'catalog_times')) 
+         } else {
+           load('tmp.rda')
+         }
            icatalog <- 1
            input_file <- catalog_list[icatalog]
            ds <- catalog_times[[icatalog]]
@@ -890,6 +808,103 @@ map_ereefs_movie <- function(var_name = "true_colour",
          #input_file <- input_file
          ds<- get_origin_and_times(input_file)[[2]]
        }
+       grids <- get_ereefs_grids(input_file, input_grid)
+       x_grid <- grids[['x_grid']]
+       y_grid <- grids[['y_grid']]
+
+       # Allow user to specify a depth below MSL by setting layer to a negative value
+       if (layer<=0) {
+          z_grid <- grids[['z_grid']]
+          layer <- which.min(z_grid<layer)
+       }
+
+       dims <- dim(x_grid) - 1
+
+       # Work out which parts of the grid are within box_bounds and which are outside
+       outOfBox <- array(FALSE, dim=dim(x_grid))
+       if (!is.na(box_bounds[1])) {
+         outOfBox <- apply(x_grid,2,function(x){ (x<box_bounds[1]|is.na(x)) } )
+       }
+       if (!is.na(box_bounds[2])) {
+         outOfBox <- outOfBox | apply(x_grid,2,function(x){(x>box_bounds[2]|is.na(x))})
+       }
+       if (!is.na(box_bounds[3])) {
+         outOfBox <- outOfBox | apply(y_grid,2,function(x){(x<box_bounds[3]|is.na(x))})
+       }
+       if (!is.na(box_bounds[4])) {
+         outOfBox <- outOfBox | apply(y_grid,2,function(x){(x>box_bounds[4]|is.na(x))})
+       }
+         
+       # Find the subset of x_grid and y_grid that is inside the box and crop the grids
+       # to the box_bounds
+       if (is.na(box_bounds[1])) { 
+        xmin <- 1
+       } else {
+        xmin <- which(apply(!outOfBox, 1, any))[1]
+        if (length(xmin)==0) xmin <- 1
+       }
+       if (is.na(box_bounds[2])) {
+        xmax <- dims[1]
+       } else {
+         xmax <- which(apply(!outOfBox, 1, any))
+         xmax <- xmax[length(xmax)]
+         if ((length(xmax)==0)|(xmax > dims[1])) xmax <- dims[1]
+       }
+       if (is.na(box_bounds[3])) { 
+         ymin <- 1
+       } else {
+         ymin <- which(apply(!outOfBox, 2, any))[1]
+         if (length(ymin)==0) ymin <- 1
+       }
+       if (is.na(box_bounds[4])) {
+         ymax <- dims[2]
+       } else {
+         ymax <- which(apply(!outOfBox, 2, any))
+         ymax <- ymax[length(ymax)]
+         if ((length(ymax)==0)|(ymax > dims[2])) ymax <- dims[2]
+       }
+
+       x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
+       y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
+
+       nc <- safe_nc_open(input_file)
+       if (is.null(nc$var[['latitude']])) {
+       # Standard EMS output file
+         latitude <- safe_ncvar_get(nc, "y_centre")
+         longitude <- safe_ncvar_get(nc, "x_centre")
+         botz <- safe_ncvar_get(nc, 'botz')
+       } else { 
+         # Simple format netcdf file
+         latitude <- safe_ncvar_get(nc, "latitude")
+         longitude <- safe_ncvar_get(nc, "longitude")
+         botz <- NULL
+         if (show_bathy) warning('Can not show bathymetry: simple format netcdf file does not contain botz')
+       }
+       ncdf4::nc_close(nc)
+
+       if (add_arrows) {
+         idim <- dim(latitude)[1]
+         jdim <- dim(latitude)[2]
+         max_arrow <- max(max(abs(longitude[idim, jdim] - longitude[1,1])/idim), max(abs(latitude[idim, jdim] - latitude[1,1])/jdim))
+       }
+
+       # Set up the polygon corners. 4 per polygon.
+       a <- xmax - xmin + 1
+       b <- ymax - ymin + 1
+     
+       gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
+       gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
+       gx <- array(gx, dim=c(a*b,4))
+       gy <- array(gy, dim=c(a*b,4))
+
+       # Find and exclude points where not all corners are defined
+       gx_ok <- !apply(is.na(gx),1, any)
+       gy_ok <- !apply(is.na(gy),1, any)
+       gx <- c(t(gx[gx_ok&gy_ok,]))
+       gy <- c(t(gy[gx_ok&gy_ok,]))
+       longitude <- c(longitude)[gx_ok&gy_ok]
+       latitude <- c(latitude)[gx_ok&gy_ok]
+
     } else {
        from_day <- 1
        start_tod <- 0
@@ -956,6 +971,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
 	    fileslist <- 1
     } else if (ereefs_case[1] == "thredds_catalog") { 
+      tstep <- as.numeric(ds[2]-ds[1])
       month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
                                       origin=c(year=1990, month=1, day=1))
       month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
