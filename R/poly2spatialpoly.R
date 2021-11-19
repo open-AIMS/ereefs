@@ -58,9 +58,9 @@ poly2sp <- function(polydf) {
 
 sp2raster <- function(sPdf, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=NA, r=NULL) { 
    # Default settings line up with Dieter's grid but encompass full extent of eReefs domain
-   bbox <- summary(sPdf)$bbox
-   if (is.na(xmx)) xmx<-bbox['x','max']
-   if (is.na(ymx)) ymx<-bbox['y','max']
+   spbbox <- summary(sPdf)$bbox
+   if (is.na(xmx)) xmx<-spbbox['x','max']
+   if (is.na(ymx)) ymx<-spbbox['y','max']
    ncols <- as.integer((xmx-xmn)/resolution)
    nrows <- as.integer((ymx-ymn)/resolution)
    xmx <- xmn + resolution * ncols
