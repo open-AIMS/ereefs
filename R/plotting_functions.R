@@ -1002,12 +1002,19 @@ map_ereefs_movie <- function(var_name = "true_colour",
          icatalog <- ix[dcount]
          input_file <- catalog_list[icatalog]
          ds <- catalog_times[[icatalog]]
-         tstep <- as.numeric(ds[2] - ds[1])
-         first_day <- as.integer((as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
+         if (length(ds)>1) {
+           tstep <- as.numeric(ds[2] - ds[1])
+           first_day <- as.integer((as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
                                   origin=c(year=1990, month=1, day=1)) - catalog_startdates[icatalog]) +
                                   start_tod) / tstep + 1 )
-         if (first_day<1) first_day <- 1
-         last_day <- min(length(ds) , as.integer(day_count/tstep) - first_day + 1)
+           if (first_day<1) first_day <- 1
+           last_day <- min(length(ds) - first_day, as.integer(day_count/tstep))
+           if (last_day <1) last_day <- 1
+         } else {
+           tstep <- 1
+           first_day <- 1
+           last_day <- 1
+         }
 	       start_array <- c(xmin, ymin, first_day)
 	       count_array <- c(xmax-xmin, ymax-ymin, last_day)
       }
