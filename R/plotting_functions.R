@@ -503,6 +503,7 @@ if (label_towns) {
                                  ggplot2::geom_point(data=towns, ggplot2::aes(x=longitude, y=latitude))
 }
 
+browser()
 p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[day])+0.000001), "%Y-%m-%d %H:%M"))) +
     ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
 if (!is.null(mark_points)) {
@@ -758,7 +759,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
        } else if (ereefs_case[2] == "1km") {
          input_file <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
        } else if (ereefs_case[1] == "thredds_catalog") {
-         if (verbosity != 70) {
+         if (verbosity != 70) { # Hidden option to use if we are repeatedly querying the same catalog for the same time-period but different variables
          # (We are currently in map_ereefs_movie())
            catalog_list <- thredds::tds_list_datasets(input_file)
            catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
@@ -976,20 +977,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
                                       origin=c(year=1990, month=1, day=1))
       month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
                                       origin=c(year=1990, month=1, day=1))
-      day_count <- day_count / as.numeric(ds[2]-ds[1])
       ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
       icatalog <- ix[1]
       fileslist <- catalog_list[ix]
       if (end_date > catalog_enddates[length(catalog_enddates)]) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
-        day_count <- day_count - (end_date - catalog_enddates[length(catalog_enddates)])
       }
-      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
-                               origin=c(year=1990, month=1, day=1)) - catalog_startdates[ix[1]]) 
-                   + start_tod) / as.numeric(ds[2] - ds[1]) + 1 
-      if (from_day<1) from_day <- 1
-	    start_array <- c(xmin, ymin, from_day)
-	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
     } else stop("Shouldn't happen: ereefs_case not recognised")
 
     if (stride == 'daily') {
@@ -1006,9 +999,17 @@ map_ereefs_movie <- function(var_name = "true_colour",
          input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc') 
          #ds <- as.Date(paste(year, month, fileslist[dcount], sep="-", '%Y-%m-%d'))
       } else if (ereefs_case[1] == "thredds_catalog") {
-         icatalog <- icatalog[dcount]
+         icatalog <- ix[dcount]
          input_file <- catalog_list[icatalog]
          ds <- catalog_times[[icatalog]]
+         tstep <- as.numeric(ds[2] - ds[1])
+         first_day <- as.integer((as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
+                                  origin=c(year=1990, month=1, day=1)) - catalog_startdates[icatalog]) +
+                                  start_tod) / tstep + 1 )
+         if (first_day<1) first_day <- 1
+         last_day <- min(length(ds) , as.integer(day_count/tstep) - first_day + 1)
+	       start_array <- c(xmin, ymin, first_day)
+	       count_array <- c(xmax-xmin, ymax-ymin, last_day)
       }
       if (verbosity>0) print(input_file)
       if (var_name=="plume") {
@@ -1143,6 +1144,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                input_file <- paste0(input_file, '?',var_name, slice)
              }
            } else input_file <- input_file
+           if (verbosity>1) print(paste("Before nc_open, input_file = ", input_file))
            nc <- safe_nc_open(input_file)
            ems_var <- safe_ncvar_get(nc, var_name)
            if (add_arrows) {
