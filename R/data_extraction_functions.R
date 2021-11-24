@@ -200,14 +200,6 @@ substitute_filename <- function(input_file = "menu") {
                     "GBR4_BGC-v3p2nrtsurf",
                     "GBR4_BGC-v3p2nrt",
                     "menu")
-    } else if ((stringr::str_ends(input_file, "catalog.html"))|((stringr::str_starts(input_file, "http")&(stringr::str_ends(input_file, "/"))))) {
-      services <- thredds::tds_list_datasets(input_file)
-      # Trim the list to only show the catalogues
-      services <- services[which(services$type=="catalog"), ]
-      choices <- services$dataset
-      #choices[length(choices) + 1] <- "menu"
-      # I'm probably missing something, but the following returns paths that will work:
-      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
     } else {
       # Get the list of eReefs data sevices from the NCI server:
       services <- thredds::tds_list_datasets("https://dapds00.nci.org.au/thredds/catalogs/fx3/catalog.html")
@@ -219,8 +211,14 @@ substitute_filename <- function(input_file = "menu") {
       paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
     }
   }
-  if (is.numeric(input_file)) {
-     input_file <- choices[input_file]
+  if ((stringr::str_ends(input_file, "catalog.html"))|((stringr::str_starts(input_file, "http")&(stringr::str_ends(input_file, "/"))))) {
+      services <- thredds::tds_list_datasets(input_file)
+      # Trim the list to only show the catalogues
+      services <- services[which(services$type=="catalog"), ]
+      choices <- services$dataset
+      #choices[length(choices) + 1] <- "menu"
+      # I'm probably missing something, but the following returns paths that will work:
+      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
   } else if (input_file == "choices") {
   # The user just wants a list of options
    print(choices)
@@ -252,6 +250,9 @@ substitute_filename <- function(input_file = "menu") {
     print("Refer to https://research.csiro.au/ereefs/models/models-about/biogeochemical-simulation-naming-protocol/ for naming conventions.")
     selection <- utils::menu(choices)
     input_file  <- paths[selection]
+  }
+  if (is.numeric(input_file)) {
+     input_file <- choices[input_file]
   }
   # Perhaps the user has manually specified (or selected from old_menu) one of the (obsolescent) official run labels from ereefs.info
     input_file <- dplyr::case_when(
@@ -617,6 +618,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       fileslist <- 1
       input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
 	    day_count <- day_count / as.numeric(ds[2]-ds[1])
+      if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
+      if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
+      if(ds[2]==ds[1]) stop(paste('Error reading time from', input_file, '(t[2]==t[1])'))
       if (day_count > length(ds)) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
         day_count <- length(ds)

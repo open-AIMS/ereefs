@@ -45,7 +45,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   input_file <- substitute_filename(input_file)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
-  check_platform_ok(input_stem)
+  #check_platform_ok(input_stem)
 
   # Remember which direction our slice should be facing
   if ((location_latlon[1,1]<location_latlon[2,1]) |
@@ -312,7 +312,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   input_file <- substitute_filename(input_file)
   ereefs_case <- get_ereefs_case(input_file)
   input_stem <- get_file_stem(input_file)
-  check_platform_ok(input_stem)
+  #check_platform_ok(input_stem)
   if (!is.na(eta_stem)) {
 	      if (stringi::stri_endswith(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
   }
