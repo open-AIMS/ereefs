@@ -954,7 +954,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       start_array <- c(xmin, ymin, dum1) 
       count_array <- c(xmax-xmin, ymax-ymin, dum1)
       tstep <- 1
-    } else if (ereefs_case[2] == "recom") {
+    } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) {
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
 	    # input_file <- paste0(input_stem, '.nc') # input_file has been set previously 

@@ -22,6 +22,8 @@ get_ereefs_case <- function(filename) {
     warn(".mnc files not yet implemented.")
   } else if (stringr::str_ends(filename, "catalog.html")) {
     ereefs_case <- c("thredds_catalog", "nci")
+  } else if (stringr::str_ends(filename, ".ncml")) {
+    ereefs_case <- c("ncml", "unknown")
   } else {
     stop(paste("Filename format (", filename, ") is not recognised as a netcdf or THREDDS catalog file"))
   }
@@ -629,7 +631,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    fileslist <- from_day:(from_day+day_count-1)
 	    from_day <- 1
 	    day_count <- 1
-    } else if (ereefs_case[2] == 'recom') { 
+    } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
       day_count <- day_count / as.numeric(ds[2]-ds[1])
       if (day_count > length(ds)) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
@@ -679,7 +681,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           } else {
             d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
           }
-      } else if (ereefs_case[2] == "recom") { 
+      } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
          d <- ds[from_day:(from_day + day_count - 1)]
       } else if (ereefs_case[1] == "thredds_catalog") {
          d <- ds[from_day:(from_day + day_count - 1)]
@@ -972,7 +974,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
-    } else if (ereefs_case[2] == 'recom') { 
+    } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
       day_count <- day_count / as.numeric(ds[2]-ds[1])
       if (day_count > length(ds)) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
@@ -1018,7 +1020,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
               ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01")) 
            }
 	        d <- ds[from_day:(from_day + day_count - 1)]
-        } else if (ereefs_case[2] == "recom") { 
+        } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
            d <- ds[from_day:(from_day + day_count - 1)]
         } else if (ereefs_case[1] == "thredds_catalog") {
            d <- ds[from_day:(from_day + day_count - 1)]
@@ -1377,7 +1379,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
-     } else if (ereefs_case[2] == 'recom') { 
+     } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
        day_count <- day_count / as.numeric(ds[2]-ds[1])
        if (day_count > length(ds)) {
          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
@@ -1430,7 +1432,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           } else {
             d <- (safe_ncvar_get(nc, "time") + ereefs_origin)[from_day:(from_day+day_count-1)]
           }
-        } else if (ereefs_case[2] == "recom") { 
+        } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
            d <- ds[from_day:(from_day + day_count - 1)]
         } else if (ereefs_case[1] == "thredds_catalog") {
            d <- ds[from_day:(from_day + day_count - 1)]
@@ -1723,7 +1725,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         fileslist <- from_day:(from_day+day_count-1)
         from_day <- 1
         day_count <- 1
-     } else if (ereefs_case[2] == 'recom') { 
+     } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
        day_count <- day_count / as.numeric(ds[2]-ds[1])
        if (day_count > length(ds)) {
          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
