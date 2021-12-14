@@ -410,7 +410,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
                                  origin=c(year=1990, month=1, day=1))
   } else if (class(start_date)[1] == "Date") {
-    start_date <- chron::as.chron(start_date)
+    start_date <- chron::chron(as.character(start_date, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+    #start_date <- chron::as.chron(start_date) # I don't know why this does not work.
   }
   start_day <- as.integer(chron::days(start_date))
   start_tod <- as.numeric(start_date) - as.integer(start_date)
@@ -436,7 +438,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
                                  origin=c(year=1990, month=1, day=1))
   } else if (class(end_date)[1] == "Date") {
-    end_date <- chron::as.chron(end_date)
+    end_date <- chron::chron(as.character(end_date, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1))
+    #end_date <- chron::as.chron(end_date)
   }
   end_day <- as.integer(chron::days(end_date))
   end_month <- as.integer(months(end_date))
@@ -521,6 +525,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       icatalog <- 1
       input_file <- catalog_list[icatalog]
       ds <- catalog_times[[icatalog]]
+      ereefs_origin <- get_origin_and_times(catalog_list[icatalog])[[1]]
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   } else {
       # We are looking at a single netcdf file such as a RECOM output file
@@ -732,12 +737,14 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (verbosity>0) close(pb)
 
+                    # Not sure using t() here is correct!
   ts_frame = lapply(seq(dim(ts_frame)[3]),
                    function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x] - as.numeric(ereefs_origin)), 
                                     format=c('y-m-d', 'h:m:s'), 
                                     origin = c(1, 1, 1990)),
-                                 ts_frame[, 2:dim(ts_frame)[2], x]))
+                                 t(ts_frame[, 2:dim(ts_frame)[2], x])))
   if (date_format == "date") ts_frame$date <- as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date)))
+  if (date_format == "chron") ts_frame$date <- ts_frame$date + ereefs_origin
 
   #ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
   #ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
