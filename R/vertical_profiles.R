@@ -782,7 +782,7 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
 	lat1 <- location_latlon[1,'latitude']
 	lat2 <- location_latlon[2,'latitude']
 
-	# Define a line through the two points
+	# Define a line through the two points. This probably ought to be corrected for curvature.
 	#Y = A*x+b ; A*x +b - Y = 0
   if (lon2!=lon1) {
 	  A <- (lat2 - lat1) / (lon2 - lon1)
