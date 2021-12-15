@@ -737,19 +737,19 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (verbosity>0) close(pb)
 
-                    # Not sure using t() here is correct!
   ts_frame = lapply(seq(dim(ts_frame)[3]),
-                   function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x] - as.numeric(ereefs_origin)), 
-                                    format=c('y-m-d', 'h:m:s'), 
-                                    origin = c(1, 1, 1990)),
-                                 t(ts_frame[, 2:dim(ts_frame)[2], x])))
-  if (date_format == "date") ts_frame$date <- as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date)))
-  if (date_format == "chron") ts_frame$date <- ts_frame$date + ereefs_origin
+                   function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x]),
+                                    format=c('y-m-d', 'h:m:s')),
+                                 ts_frame[, 2:dim(ts_frame)[2], x]))
+  if (date_format == "date") ts_frame$date <- lapply(seq(dim(ts_frame)[3]),
+                   function(x) data.frame(date = as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date))),
+                                 ts_frame[, 2:dim(ts_frame)[2], x]))
+  if (numpoints == 1) ts_frame <- data.frame(ts_frame[[1]])
 
   #ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
-  #ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
+    #ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
+    #ts_frame$date <- ts_frame$date + as.numeric(ereefs_origin)
   if (mmp) names(ts_frame) <- mmp_sites$Name
-  if (numpoints == 1) ts_frame <- data.frame(ts_frame[[1]])
   if (length(var_names)==1) names(ts_frame)[2] <- var_names
   return(ts_frame)
 }
