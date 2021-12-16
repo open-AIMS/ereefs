@@ -136,7 +136,7 @@ get_file_stem <- function(filename) {
   if (case[1]!='nc') {
     return(NA)
   }
-  if (is.na(case[2])) {
+  if (is.na(case[2]) | case[2] == "recom") {
      # A netcdf filename, but not obviously 1km or 4km eReefs. Might be RECOM or another application
 	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-1)
   } else if (case[2]=='1km') {

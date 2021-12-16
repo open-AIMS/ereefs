@@ -503,7 +503,6 @@ if (label_towns) {
                                  ggplot2::geom_point(data=towns, ggplot2::aes(x=longitude, y=latitude))
 }
 
-browser()
 p <- p + ggplot2::ggtitle(paste(var_longname, format(chron::chron(as.numeric(ds[day])+0.000001), "%Y-%m-%d %H:%M"))) +
     ggplot2::xlab('longitude') + ggplot2::ylab('latitude')
 if (!is.null(mark_points)) {
