@@ -568,8 +568,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        }
        grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
     }
-    location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
-                       (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    location_grid <- arrayInd(grid_index, dim(latitude))
+#    location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
+#                       (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
   numpoints <- dim(location_grid)[1]
   # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass all
@@ -937,8 +938,9 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
-    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
-		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    location_grid <- arrayInd(tmp, dim(latitude))
+    #location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
+		#       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
@@ -1309,8 +1311,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        }
        grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
     }
-    location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
-                       (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    location_grid <- arrayInd(tmp, dim(latitude))
+    #location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
+    #                   (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
   numpoints <- dim(location_grid)[1]
   # Find the outer grid coordinates of the area that we need to extract from netcdf files to encompass all
@@ -1691,8 +1694,9 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
-    location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
-		       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    location_grid <- arrayInd(tmp, dim(latitude))
+    #location_grid <- c(floor((tmp+dim(latitude)[1]-1)/dim(latitude)[1]),
+		#       (tmp+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
   zat <- ncdf4::ncatt_get(nc, "botz")
   if (!is.null(zat$positive)) {
