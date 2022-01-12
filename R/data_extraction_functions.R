@@ -1311,7 +1311,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        }
        grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
     }
-    location_grid <- arrayInd(tmp, dim(latitude))
+    location_grid <- arrayInd(grid_index, dim(latitude))
     #location_grid <- cbind(floor((grid_index + dim(latitude)[1]-1)/dim(latitude)[1]), 
     #                   (grid_index+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
