@@ -129,9 +129,9 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 
     #var_list <- paste(var_names, collapse=",")
 
-    location_grid <- arrayInd(llind, dim(latitude))
-    #location_grid <- cbind(floor((llind+dim(latitude)[1]-1)/dim(latitude)[1]),
-		#       (llind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    #location_grid <- arrayInd(llind, dim(latitude))
+    location_grid <- cbind(floor((llind+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (llind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
 
     if (ereefs_case[2] == '4km') {
         input_file <- paste0(input_stem, format(as.Date(paste(target_year, target_month, 1, sep='-')), '%Y-%m'), 
@@ -416,9 +416,9 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
     # Find the nearest grid-points to the sampling location
     grid_ind <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     grid_ind <- which.min(grid_ind) 
-    location_grid <- arrayInd(grid_ind, dim(latitude))
-    #location_grid <- c(floor((grid_ind+dim(latitude)[1]-1)/dim(latitude)[1]),
-		#       (grid_ind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
+    #location_grid <- arrayInd(grid_ind, dim(latitude))
+    location_grid <- c(floor((grid_ind+dim(latitude)[1]-1)/dim(latitude)[1]),
+		       (grid_ind+dim(latitude)[1]-1)%%dim(latitude)[1] + 1)
   }
 		     
   zat <- ncdf4::ncatt_get(nc, "botz")
