@@ -51,16 +51,17 @@ get_origin_and_times <- function(input_file, as_chron="TRUE") {
 	  nc <- safe_nc_open(input_file)
     if (!is.null(nc$var[['t']])) { 
       posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'t'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 
       ds <- safe_ncvar_get(nc, "t") 
     } else { 
       posix_origin <- stringi::stri_datetime_parse(ncdf4::ncatt_get(nc ,'time'), "'days since 'yyyy-MM-dd HH:mm:ss")[1]
-      ereefs_origin <- as.numeric(as.Date('1990-01-01') - as.Date(posix_origin), origin=c(year=1990, month=1, day=1))-1 
       ds <- safe_ncvar_get(nc, "time") 
     }
+    ereefs_origin <- floor(as.numeric(posix_origin - as.POSIXct("1990-01-01 00:00")))/86400
     ncdf4::nc_close(nc) 
     if (as_chron) {
-      ereefs_origin <- ereefs_origin + chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), format='y-m-d')
+      ereefs_origin <- ereefs_origin + chron::chron('1990-01-01', origin=c(year=1990, month=1, day=1), 
+                                                    format=c(dates='y-m-d', times='h:m'), 
+                                                    out.format = c(dates = 'year m day', times='h:m'))
       ds <- ds + ereefs_origin
     } else {
       ds <- as.Date(ds, origin = as.Date("1990-01-01"))
@@ -393,25 +394,30 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Dates to plot
   if (is.vector(start_date)) {
     if ((length(start_date==2)) && is.character(start_date[1])) { 
-          start_date <- chron::chron(start_date[1], start_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1))
+          start_date <- chron::chron(dates. = start_date[1], times. = start_date[2], format=c('d-m-y', 'h:m:s'), 
+                                     origin=c(year=1990, month=1, day=1),
+                                     out.format = c('year m day', 'h:m'))
     } else if (length(start_date==3)) { 
       # Set time to midday
       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
+                                 origin=c(year=1990, month=1, day=1),
+                                out.format=c('year m day', 'h:m'))
     } else if (length(start_date==4)) {
        if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
        start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), start_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1)) 
+                                  origin=c(year=1990, month=1, day=1), 
+                                  out.format=c('year m day', 'h:m'))
     } else {
       stop("start_date format not recognised")
     }
   } else if (is.character(start_date)) {
     start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
+                                 origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
   } else if (class(start_date)[1] == "Date") {
     start_date <- chron::chron(as.character(start_date, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
+                                 origin=c(year=1990, month=1, day=1),
+                                 out.format=c('year m day', 'h:m'))
     #start_date <- chron::as.chron(start_date) # I don't know why this does not work.
   }
   start_day <- as.integer(chron::days(start_date))
@@ -422,24 +428,29 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (is.vector(end_date)) {
     if (length(end_date==2) && is.character(end_date[1])) { 
           end_date <- chron::chron(end_date[1], end_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1))
+                                     origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
     } else if (length(end_date==3)) { 
       # Set time to midday
       end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
+                                 origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
     } else if (length(end_date==4)) {
        if (!is.character(end_date[4])) end_date[4] <- paste0(end_date[4], ':00')
        end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), end_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1)) 
+                                  origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
     } else {
       stop("end_date format not recognised")
     }
   } else if (is.character(end_date)) {
     end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
+                                 origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
   } else if (class(end_date)[1] == "Date") {
     end_date <- chron::chron(as.character(end_date, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
+                                 origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
     #end_date <- chron::as.chron(end_date)
   }
   end_day <- as.integer(chron::days(end_date))
@@ -594,9 +605,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   # Initialise
   blanks <- rep(NA, blank_length)
+
   ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
   #ts_frame <- data.frame(blanks, array(blanks, dim=c(length(blanks), length(var_names))))
   colnames(ts_frame) <- c("date", var_names)
+  class(ts_frame[,"date",]) <- 
 
   # Loop through relevant daily or monthly eReefs files to extract the data
   ndims <- rep(NA, length(var_names))
@@ -681,17 +694,19 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
       #input_file <- paste0(input_file, '?', var_list, ',time')
       nc <- safe_nc_open(input_file)
-      if ((ereefs_case[2] == "1km")||(ereefs_case[2] == "4km")) {
-          if (!is.null(nc$var[['t']])) {
-            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
-          } else {
-            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
-          }
-      } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
+#      if ((ereefs_case[2] == "1km")||(ereefs_case[2] == "4km")) {
+#          if (!is.null(nc$var[['t']])) {
+#            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+#          } else {
+#            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+#          }
+#      } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
+#         d <- ds[from_day:(from_day + day_count - 1)]
+      if (ereefs_case[1] == "thredds_catalog") {
          d <- ds[from_day:(from_day + day_count - 1)]
-      } else if (ereefs_case[1] == "thredds_catalog") {
-         d <- ds[from_day:(from_day + day_count - 1)]
-      } else stop("Shouldn't happen: ereefs_case not recognised")
+      } else {
+         d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
+      } 
       im1 = i+1
       i <- i + length(d)
 
@@ -740,7 +755,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   ts_frame = lapply(seq(dim(ts_frame)[3]),
                    function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x]),
-                                    format=c('y-m-d', 'h:m:s')),
+                                    format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1)),
                                  ts_frame[, 2:dim(ts_frame)[2], x]))
   if (date_format == "date") ts_frame$date <- lapply(seq(dim(ts_frame)[3]),
                    function(x) data.frame(date = as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date))),
