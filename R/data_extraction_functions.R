@@ -378,7 +378,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if (layer < 0) { 
      z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
-     layer <- which.min(z_grid<layer)
+     layer <- max(which(z_grid<layer))
   }
   if (is.character(location_latlon)&&(location_latlon=="mmp")) {
      location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
