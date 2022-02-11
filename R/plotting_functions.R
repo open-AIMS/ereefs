@@ -191,7 +191,7 @@ y_grid <- grids[['y_grid']]
 # Allow user to specify a depth below MSL by setting layer to a negative value
 if (layer<=0) {
    z_grid <- grids[['z_grid']]
-   layer <- which.min(z_grid<layer)
+   layer <- max(which(z_grid<layer))
 }
 
 
@@ -226,6 +226,7 @@ if (ereefs_case[2] == '4km') {
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
 }
+#day <- day + 6
 
 # Allow for US English:
 if (var_name == "true_color") {
@@ -815,7 +816,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
        # Allow user to specify a depth below MSL by setting layer to a negative value
        if (layer<=0) {
           z_grid <- grids[['z_grid']]
-          layer <- which.min(z_grid<layer)
+          layer <- max(which(z_grid<layer))
        }
 
        dims <- dim(x_grid) - 1
