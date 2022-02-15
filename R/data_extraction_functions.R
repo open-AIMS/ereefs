@@ -376,10 +376,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if ((layer=='bottom')&&(length(location_latlon[,1])>1)) stop('Only one location can be given if layer==bottom')
 #  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if (layer < 0) { 
-     z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
-     layer <- max(which(z_grid<layer))
-  }
   if (is.character(location_latlon)&&(location_latlon=="mmp")) {
      location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
      mmp <- TRUE
@@ -730,7 +726,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                  layer_actual <- layer
                  if (verbosity>0) print(paste('bottom layer = ', layer))
               } 
-           } else { 
+           } else if (layer < 0) { 
+             z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
+             layer <- max(which(z_grid<layer)) 
+             layer_actual <- layer 
+           } else {
               layer_actual <- layer 
            }
 
