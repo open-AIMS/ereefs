@@ -753,14 +753,24 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (verbosity>0) close(pb)
 
-  ts_frame = lapply(seq(dim(ts_frame)[3]),
-                   function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x]),
+  dum1 <- dim(ts_frame)[3]
+  if (dum1==1) {
+    ts_frame <- as.data.frame(array(ts_frame, dim=dim(ts_frame)[1:2], dimnames = list(NULL, dimnames(ts_frame)[[2]])))
+    ts_frame$date <- chron::chron(ts_frame$date, format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1))
+    if (date_format == "date") { ts_frame$date<- as.Date(strptime(chron::chron(trunc(ts_frame$date, units = 'days'), out.format='yyyy-m-d'), format='%Y-%b-%d')) }
+  } else {
+  browser()
+    fred <- ts_frame
+    ts_frame <- fred
+    ts_frame <- lapply(seq(dum1),
+                       function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x]),
                                     format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1)),
-                                 ts_frame[, 2:dim(ts_frame)[2], x]))
-  if (date_format == "date") ts_frame$date <- lapply(seq(dim(ts_frame)[3]),
-                   function(x) data.frame(date = as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date))),
-                                 ts_frame[, 2:dim(ts_frame)[2], x]))
-  if (numpoints == 1) ts_frame <- data.frame(ts_frame[[1]])
+                                    ts_frame[, 2:dim(ts_frame)[2], x]))
+    if (date_format == "date") ts_frame <- lapply(seq(dum1),
+                                                  function(x) data.frame(date = as.Date(strptime(chron::chron(trunc(ts_frame[, 1, x], units = 'days'), out.format='yyyy-m-d'), format='%Y-%b-%d')),
+                                                                         as.data.frame(ts_frame[, 2:dim(ts_frame)[2], x])))
+  }
+  #if (numpoints == 1) ts_frame <- data.frame(ts_frame[[1]])
 
   #ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
     #ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
