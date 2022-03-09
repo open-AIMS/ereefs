@@ -77,29 +77,62 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   intersected <- NULL
   llind <- NULL
   crossref <- NULL
+  #browser()
   for (i in 1:(dim(location_latlon)[1]-1)) {
      print(paste('transect section', i, 'of', dim(location_latlon)[1]-1))
      first_point <- (i==1)
      li <- find_intersections(location_latlon[i:(i+1),], x_grid, y_grid, latitude, longitude, first_point)
-	  if ((dim(li[[1]])[1] > 1)||(i==1)) {
-        location_ll <- rbind(location_ll, li[[1]])
+     #print(li[[1]])
+     #print(li[[2]])
+	   if (first_point) {
+       location_ll <- li[[1]]
+	     location_edges <- li[[2]]
+	     intersected <- li[[3]]
+	     llind <- li[[4]]
+     } else if (!is.null(li[[2]])) {
 	     location_edges <- rbind(location_edges, li[[2]])
-	     intersected <- rbind(intersected, li[[3]])
+	     intersected <- intersected | li[[3]] # This is boolean per cell so we want to combine them
+       if (li[[4]][length(li[[4]])] == llind[length(llind)]) {
+         li[[4]] <- li[[4]][1:(length(li[[4]])-1)]
+         li[[1]] <- li[[1]][1:(length(li[[1]])-1), ]
+       } else if (li[[4]][1] == llind[length(llind)]) {
+         li[[4]] <- li[[4]][2:length(li[[4]])]
+         li[[1]] <- li[[1]][2:length(li[[1]]), ]
+       }
+       location_ll <- rbind(location_ll, li[[1]])
 	     llind <- c(llind, li[[4]])
-     }
-     crossref[i] <- length(llind)
+      }
+      crossref[i] <- length(llind)
   }
+  if (llind[1] == llind[2]) {
+    # This will happen when first_point returns a single value but subsequent points also return values
+    llind <- llind[2:length(llind)]
+    crossref <- crossref[2:length(crossref)]
+    location_ll <- location_ll[2:dim(location_ll)[1],]
+  }
+  print(llind)
+  print(location_ll)
+  #browser()
+  #dum1 <- location_ll; dum1$key <- 1:length(location_ll$latitude)
+  #dum1 <- distinct(dum1, latitude, longitude, .keep_all=TRUE)
+  #location_ll <- location_ll[dum1$key,]
+  #llind <- llind[dum1$key]
+  #dum1 <- location_edges; dum1$key <- 1:length(location_edges$latitude)
+  #dum1 <- distinct(dum1, latitude, longitude, .keep_all=TRUE)
+  #location_edges <- location_edges[dum1$key,]
   crossref <- c(1, crossref)
   location_latlon <- location_ll
 
   if (dim(location_latlon)[1]==0) stop("The line segment given does not intersect any model cells on this grid.")
   i <- dim(location_latlon)[1]
 
-  eta <- rep(NA, length(which(intersected)))
-  botz <- rep(NA, length(which(intersected)))
+  eta <- rep(NA, dim(location_ll)[1])
+  botz <- rep(NA, dim(location_ll)[1])
   values <- array(NA, c(length(z_grid)-1, length(eta), length(var_names)))
 
   if (robust) {
+    #print(target_date)
+    #browser()
     mydata <- get_ereefs_profile(var_names=var_names, location_latlon=as.numeric(location_latlon[1,c('latitude','longitude')]),
 		     start_date = target_date, end_date = target_date, 
 		     input_file = input_file, input_grid = input_grid, eta_stem = eta_stem, override_positive=override_positive)
@@ -161,11 +194,6 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     if (target_date > ds[length(ds)]) {
       warning(paste('Target date (', target_date, ') is after end of data. Setting target_date to', ds[length(ds)]))
       target_date <- ds[length(ds)]
-    }
-    if (!is.null(nc$var[['t']])) { 
-      ds <- as.Date(ncdf4::ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-    } else {
-      ds <- as.Date(ncdf4::ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     }
     if (!is.na(eta_stem)) {
       nc3 <- ncdf4::nc_open(etafile)
@@ -246,8 +274,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
   dimnames(values)[[1]] <- 1:(length(z_grid)-1)
   dimnames(values)[[3]] <- var_names
 
-  if ((location_latlon[1,1]<location_latlon[2,1]) |
-      ((location_latlon[1,1]==location_latlon[2,1])&(location_latlon[1,2]<location_latlon[2,2]))) {
+  if ((location_latlon[1,1]<location_latlon[length(location_latlon$latitude),1]) |
+      ((location_latlon[1,1]==location_latlon[length(location_latlon$latitude),1])&(location_latlon[1,2]<location_latlon[length(location_latlon$latitude),2]))) {
      directn <- 1
   } else {
      directn <- -1
@@ -256,8 +284,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
      ind <- seq(length(eta), 1, -1)
      eta <- eta[ind]
      botz <- botz[ind]
-     location_latlon <- location_latlon[ind,]
-     location_edges <- location_edges[seq(length(eta)+1, 1, -1),]
+     location_latlon <- location_latlon[seq(dim(location_latlon)[1], 1, -1),]
+     location_edges <- location_edges[seq(dim(location_edges)[1], 1, -1),]
      values[,1:length(eta),] <- values[,ind,]
   }
 
@@ -479,14 +507,9 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
               if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(start_date+dcount-1, sep="-", '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
+        d <- get_origin_and_times(input_file)[[2]]
         nc <- ncdf4::nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
-        if (!is.na(ereefs_case)) {
-          d <- ncdf4::ncvar_get(nc, "time", start=from_record, count=day_count)
-          d <- as.Date(d, origin = as.Date("1990-01-01"))
-        } else {
-	       d <- ds[from_record:(from_record + day_count - 1)]
-        }
         if (!is.null(nc$var[['eta']])) { 
           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_record), count=c(1,1,day_count))
 	} else {
@@ -641,8 +664,7 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 	   d[i] <- earth.dist(slice$cell_intersections[i,'longitude'],slice$cell_intersections[i,'latitude'], slice$cell_intersections[i+1,'longitude'], slice$cell_intersections[i+1,'latitude']) 
 	}
 
-  browser()
-   d <- cumsum(d)
+  d <- cumsum(d)
 	dmin <- c(0, d[1:(numprofiles-1)])
 	dmax <- d[1:numprofiles]
 	dmin <- t(array(dmin, c(numprofiles, layers)))
@@ -768,10 +790,10 @@ return(d)
 }
 
 find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude, first_point = FALSE) {
-  warning("Returned cell intersections are incorrect, as will be the plotted distance -- needs debugging")
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
 	intersected <- array(FALSE, dim=c(a,b))
+  # Rearrange to get an array with one row for each cell and one column for each corner of that cell (top left/bottom left/bottom right/top right)
         gx <- c(x_grid[1:a, 1:b], x_grid[2:(a+1), 1:b], x_grid[2:(a+1), 2:(b+1)], x_grid[1:a, 2:(b+1)])
         gy <- c(y_grid[1:a, 1:b], y_grid[2:(a+1), 1:b], y_grid[2:(a+1), 2:(b+1)], y_grid[1:a, 2:(b+1)])
         gx <- array(gx, dim=c(a*b,4))
@@ -867,12 +889,18 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     d <- abs((xi<gx[,1]) + (xi<gx[,2]))
     xi[d>1] <- NA                     
     yi <- A * xi + b
+    d <- (xi<minlon) + (xi>maxlon) + (yi<minlat) + (yi>maxlat)
+    xi[d>0] <- NA
+    yi[d>0] <- NA
 
     c1 <- (gy[,3] - gy[,2]) / (gx[,3] - gx[,2])
     x <- (gy[,3] - b -gx[,3]*c1) / (A -c1)
     d <- abs((x<gx[,3]) + (x<gx[,2]))
     x[d>1] <- NA
     y <- A * x + b
+    d <- (x<minlon) + (x>maxlon) + (y<minlat) + (y>maxlat)
+    x[d>0] <- NA
+    y[d>0] <- NA
     xi <- c(xi, x)
     yi <- c(yi, y)
 
@@ -881,6 +909,9 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     d <- abs((x<gx[,4]) + (x<gx[,3]))
     x[d>1] <- NA
     y <- A * x + b
+    d <- (x<minlon) + (x>maxlon) + (y<minlat) + (y>maxlat)
+    x[d>0] <- NA
+    y[d>0] <- NA
     xi <- c(xi, x)
     yi <- c(yi, y)
 
@@ -889,6 +920,9 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     d <- abs((x<gx[,1]) + (x<gx[,4]))
     x[d>1] <- NA
     y <- A * x + b
+    d <- (x<minlon) + (x>maxlon) + (y<minlat) + (y>maxlat)
+    x[d>0] <- NA
+    y[d>0] <- NA
     xi <- c(xi, x)
     yi <- c(yi, y)
     yi <- yi[!is.na(xi)]
@@ -908,12 +942,18 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     yi <- c1 * (xi - gx[,2]) + gy[,2]
     d <- abs((yi<gy[,2]) + (yi<gx[,1]))
     yi[d>1] <- NA
+    d <- (xi<minlon) + (xi>maxlon) + (yi<minlat) + (yi>maxlat)
+    xi[d>0] <- NA
+    yi[d>0] <- NA
 
     c1 <- (gy[,3] - gy[,2]) / (gx[,3] - gx[,2])
     x <- rep(lon1, length(llind))
     y <- (gx[,3] - b -gy[,3]*c1) / (A -c1)
     d <- abs((y<gy[,3]) + (y<gx[,2]))
     y[d>1] <- NA
+    d <- (x<minlon) + (x>maxlon) + (y<minlat) + (y>maxlat)
+    x[d>0] <- NA
+    y[d>0] <- NA
     yi <- c(yi, y)
     xi <- c(xi, x)
 
@@ -922,6 +962,9 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     y <- (gx[,3] - b -gy[,4]*c1) / (A -c1)
     d <- abs((y<gy[,4]) + (y<gx[,3]))
     y[d>1] <- NA
+    d <- (x<minlon) + (x>maxlon) + (y<minlat) + (y>maxlat)
+    x[d>0] <- NA
+    y[d>0] <- NA
     yi <- c(yi, y)
     xi <- c(xi, x)
 
@@ -930,6 +973,9 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     y <- (gx[,4] - b -gy[,1]*c1) / (A -c1)
     d <- abs((y<gy[,1]) + (y<gx[,4]))
     y[d>1] <- NA
+    d <- (x<minlon) + (x>maxlon) + (y<minlat) + (y>maxlat)
+    x[d>0] <- NA
+    y[d>0] <- NA
     yi <- c(yi, y)
     xi <- c(xi, x)
 
@@ -941,7 +987,7 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
     yi <- yi[!is.na(yi)&!is.infinite(yi)]
   }
 
-   if (length(xi)!=0) { 
+   if (length(xi)>1) { 
      # determine the order in which the lists are sorted from the direction of the slice
      if (maxlon>minlon) {
         d <- sort(xi, index.return=TRUE)
@@ -952,6 +998,7 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
         if (longitude[llind[length(llind)]] < longitude[llind[1]] ) {
            yi <- yi[seq(length(xi), 1, -1)]
            xi <- xi[seq(length(xi), 1, -1)]
+           #llind <- llind[seq(length(llind), 1, -1)]
         }
      } else {
         d <- sort(yi, index.return=TRUE)
@@ -962,16 +1009,28 @@ find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longit
         if (latitude[llind[length(llind)]] < latitude[llind[1]] ) {
            yi <- yi[seq(length(xi), 1, -1)]
            xi <- xi[seq(length(xi), 1, -1)]
+           #llind <- llind[seq(length(llind), 1, -1)]
         }
      }
-     location_edges <- data.frame(latitude=yi, longitude=xi)
+     # Filter out edges that are beyond the line segment
+     location_edges <- data.frame(latitude=yi, longitude=xi) %>% 
+       filter(((latitude>=lat1)-(latitude<=lat2))==0, 
+              ((longitude>=lon1)-(longitude<=lon2))==0)
+     # Each grid-cell edge is included twice (once as the trailing edge of one cell and one as the leading edge of the next cell)
+     # So we need to filter out every second edge.
+     location_edges <- location_edges[seq(1,dim(location_edges)[1], by=2),]
    } else {
+     llind <- NULL
      if (first_point) {
        # no cell edges are intersected, so return the cell-centre of the nearest grid cell
-       llind <- apply(data.frame(latitude=lat1, longitude=lon1) ,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2))
+       # I think this is over-complicated. Is there every more than one lat1 and lon1?
+       llind <- (data.frame(lat=lat1, lon=lon1) %>%
+         mutate(ind = which.min((latitude - lat1)^2 + (longitude - lon1)^2)))$ind
+       #llind <- apply(data.frame(latitude=lat1, longitude=lon1) ,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2))
      }
      location_edges <- NULL
    }
-   location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind])
+  #browser()
+   location_latlon <- data.frame(latitude=latitude[llind], longitude=longitude[llind]) 
    return(list(location_latlon, location_edges, intersected, llind))
 }
