@@ -388,67 +388,13 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   input_stem <- get_file_stem(input_file)
 
   # Dates to plot
-  if (is.vector(start_date)) {
-    if ((length(start_date==2)) && is.character(start_date[1])) { 
-          start_date <- chron::chron(dates. = start_date[1], times. = start_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1),
-                                     out.format = c('year m day', 'h:m'))
-    } else if (length(start_date==3)) { 
-      # Set time to midday
-      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1),
-                                out.format=c('year m day', 'h:m'))
-    } else if (length(start_date==4)) {
-       if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
-       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), start_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1), 
-                                  out.format=c('year m day', 'h:m'))
-    } else {
-      stop("start_date format not recognised")
-    }
-  } else if (is.character(start_date)) {
-    start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1),
-                                  out.format=c('year m day', 'h:m'))
-  } else if (class(start_date)[1] == "Date") {
-    start_date <- chron::chron(as.character(start_date, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1),
-                                 out.format=c('year m day', 'h:m'))
-    #start_date <- chron::as.chron(start_date) # I don't know why this does not work.
-  }
+  start_date <- get_chron_date(start_date)
   start_day <- as.integer(chron::days(start_date))
   start_tod <- as.numeric(start_date) - as.integer(start_date)
   start_month <- as.integer(months(start_date))
   start_year <- as.integer(as.character(chron::years(start_date)))
 
-  if (is.vector(end_date)) {
-    if (length(end_date==2) && is.character(end_date[1])) { 
-          end_date <- chron::chron(end_date[1], end_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1),
-                                  out.format=c('year m day', 'h:m'))
-    } else if (length(end_date==3)) { 
-      # Set time to midday
-      end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1),
-                                  out.format=c('year m day', 'h:m'))
-    } else if (length(end_date==4)) {
-       if (!is.character(end_date[4])) end_date[4] <- paste0(end_date[4], ':00')
-       end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), end_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1),
-                                  out.format=c('year m day', 'h:m'))
-    } else {
-      stop("end_date format not recognised")
-    }
-  } else if (is.character(end_date)) {
-    end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1),
-                                  out.format=c('year m day', 'h:m'))
-  } else if (class(end_date)[1] == "Date") {
-    end_date <- chron::chron(as.character(end_date, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1),
-                                  out.format=c('year m day', 'h:m'))
-    #end_date <- chron::as.chron(end_date)
-  }
+  end_date <- get_chron_date(end_date)
   end_day <- as.integer(chron::days(end_date))
   end_month <- as.integer(months(end_date))
   end_year <- as.integer(as.character(chron::years(end_date)))
@@ -753,30 +699,28 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   if (verbosity>0) close(pb)
 
-  dum1 <- dim(ts_frame)[3]
-  if (dum1==1) {
-    ts_frame <- as.data.frame(array(ts_frame, dim=dim(ts_frame)[1:2], dimnames = list(NULL, dimnames(ts_frame)[[2]])))
-    ts_frame$date <- chron::chron(ts_frame$date, format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1))
-    if (date_format == "date") { ts_frame$date<- as.Date(strptime(chron::chron(trunc(ts_frame$date, units = 'days'), out.format='yyyy-m-d'), format='%Y-%b-%d')) }
-  } else {
-  browser()
-    fred <- ts_frame
-    ts_frame <- fred
-    ts_frame <- lapply(seq(dum1),
-                       function(x) data.frame(date = chron::chron(as.vector(ts_frame[, 1, x]),
-                                    format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1)),
-                                    ts_frame[, 2:dim(ts_frame)[2], x]))
-    if (date_format == "date") ts_frame <- lapply(seq(dum1),
-                                                  function(x) data.frame(date = as.Date(strptime(chron::chron(trunc(ts_frame[, 1, x], units = 'days'), out.format='yyyy-m-d'), format='%Y-%b-%d')),
-                                                                         as.data.frame(ts_frame[, 2:dim(ts_frame)[2], x])))
-  }
+  #dum1 <- dim(ts_frame)[3]
+  #if (dum1==1) {
+  #  ts_frame <- as.data.frame(array(ts_frame, dim=dim(ts_frame)[1:2], dimnames = list(NULL, dimnames(ts_frame)[[2]])))
+  #  ts_frame$date <- chron::chron(ts_frame$date, format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1))
+  #  if (date_format == "date") { ts_frame$date<- as.Date(strptime(chron::chron(trunc(ts_frame$date, units = 'days'), out.format='yyyy-m-d'), format='%Y-%b-%d')) }
+  #} else {
+    keepnames <- dimnames(ts_frame)[[2]]
+    fred <- NULL
+    for (ii in 1:dim(location_latlon)[1]) {
+       fred <- rbind(fred, data.frame(matrix(ts_frame[,,ii], ncol=length(keepnames)), location_latlon$latitude[ii], location_latlon$longitude[ii]))
+    }
+    names(fred) <- c(keepnames, 'latitude', 'longitude')
+    ts_frame <- fred %>% transform(date = chron::chron(date, format=c('year m d', 'h:m:s'), origin=c(year=1990, month=1, day=1)))
+    if (date_format == "date") ts_frame <- ts_frame %>% transform(date = as.Date(strptime(chron::chron(trunc(date, units = 'days'), out.format='yyyy-m-d'), format='%Y-%b-%d')))
+  #}
   #if (numpoints == 1) ts_frame <- data.frame(ts_frame[[1]])
 
   #ts_frame <- lapply(seq(dim(ts_frame)[3]), function(x) data.frame(date=as.Date(as.vector(ts_frame[ ,1, 1]), origin="1970-01-01"), ts_frame[ ,2:dim(ts_frame)[2] , x])) 
     #ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
     #ts_frame$date <- ts_frame$date + as.numeric(ereefs_origin)
-  if (mmp) names(ts_frame) <- mmp_sites$Name
-  if (length(var_names)==1) names(ts_frame)[2] <- var_names
+  if (mmp & (length(var_names)==1)) names(ts_frame) <- mmp_sites$Name
+  #if (length(var_names)==1) names(ts_frame)[2] <- var_names
   return(ts_frame)
 }
 
@@ -838,20 +782,11 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
-  if (is.vector(start_date)) {
-	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
-  } else if (is.character(start_date)) {
-	  start_date <- as.Date(start_date)
-  }
+  start_date <- get_chron_date(start_date)
+  end_date <- get_chron_date(end_date)
   start_day <- as.integer(format(start_date, '%d'))
   start_month <- as.integer(format(start_date, '%m'))
   start_year <- as.integer(format(start_date, '%Y'))
-
-  if (is.vector(end_date)) {
-	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
-  } else if (is.character(end_date)) {
-	  end_date <- as.Date(end_date)
-  }
   end_day <- as.integer(format(end_date, '%d'))
   end_month <- as.integer(format(end_date, '%m'))
   end_year <- as.integer(format(end_date, '%Y'))
@@ -1152,53 +1087,12 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
-  if (is.vector(start_date)) {
-    if ((length(start_date==2)) && is.character(start_date[1])) { 
-          start_date <- chron::chron(start_date[1], start_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1))
-    } else if (length(start_date==3)) { 
-      # Set time to midday
-      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-    } else if (length(start_date==4)) {
-       if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
-       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), start_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1)) 
-    } else {
-      stop("start_date format not recognised")
-    }
-  } else if (is.character(start_date)) {
-    start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-  } else if (class(start_date)[1] == "Date") {
-    start_date <- chron::as.chron(start_date)
-  }
+  start_date <- get_chron_date(start_date)
+  end_date <- get_chron_date(end_date)
   start_day <- as.integer(chron::days(start_date))
   start_tod <- as.numeric(start_date) - as.integer(start_date)
   start_month <- as.integer(months(start_date))
   start_year <- as.integer(as.character(chron::years(start_date)))
-
-  if (is.vector(end_date)) {
-    if (length(end_date==2) && is.character(end_date[1])) { 
-          end_date <- chron::chron(end_date[1], end_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1))
-    } else if (length(end_date==3)) { 
-      # Set time to midday
-      end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-    } else if (length(end_date==4)) {
-       if (!is.character(end_date[4])) end_date[4] <- paste0(end_date[4], ':00')
-       end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), end_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1)) 
-    } else {
-      stop("end_date format not recognised")
-    }
-  } else if (is.character(end_date)) {
-    end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-  } else if (class(end_date)[1] == "Date") {
-    end_date <- chron::as.chron(end_date)
-  }
   end_day <- as.integer(chron::days(end_date))
   end_month <- as.integer(months(end_date))
   end_year <- as.integer(as.character(chron::years(end_date)))
@@ -1587,20 +1481,11 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
   # Dates to plot
-  if (is.vector(start_date)) {
-	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-'))
-  } else if (is.character(start_date)) {
-	  start_date <- as.Date(start_date)
-  }
+  start_date <- get_chron_date(start_date)
+  end_date <- get_chron_date(end_date)
   start_day <- as.integer(format(start_date, '%d'))
   start_month <- as.integer(format(start_date, '%m'))
   start_year <- as.integer(format(start_date, '%Y'))
-
-  if (is.vector(end_date)) {
-	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-'))
-  } else if (is.character(end_date)) {
-	  end_date <- as.Date(end_date)
-  }
   end_day <- as.integer(format(end_date, '%d'))
   end_month <- as.integer(format(end_date, '%m'))
   end_year <- as.integer(format(end_date, '%Y'))
@@ -1899,4 +1784,44 @@ safe_nc_open <- function(filename, tries=4) {
     if (trywait>(tries+1)) stop(paste('Cannot open netcdf file', filename))
    }
    return(nc)
+}
+
+#' A simple function to convert a date provided in any of several formats to a chron date
+#' @param d The date of interest. Can be any of:
+#'              c(year, month, day)
+#'              c(year, month, day, hour) 
+#'              Date format date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
+#'              chron date
+#'              character format, e.g. '1970-01-01'
+#' @return date in chron format
+#' @export
+get_chron_date <- function(d) {
+  if (is.vector(d)) {
+    if ((length(d==2)) && is.character(d[1])) { 
+          d <- chron::chron(dates. = d[1], times. = d[2], format=c('d-m-y', 'h:m:s'), 
+                                     origin=c(year=1990, month=1, day=1),
+                                     out.format = c('year m day', 'h:m'))
+    } else if (length(d==3)) { 
+      # Set time to midday
+      d <- chron::chron(paste(d[3], d[2], d[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1),
+                                out.format=c('year m day', 'h:m'))
+    } else if (length(d==4)) {
+       if (!is.character(d[4])) d[4] <- paste0(d[4], ':00')
+       d <- chron::chron(paste(d[3], d[2], d[1], sep = '-'), d[4], format=c('d-m-y', 'h:m:s'), 
+                                  origin=c(year=1990, month=1, day=1), 
+                                  out.format=c('year m day', 'h:m'))
+    } else {
+      stop("d format not recognised")
+    }
+  } else if (is.character(d)) {
+    d <- chron::chron(d, "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1),
+                                  out.format=c('year m day', 'h:m'))
+  } else if (class(d)[1] == "Date") {
+    d <- chron::chron(as.character(d, format="%d-%m-%y"), "12:00:00", format=c('d-m-y', 'h:m:s'), 
+                                 origin=c(year=1990, month=1, day=1),
+                                 out.format=c('year m day', 'h:m'))
+    #d <- chron::as.chron(d) # I don't know why this does not work.
+  }
 }
