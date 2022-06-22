@@ -558,7 +558,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    from_day <- 1
 	    day_count <- 1
     } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
-      browser()
+      #browser()
       day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
       if (day_count > length(ds)) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
