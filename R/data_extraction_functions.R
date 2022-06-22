@@ -12,16 +12,19 @@
 #' @return 1 for daily, 4 for monthly, 0 for other
 #' @export
 get_ereefs_case <- function(filename) {
-  # If the filename ends in ".nc.html", truncate to remove the ".html" part
+  # If the filename ends in ".nc.html", truncate to remove the ".html" part. These two lines should have already been taken care of
+  # by substitute_filename():
   if (stringr::str_ends(filename, stringr::fixed(".nc.html"))) filename <- stringr::str_sub(filename, 1, -6)
+  if (stringr::str_ends(filename, stringr::fixed("catalog.html"))) filename <- paste0(stringr::str_sub(filename, 1, -5), 'xml')
 
   if (stringr::str_ends(filename, stringr::fixed(".nc"))) {
-    ereefs_case <- "nc"
+    ereefs_case <- c("nc")
   } else if (stringr::str_ends(filename, stringr::fixed(".mnc"))) {
-    ereefs_case <- "mnc"
-    warn(".mnc files not yet implemented.")
-  } else if (stringr::str_ends(filename, "catalog.html")) {
-    ereefs_case <- c("thredds_catalog", "nci")
+    ereefs_case <- c("mnc", "unknown")
+    stop(".mnc files not yet implemented.")
+  } else if (stringr::str_ends(filename, ".xml")) {
+    ereefs_case <- c("xml", "unknown")
+    stop("Should not get to ereefs_case xml. Should have already been converted by substitute_filename() to .ncml")
   } else if (stringr::str_ends(filename, ".ncml")) {
     ereefs_case <- c("ncml", "unknown")
   } else {
@@ -137,7 +140,7 @@ get_file_stem <- function(filename) {
   if (case[1]!='nc') {
     return(NA)
   }
-  if (is.na(case[2]) | case[2] == "recom") {
+  if (is.na(case[2]) | case[2] == "recom" | case[2] == "unknown") {
      # A netcdf filename, but not obviously 1km or 4km eReefs. Might be RECOM or another application
 	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-1)
   } else if (case[2]=='1km') {
@@ -173,92 +176,88 @@ check_platform_ok <- function(input_stem)
 #' Check whether the given filename is a shortcut and if so, set the full filename
 #'
 #' Utility function for the eReefs package
-#' @param input_file A netcdf filename, file stem or THREDDS catalog URI, or "menu" or "old_menu", or a run label from ereefs.info such as "GBR4-v2.0"
-#'                   Default is "menu".
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @return input_file
 #' @export
-substitute_filename <- function(input_file = "menu") {
-  choices <- NA
-  if ((input_file == "menu")|(input_file == "old_menu")|(input_file == "choices") | is.numeric(input_file)) {
+substitute_filename <- function(input_file = "catalog") {
+  # Try to work out what the user wants if it looks a bit like a THREDDS catalog but isn't clear
+  if (stringr::str_ends(input_file, stringr::fixed("catalog.html"))) input_file <- paste0(stringr::str_sub(input_file, 1, -5), 'xml')
+  if (((stringr::str_starts(input_file, "http")&(stringr::str_ends(input_file, "/"))))) input_file <- paste0(input_file, "catalog.xml")
+
+  choices <- NULL
+  if ((input_file == "old_menu")|(input_file == "choices") | is.numeric(input_file)) {
     # Set up the menu of choices to display for interactive input, or to select from if the user has specified an option number
-    if (input_file == "old_menu") {
-      choices  <- c("GBR4-v2.0",
-                    "GBR4_BGC-v2.0 Chyb Dcrt",
-                    "GBR4_BGC-v2.0 Chyb Dnrt",
-                    "GBR4_BGC-v2.0 Cpre Dcrt",
-                    "GBR4 rivers_2.0  Dnrt   GBR4 passive",
-                    "GBR1-v2.0",
-                    "GBR1 rivers_2.0  Dnrt",
-                    "GBR4-v1.85",
-                    "GBR4_BGC-v926",
-                    "GBR4_BGC-v924",
-                    "GBR1-v1.71",
-                    "GBR1_BGC-v924",
-                    "GBR4_BGC-v3.0 Dcrt",
-                    #"GBR4_BGC-v3.0 Dnrt",
-                    "GBR4_BGC-v3.1",
-                    "GBR4_BGC-v3.0",
-                    "GBR1_BGC-v3p2surf",
-                    "GBR1_BGC-v3p2",
-                    "GBR4_BGC-v3p2nrtsurf",
-                    "GBR4_BGC-v3p2nrt",
-                    "menu")
-    } else {
-      # Get the list of eReefs data sevices from the NCI server:
-      services <- thredds::tds_list_datasets("https://dapds00.nci.org.au/thredds/catalogs/fx3/catalog.html")
-      # Trim the list to only show the catalogues
-      services <- services[which(services$type=="catalog"), ]
-      choices <- services$dataset
-      #choices[length(choices) + 1] <- "menu"
-      # I'm probably missing something, but the following returns paths that will work:
-      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
-    }
-  }
-  if ((stringr::str_ends(input_file, "catalog.html"))|((stringr::str_starts(input_file, "http")&(stringr::str_ends(input_file, "/"))))) {
-      services <- thredds::tds_list_datasets(input_file)
-      # Trim the list to only show the catalogues
-      services <- services[which(services$type=="catalog"), ]
-      choices <- services$dataset
-      #choices[length(choices) + 1] <- "menu"
-      # I'm probably missing something, but the following returns paths that will work:
-      paths <- stringr::str_replace(services$path, "catalogs/fx3//thredds/", "") 
-  } else if (input_file == "choices") {
-  # The user just wants a list of options
-   print(choices)
-   stop()
-  } else if (input_file=="old_menu") {
-      selection <- utils::menu(c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
-                               "Archived 4km biogeochemical model hindcast v2.0 (Sept 2010 - Oct 2016)",
-                               "Archived 4km biogeochemical model near real time v2.0 (Oct 2016 - Nov 2019)",
-                               "Archived Pre-industrial catchment scenario 4km BGC (Sept 2010 - Oct 2016)",
-                               "Latest release passive river tracers (Sept 2010 - pres.)",
-                               "Latest release 1km grid hydrodynamic model (Dec 2014 - pres.)",
-                               "Latest release 1km grid passive river tracers (Dec 2014 - pres.)",
-                               "Archived 4km hydro (v 1.85, Sept 2010-pres.)",
-                               "Archived 4km bgc (v926, Sept 2010 - Dec 2014)",
-                               "Archived 4km bgc (v924, Sept 2010 - Sept 2017)",
-                               "Archived 1km hydro (v 1.71, Dec 2014 – Apr 2016)",
-                               "Archived 1km bgc (v924, Dec 2014 – Nov 2019)",
-                               "Archived 4km biogeochemical model hindcast v3.0 (Dec 2010 - Oct 2018)",
-                               "Latest release 4km biogeochemical model v3.1 (Dec 2010 - Apr 2019)",
-                               "CSIRO login required: GBR1 NRT BGC 3p0 3D (2018-09-02 to 2019-01-30)",
-                               "CSIRO login required: Latest release GBR1 NRT BGC 3p2 surface (16 Oct 2019 - pres., 3x/day)",
-                               "CSIRO login required: Latest release GBR1 NRT BGC 3p2 3D (16 Oct 2019 - pres., daily)",
-                               "CSIRO login required: Latest release GBR4 NRT BGC surface (Oct 2019 - May 2020, 4x/day)",
-                               "CSIRO login required: Latest release GBR4 NRT BGC 3D (Oct 2019 - May 2020, daily)"
-                              ))
-    input_file <- choices[selection]
-  } else if ((input_file == "menu")|(input_file == length(choices))) {
-    # We are using the NCI catalog to provide options
+    short_names  <- c("GBR4-v2.0",
+                      "GBR4_BGC-v2.0 Chyb Dcrt",
+                      "GBR4_BGC-v2.0 Chyb Dnrt",
+                      "GBR4_BGC-v2.0 Cpre Dcrt",
+                      "GBR4 rivers_2.0  Dnrt   GBR4 passive",
+                      "GBR1-v2.0",
+                      "GBR1 rivers_2.0  Dnrt",
+                      "GBR4-v1.85",
+                      "GBR4_BGC-v926",
+                      "GBR4_BGC-v924",
+                      "GBR1-v1.71",
+                      "GBR1_BGC-v924",
+                      "GBR4_BGC-v3.0 Dcrt",
+                      #"GBR4_BGC-v3.0 Dnrt",
+                      "GBR4_BGC-v3.1",
+                      "GBR4_BGC-v3.0",
+                      "GBR1_BGC-v3p2surf",
+                      "GBR1_BGC-v3p2",
+                      "GBR4_BGC-v3p2nrtsurf",
+                      "GBR4_BGC-v3p2nrt",
+                      "menu") 
+    if (input_file == "choices") { 
+      # The user just wants a list of options
+      print(short_names)
+      stop()
+    } 
+  } else if ((input_file == "catalog") | (input_file == "nci") | (input_file == "menu")) { 
+    # Get the list of eReefs data sevices from the NCI server:
+    catalog <- thredds::get_catalog("https://dapds00.nci.org.au/thredds/catalogs/fx3/catalog.xml")
+    choices <- catalog$get_dataset_names()
     print("Refer to https://research.csiro.au/ereefs/models/models-about/biogeochemical-simulation-naming-protocol/ for naming conventions.")
-    selection <- utils::menu(choices)
-    input_file  <- paths[selection]
+  } else if (stringr::str_ends(input_file, "xml")) {
+    catalog <- thredds::get_catalog(input_file)
+    choices <- catalog$get_dataset_names()
+  } else if (input_file=="old_menu") {
+    choices <- c("Latest release 4km grid hydrodynamic model (Sept 2010-pres.)", 
+                 "Archived 4km biogeochemical model hindcast v2.0 (Sept 2010 - Oct 2016)",
+                 "Archived 4km biogeochemical model near real time v2.0 (Oct 2016 - Nov 2019)",
+                 "Archived Pre-industrial catchment scenario 4km BGC (Sept 2010 - Oct 2016)",
+                 "Latest release passive river tracers (Sept 2010 - pres.)",
+                 "Latest release 1km grid hydrodynamic model (Dec 2014 - pres.)",
+                 "Latest release 1km grid passive river tracers (Dec 2014 - pres.)",
+                 "Archived 4km hydro (v 1.85, Sept 2010-pres.)",
+                 "Archived 4km bgc (v926, Sept 2010 - Dec 2014)",
+                 "Archived 4km bgc (v924, Sept 2010 - Sept 2017)",
+                 "Archived 1km hydro (v 1.71, Dec 2014 – Apr 2016)",
+                 "Archived 1km bgc (v924, Dec 2014 – Nov 2019)",
+                 "Archived 4km biogeochemical model hindcast v3.0 (Dec 2010 - Oct 2018)",
+                 "Latest release 4km biogeochemical model v3.1 (Dec 2010 - Apr 2019)",
+                 "CSIRO login required: GBR1 NRT BGC 3p0 3D (2018-09-02 to 2019-01-30)",
+                 "CSIRO login required: Latest release GBR1 NRT BGC 3p2 surface (16 Oct 2019 - pres., 3x/day)",
+                 "CSIRO login required: Latest release GBR1 NRT BGC 3p2 3D (16 Oct 2019 - pres., daily)",
+                 "CSIRO login required: Latest release GBR4 NRT BGC surface (Oct 2019 - May 2020, 4x/day)",
+                 "CSIRO login required: Latest release GBR4 NRT BGC 3D (Oct 2019 - May 2020, daily)")
   }
   if (is.numeric(input_file)) {
-     input_file <- choices[input_file]
+     input_file <- short_names[input_file]
+  } else if (!is.null(choices)) {
+    selection <- utils::menu(choices)
+    if (input_file == "old_menu") {
+      input_file <- short_names[selection]
+    } else {
+      input_file <- paste0(stringr::str_extract(catalog$url, "https://.[^/]*"), catalog$list_services()$ncdods[3], catalog$get_datasets()[[selection]]$get_url())
+    }
   }
   # Perhaps the user has manually specified (or selected from old_menu) one of the (obsolescent) official run labels from ereefs.info
-    input_file <- dplyr::case_when(
+  input_file <- dplyr::case_when(
       input_file == "GBR4-v2.0" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
       input_file == "GBR4_BGC-v2.0 Chyb Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
       input_file == "GBR4_BGC-v2.0 Chyb Dnrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
@@ -288,8 +287,8 @@ substitute_filename <- function(input_file = "menu") {
       input_file == "rivers" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
       input_file == "GBR1HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
       input_file == "GBR1BGC" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
-      TRUE ~ input_file
-    )
+      TRUE ~ input_file)
+
   # If necessary, remove trailing ".html" from an input file name that is not a catalog.
   if (stringr::str_ends(input_file, ".nc.html")) input_file <- stringr::str_sub(input_file, 1, -6)
     
@@ -326,10 +325,11 @@ substitute_filename <- function(input_file = "menu") {
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	       c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'        formatted for input to as.Date(). Defaults to c(2016,10,31).
-#' @param input_file is the URI or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
 #'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
 #'      but not specified, the function will first look for z_grid in the first INPUT_STEM file, and if not found, 
@@ -369,6 +369,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                           return_list = FALSE,
                           date_format = "date")
 {
+  library(dplyr)
   if (is.null(dim(location_latlon))) {
      location_latlon <- array(location_latlon, c(1,2))
   }
@@ -435,53 +436,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       blank_length <- end_date - start_date + 1
       ereefs_origin <- get_origin_and_times(input_file)[[1]]
       # We don't need ds in this case because we are taking just one output per day
-  } else if (ereefs_case[1] == "thredds_catalog") {
-    # (We are currently in get_ereefs_ts())
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      catalog_list <- thredds::tds_list_datasets(input_file)
-      catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
-      catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
-      # Special case to remove unwanted additional files from certain catalogues
-      in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
-      catalog_list <- catalog_list[in_range]
-      catalog_startdates <- chron::chron(rep(1, length(catalog_list)), origin=c(year=1990,month=1,day=1), format="y-m-d")
-      catalog_enddates <- catalog_startdates
-
-      # Pare down the catalog_list to include only those that cover the date range of interest, and set up a list of
-      # the times of outputs in each of these relevant files. This is slow.
-      # We could save this time by saving the results to sysdata.rda so we can look them up for known catalogs and only 
-      # doing this if we encounter an unknown catalog. Alternatively, we could save some time by assuming that the list is
-      # in temporal order and only looking for the first and last file needed.
-      if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
-      catalog_times <- vector("list", length(catalog_list))
-      in_range <- rep(FALSE, length(catalog_list))
-      blank_length <- 0
-      for (i in 1:length(catalog_list)) {
-         if (verbosity >1) print(paste("File", i, catalog_list[i]))
-         catalog_times[[i]] <- get_origin_and_times(catalog_list[i])[[2]]
-         catalog_startdates[i] <- catalog_times[[i]][1]
-         catalog_enddates[i] <- catalog_times[[i]][length(catalog_times[[i]])]
-         dum1 <- length(which((catalog_times[[i]] >= start_date)&(catalog_times[[i]] <= end_date)))
-         if (dum1 >0) {
-           blank_length <- blank_length + dum1
-           in_range[i] <- TRUE
-         }
-      }
-
-      # Let's make sure these are in temporal order. Note that sort.chron() ignores index.return so we need to convert to numeric.
-      ix <- sort(as.numeric(catalog_startdates[in_range]), index.return=TRUE)$ix
-      ix <- which(in_range)[ix]
-      catalog_list <- catalog_list[ix]
-      catalog_times <- catalog_times[ix]
-      catalog_startdates <- catalog_startdates[ix]
-      catalog_enddates <- catalog_enddates[ix]
-      icatalog <- 1
-      input_file <- catalog_list[icatalog]
-      ds <- catalog_times[[icatalog]]
-      ereefs_origin <- get_origin_and_times(catalog_list[icatalog])[[1]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   } else {
-      # We are looking at a single netcdf file such as a RECOM output file
+      # We are looking at a single netcdf file such as a RECOM output file or a ncml file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
       input_file <- input_file
       dum1 <- get_origin_and_times(input_file)
@@ -519,6 +475,15 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
           # location_latlon has been provided as an array/matrix. Coerce it into a data frame for consistency.
           location_latlon <- data.frame(latitude = location_latlon[,1], longitude = location_latlon[,2])
        }
+    # Let's make sure we have been given the right geolocation data and warn if not clear
+       ilat <- which((names(location_latlon) == "latitude")|(names(location_latlon) == "lat"))
+       ilon <- which((names(location_latlon) == "longitude")|(names(location_latlon) == "lon"))
+       if (length(ilat)) {
+         location_latlon <- data.frame(latitude = location_latlon[, ilat], longitude = location_latlon[, ilon])
+       } else {
+         warn("Assuming that the first column of location_latlon is latitude and the second column is longitude")
+       }
+       names(location_latlon)[1:2] <- c("latitude", "longitude")
        grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
     }
     #location_grid <- arrayInd(grid_index, dim(latitude))
@@ -593,7 +558,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	    from_day <- 1
 	    day_count <- 1
     } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
-      day_count <- day_count / as.numeric(ds[2]-ds[1])
+      browser()
+      day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
       if (day_count > length(ds)) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
         day_count <- length(ds)
@@ -603,36 +569,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                               start_tod) / as.numeric(ds[2] - ds[1]) + 1 
 	    if (from_day<1) from_day <-1
 	    fileslist <- 1
-    } else if (ereefs_case[1] == "thredds_catalog") { 
-      month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
-                                      origin=c(year=1990, month=1, day=1))
-      month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
-                                      origin=c(year=1990, month=1, day=1))
-      day_count <- day_count / as.numeric(ds[2]-ds[1])
-      ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
-      icatalog <- ix[1]
-      fileslist <- catalog_list[ix]
-      if (end_date > catalog_enddates[length(catalog_enddates)]) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
-        day_count <- day_count - (end_date - catalog_enddates[length(catalog_enddates)])
-      }
-      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
-                               origin=c(year=1990, month=1, day=1)) - catalog_startdates[ix[1]]) 
-                   + start_tod) / as.numeric(ds[2] - ds[1]) + 1 
-      if (from_day<1) from_day <- 1
     } else stop("Shouldn't happen: ereefs_case not recognised")
 
     for (dcount in 1:length(fileslist)) {
       if (ereefs_case[2] == '1km') {
 	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc')
-      } else if (ereefs_case[1] == "thredds_catalog") {
-        ## Are we past the end date of the current netcdf file from the catalog? If so, move on to the next one.
-        #if (chron::chron(paste(year, month, dcount, sep = '-'), format = c('y-m-d'), origin = c(year=1990, month=1, day=1)) > 
-        #    catalog_times[[icatalog]][length(catalog_times[[icatalog]])]) {
-          icatalog <- icatalog[dcount]
-          input_file <- catalog_list[icatalog]
-          ds <- catalog_times[[icatalog]]
-        #}
       }
       #input_file <- paste0(input_file, '?', var_list, ',time')
       nc <- safe_nc_open(input_file)
@@ -644,11 +585,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #          }
 #      } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
 #         d <- ds[from_day:(from_day + day_count - 1)]
-      if (ereefs_case[1] == "thredds_catalog") {
-         d <- ds[from_day:(from_day + day_count - 1)]
-      } else {
-         d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
-      } 
+      d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
       im1 = i+1
       i <- i + length(d)
 
@@ -741,9 +678,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -823,52 +762,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
 			  '.nc') 
       blank_length <- end_date - start_date + 1
-  } else if (ereefs_case[1] == "thredds_catalog") {
-    # (We are currently in get_ereefs_bottom_ts())
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      catalog_list <- thredds::tds_list_datasets(input_file)
-      catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
-      catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
-      # Special case to remove unwanted additional files from certain catalogues
-      in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
-      catalog_list <- catalog_list[in_range]
-      catalog_startdates <- chron::chron(rep(1, length(catalog_list)), origin=c(year=1990,month=1,day=1), format="y-m-d")
-      catalog_enddates <- catalog_startdates
-
-      # Pare down the catalog_list to include only those that cover the date range of interest, and set up a list of
-      # the times of outputs in each of these relevant files. This is slow.
-      # We could save this time by saving the results to sysdata.rda so we can look them up for known catalogs and only 
-      # doing this if we encounter an unknown catalog. Alternatively, we could save some time by assuming that the list is
-      # in temporal order and only looking for the first and last file needed.
-      if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
-      catalog_times <- vector("list", length(catalog_list))
-      in_range <- rep(FALSE, length(catalog_list))
-      blank_length <- 0
-      for (i in 1:length(catalog_list)) {
-         if (verbosity >1) print(paste("File", i, catalog_list[i]))
-         catalog_times[[i]] <- get_origin_and_times(catalog_list[i])[[2]]
-         catalog_startdates[i] <- catalog_times[[i]][1]
-         catalog_enddates[i] <- catalog_times[[i]][length(catalog_times[[i]])]
-         dum1 <- length(which((catalog_times[[i]] >= start_date)&(catalog_times[[i]] <= end_date)))
-         if (dum1 >0) {
-           blank_length <- blank_length + dum1
-           in_range[i] <- TRUE
-         }
-      }
-
-      # Let's make sure these are in temporal order. Note that sort.chron() ignores index.return so we need to convert to numeric.
-      ix <- sort(as.numeric(catalog_startdates[in_range]), index.return=TRUE)$ix
-      ix <- which(in_range)[ix]
-      catalog_list <- catalog_list[ix]
-      catalog_times <- catalog_times[ix]
-      catalog_startdates <- catalog_startdates[ix]
-      catalog_enddates <- catalog_enddates[ix]
-      icatalog <- 1
-      input_file <- catalog_list[icatalog]
-      ds <- catalog_times[[icatalog]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   } else {
-      # We are looking at a single netcdf file such as a RECOM output file
+      # We are looking at a single netcdf file such as a RECOM output file or a ncml file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
       input_file <- input_file
       dum1 <- get_origin_and_times(input_file)
@@ -944,7 +839,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
     } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
-      day_count <- day_count / as.numeric(ds[2]-ds[1])
+      day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
       if (day_count > length(ds)) {
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
         day_count <- length(ds)
@@ -954,23 +849,6 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                               start_tod) / as.numeric(ds[2] - ds[1]) + 1 
 	    if (from_day<1) from_day <-1
 	    fileslist <- 1
-    } else if (ereefs_case[1] == "thredds_catalog") { 
-      month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
-                                      origin=c(year=1990, month=1, day=1))
-      month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
-                                      origin=c(year=1990, month=1, day=1))
-      day_count <- day_count / as.numeric(ds[2]-ds[1])
-      ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
-      icatalog <- ix[1]
-      fileslist <- catalog_list[ix]
-      if (end_date > catalog_enddates[length(catalog_enddates)]) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
-        day_count <- day_count - (end_date - catalog_enddates[length(catalog_enddates)])
-      }
-      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
-                               origin=c(year=1990, month=1, day=1)) - catalog_startdates[ix[1]]) 
-                   + start_tod) / as.numeric(ds[2] - ds[1]) + 1 
-      if (from_day<1) from_day <- 1
     } else stop("Shouldn't happen: ereefs_case not recognised")
 
      for (dcount in 1:length(fileslist)) {
@@ -990,8 +868,6 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
            }
 	        d <- ds[from_day:(from_day + day_count - 1)]
         } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
-           d <- ds[from_day:(from_day + day_count - 1)]
-        } else if (ereefs_case[1] == "thredds_catalog") {
            d <- ds[from_day:(from_day + day_count - 1)]
         } else stop("Shouldn't happen: ereefs_case not recognised")
 
@@ -1043,9 +919,11 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -1136,50 +1014,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       dum1 <- get_origin_and_times(input_file)
       ereefs_origin <- dum1[[1]]
       ds <- dum1[[2]]
-  } else if (ereefs_case[1] == "thredds_catalog") {
-    # (We are currently in get_ereefs_depth_integrated_ts())
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      catalog_list <- thredds::tds_list_datasets(input_file)
-      catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
-      catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
-      # Special case to remove unwanted additional files from certain catalogues
-      in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
-      catalog_list <- catalog_list[in_range]
-      catalog_startdates <- chron::chron(rep(1, length(catalog_list)), origin=c(year=1990,month=1,day=1), format="y-m-d")
-      catalog_enddates <- catalog_startdates
-
-      # Pare down the catalog_list to include only those that cover the date range of interest, and set up a list of
-      # the times of outputs in each of these relevant files. This is slow.
-      # We could save this time by saving the results to sysdata.rda so we can look them up for known catalogs and only 
-      # doing this if we encounter an unknown catalog. Alternatively, we could save some time by assuming that the list is
-      # in temporal order and only looking for the first and last file needed.
-      if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
-      catalog_times <- vector("list", length(catalog_list))
-      in_range <- rep(FALSE, length(catalog_list))
-      blank_length <- 0
-      for (i in 1:length(catalog_list)) {
-         if (verbosity >1) print(paste("File", i, catalog_list[i]))
-         catalog_times[[i]] <- get_origin_and_times(catalog_list[i])[[2]]
-         catalog_startdates[i] <- catalog_times[[i]][1]
-         catalog_enddates[i] <- catalog_times[[i]][length(catalog_times[[i]])]
-         dum1 <- length(which((catalog_times[[i]] >= start_date)&(catalog_times[[i]] <= end_date)))
-         if (dum1 >0) {
-           blank_length <- blank_length + dum1
-           in_range[i] <- TRUE
-         }
-      }
-
-      # Let's make sure these are in temporal order. Note that sort.chron() ignores index.return so we need to convert to numeric.
-      ix <- sort(as.numeric(catalog_startdates[in_range]), index.return=TRUE)$ix
-      ix <- which(in_range)[ix]
-      catalog_list <- catalog_list[ix]
-      catalog_times <- catalog_times[ix]
-      catalog_startdates <- catalog_startdates[ix]
-      catalog_enddates <- catalog_enddates[ix]
-      icatalog <- 1
-      input_file <- catalog_list[icatalog]
-      ds <- catalog_times[[icatalog]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   } else {
       # We are looking at a single netcdf file such as a RECOM output file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
@@ -1309,7 +1143,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
      } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
-       day_count <- day_count / as.numeric(ds[2]-ds[1])
+       day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
        if (day_count > length(ds)) {
          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
          day_count <- length(ds)
@@ -1319,23 +1153,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                                start_tod) / as.numeric(ds[2] - ds[1]) + 1 
 	     if (from_day<1) from_day <-1
 	     fileslist <- 1
-     } else if (ereefs_case[1] == "thredds_catalog") { 
-       month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
-                                       origin=c(year=1990, month=1, day=1))
-       month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
-                                       origin=c(year=1990, month=1, day=1))
-       day_count <- day_count / as.numeric(ds[2]-ds[1])
-       ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
-       icatalog <- ix[1]
-       fileslist <- catalog_list[ix]
-       if (end_date > catalog_enddates[length(catalog_enddates)]) {
-         warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
-         day_count <- day_count - (end_date - catalog_enddates[length(catalog_enddates)])
-       }
-       from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
-                                origin=c(year=1990, month=1, day=1)) - catalog_startdates[ix[1]]) 
-                    + start_tod) / as.numeric(ds[2] - ds[1]) + 1 
-       if (from_day<1) from_day <- 1
      } else stop("Shouldn't happen: ereefs_case not recognised")
 
      for (dcount in 1:length(fileslist)) {
@@ -1343,10 +1160,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	        input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc')
           if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc')
           if (verbosity>1) print(input_file)
-        } else if (ereefs_case[1] == "thredds_catalog") {
-          icatalog <- icatalog[dcount]
-          input_file <- catalog_list[icatalog]
-          ds <- catalog_times[[icatalog]]
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- safe_nc_open(input_file)
@@ -1362,8 +1175,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
             d <- (safe_ncvar_get(nc, "time") + ereefs_origin)[from_day:(from_day+day_count-1)]
           }
         } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
-           d <- ds[from_day:(from_day + day_count - 1)]
-        } else if (ereefs_case[1] == "thredds_catalog") {
            d <- ds[from_day:(from_day + day_count - 1)]
         } else stop("Shouldn't happen: ereefs_case not recognised")
 
@@ -1444,9 +1255,11 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param end date for animation. Can either be a) a vector of integers in the format 
 #'	c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 #'      formatted for input to as.Date(). Defaults to c(2016,12,31).
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -1530,50 +1343,6 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			  '.nc')
       blank_length <- end_date - start_date + 1
 			  # '.nc?latitude,longitude')
-  } else if (ereefs_case[1] == "thredds_catalog") {
-    # (We are currently in get_ereefs_depth_specified_ts())
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      catalog_list <- thredds::tds_list_datasets(input_file)
-      catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
-      catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
-      # Special case to remove unwanted additional files from certain catalogues
-      in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
-      catalog_list <- catalog_list[in_range]
-      catalog_startdates <- chron::chron(rep(1, length(catalog_list)), origin=c(year=1990,month=1,day=1), format="y-m-d")
-      catalog_enddates <- catalog_startdates
-
-      # Pare down the catalog_list to include only those that cover the date range of interest, and set up a list of
-      # the times of outputs in each of these relevant files. This is slow.
-      # We could save this time by saving the results to sysdata.rda so we can look them up for known catalogs and only 
-      # doing this if we encounter an unknown catalog. Alternatively, we could save some time by assuming that the list is
-      # in temporal order and only looking for the first and last file needed.
-      if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
-      catalog_times <- vector("list", length(catalog_list))
-      in_range <- rep(FALSE, length(catalog_list))
-      blank_length <- 0
-      for (i in 1:length(catalog_list)) {
-         if (verbosity >1) print(paste("File", i, catalog_list[i]))
-         catalog_times[[i]] <- get_origin_and_times(catalog_list[i])[[2]]
-         catalog_startdates[i] <- catalog_times[[i]][1]
-         catalog_enddates[i] <- catalog_times[[i]][length(catalog_times[[i]])]
-         dum1 <- length(which((catalog_times[[i]] >= start_date)&(catalog_times[[i]] <= end_date)))
-         if (dum1 >0) {
-           blank_length <- blank_length + dum1
-           in_range[i] <- TRUE
-         }
-      }
-
-      # Let's make sure these are in temporal order. Note that sort.chron() ignores index.return so we need to convert to numeric.
-      ix <- sort(as.numeric(catalog_startdates[in_range]), index.return=TRUE)$ix
-      ix <- which(in_range)[ix]
-      catalog_list <- catalog_list[ix]
-      catalog_times <- catalog_times[ix]
-      catalog_startdates <- catalog_startdates[ix]
-      catalog_enddates <- catalog_enddates[ix]
-      icatalog <- 1
-      input_file <- catalog_list[icatalog]
-      ds <- catalog_times[[icatalog]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   } else {
       # We are looking at a single netcdf file such as a RECOM output file
       if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
@@ -1647,7 +1416,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         from_day <- 1
         day_count <- 1
      } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
-       day_count <- day_count / as.numeric(ds[2]-ds[1])
+       day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
        if (day_count > length(ds)) {
          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
          day_count <- length(ds)
@@ -1657,32 +1426,11 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                                start_tod) / as.numeric(ds[2] - ds[1]) + 1 
 	     if (from_day<1) from_day <-1
 	     fileslist <- 1
-     } else if (ereefs_case[1] == "thredds_catalog") { 
-       month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
-                                       origin=c(year=1990, month=1, day=1))
-       month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
-                                       origin=c(year=1990, month=1, day=1))
-       day_count <- day_count / as.numeric(ds[2]-ds[1])
-       ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
-       icatalog <- ix[1]
-       fileslist <- catalog_list[ix]
-       if (end_date > catalog_enddates[length(catalog_enddates)]) {
-         warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
-         day_count <- day_count - (end_date - catalog_enddates[length(catalog_enddates)])
-       }
-       from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
-                               origin=c(year=1990, month=1, day=1)) - catalog_startdates[ix[1]]) 
-                    + start_tod) / as.numeric(ds[2] - ds[1]) + 1 
-       if (from_day<1) from_day <- 1
      } else stop("Shouldn't happen: ereefs_case not recognised")
 
      for (dcount in fileslist) {
         if (ereefs_case[2] == '1km') {
 	        input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc')
-        } else if (ereefs_case[1] == "thredds_catalog") {
-          icatalog <- icatalog[dcount]
-          input_file <- catalog_list[icatalog]
-          ds <- catalog_times[[icatalog]]
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
         nc <- safe_nc_open(input_file)

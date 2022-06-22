@@ -12,9 +12,11 @@
 #' @param target_date Target date to extract profile. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
 #'                   Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the calculated date to bring it as
 #'                   close to midday as possible.
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -264,6 +266,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
       wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, from_record), count=c(countv, -1, 1))[ind3d]
       wc[dry] <- NA
       if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
+      #browser()
       values[1:(length(z_grid)-1), , j] <- wc
     }
     ncdf4::nc_close(nc)
@@ -310,9 +313,11 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'                   Defaults to c(2016, 02, 04). If start_date is a vector, 0.499 is added to the calculated date to bring the start 
 #'                   as close to midday as possible.
 #' @param end_date Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the                                                        
 #'      locally-stored or opendap-served netcdf file that contains these. If not specified, the function will first look for                                                            
 #'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size                                                                                 

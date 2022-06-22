@@ -112,9 +112,11 @@ plume_class <- function(rsr) {
 #' @param Land_map Set to TRUE to show a map of Queensland as an underlay for the model output plot. No longer requires the fgmap library 
 #'      and an activated Google API key but also doesn't show maps for other locations
 #'      Default now FALSE.
-#' @param input_file is the URI or file location of any of the EMS output files, 
-#'        Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-#'        can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -215,7 +217,7 @@ if (ereefs_case[2] == '4km') {
 	day <- 1
 	ds <- target_date
 	input_file <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
-} else {
+} else { #recom or other netcdf or ncml file
 	input_file <- paste0(input_stem, '.nc')
 	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
@@ -563,8 +565,11 @@ if (return_poly) {
 #'      to 'ToAnimate'. Images are created in this directory with input_files beginning with var_name, 
 #'      followed by an underscore and then sequential numbers beginning with 100001.
 #' @param Land_map Set to TRUE to show a land map of Queensland. Default now FALSE.
-#' @param input_file is the URI or file location of any of the EMS output files, or location of a THREDDS catalogue.
-#'        Defaults to a menu selection. Set to "old_menu" to use the (faster but less up-to-date) old version of the menu.
+#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+#'        Numeric values are interpreted as references to selections available from the old menu.
+#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
 #' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
 #'      coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
 #'      x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
@@ -758,56 +763,10 @@ map_ereefs_movie <- function(var_name = "true_colour",
          input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
        } else if (ereefs_case[2] == "1km") {
          input_file <- paste0(input_stem, format(as.Date(paste(year, month, from_day, sep="-")), '%Y-%m-%d'), '.nc')
-       } else if (ereefs_case[1] == "thredds_catalog") {
-         if (verbosity != 70) { # Hidden option to use if we are repeatedly querying the same catalog for the same time-period but different variables
-         # (We are currently in map_ereefs_movie())
-           catalog_list <- thredds::tds_list_datasets(input_file)
-           catalog_list <- catalog_list[stringr::str_ends(catalog_list$path, "nc"), ]$path
-           catalog_list <- stringr::str_replace(catalog_list, "catalog/.*dataset=fx3-", stringr::fixed("dodsC/fx3/"))
-
-           # Special case to remove unwanted additional files from certain catalogues
-           in_range <- stringr::str_which(catalog_list, "recom_wc", negate=TRUE)
-           catalog_list <- catalog_list[in_range]
-           catalog_startdates <- chron::chron(rep(1, length(catalog_list)), origin=c(year=1990,month=1,day=1), format="y-m-d")
-           catalog_enddates <- catalog_startdates
-     
-           # Pare down the catalog_list to include only those that cover the date range of interest, and set up a list of
-           # the times of outputs in each of these relevant files. This is slow.
-           # We could save this time by saving the results to sysdata.rda so we can look them up for known catalogs and only 
-           # doing this if we encounter an unknown catalog. Alternatively, we could save some time by assuming that the list is
-           # in temporal order and only looking for the first and last file needed.
-           if (verbosity>0) print("Finding out which files in the catalog are relevant to the time range...")
-           catalog_times <- vector("list", length(catalog_list))
-
-           in_range <- rep(FALSE, length(catalog_list))
-           for (i in 1:length(catalog_list)) {
-              if (verbosity >1) print(paste("File", i, catalog_list[i]))
-              catalog_times[[i]] <- get_origin_and_times(catalog_list[i])[[2]]
-              catalog_startdates[i] <- catalog_times[[i]][1]
-              catalog_enddates[i] <- catalog_times[[i]][length(catalog_times[[i]])]
-              dum1 <- length(which((catalog_times[[i]] >= start_date)&(catalog_times[[i]] <= end_date)))
-              if (dum1 >0) {
-                in_range[i] <- TRUE
-              }
-           }
-     
-           # Let's make sure these are in temporal order. Note that sort.chron() ignores index.return so we need to convert to numeric.
-           ix <- sort(as.numeric(catalog_startdates[in_range]), index.return=TRUE)$ix
-           ix <- which(in_range)[ix]
-           catalog_list <- catalog_list[ix]
-           catalog_times <- catalog_times[ix]
-           catalog_startdates <- catalog_startdates[ix]
-           catalog_enddates <- catalog_enddates[ix]
-           save(file='tmp.rda', list=c('catalog_list', 'catalog_startdates', 'catalog_enddates', 'catalog_times')) 
-         } else {
-           load('tmp.rda')
-         }
-           icatalog <- 1
-           input_file <- catalog_list[icatalog]
-           ds <- catalog_times[[icatalog]]
-       } else {
+       } else { #recom or other netcdf or ncml file
          #input_file <- input_file
          ds<- get_origin_and_times(input_file)[[2]]
+         ds_original <- ds
        }
        grids <- get_ereefs_grids(input_file, input_grid)
        x_grid <- grids[['x_grid']]
@@ -925,14 +884,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
       fileslist <- 1
 	    input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
       ds <- get_origin_and_times(input_file)[[2]]
-      if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
-      if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
+      if ((ds[length(as.numeric(ds))] - as.numeric(ds)[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
+      if ((ds[length(as.numeric(ds))] - as.numeric(ds)[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
       if(ds[2]==ds[1]) stop(paste('Error reading time from', input_file, '(t[2]==t[1])'))
       tstep <- as.numeric(ds[2]-ds[1])
       day_count <- day_count / tstep
-      if (day_count > length(ds)) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
-        day_count <- length(ds)
+      if (day_count > length(as.numeric(ds))) {
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds)))
+        day_count <- length(as.numeric(ds))
       }
       #dum1 <- as.integer((from_day - 0.4999999)/tstep + 1)
       #dum2 <- as.integer((day_count - 1) / tstep) +1
@@ -958,31 +917,23 @@ map_ereefs_movie <- function(var_name = "true_colour",
 	    # Everything is in one file but we are only going to read a month at a time
 	    # Output may be more than daily, or possibly less
 	    # input_file <- paste0(input_stem, '.nc') # input_file has been set previously 
-      tstep <- as.numeric(ds[2]-ds[1])
+      tstep <- as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
       day_count <- day_count / tstep
-      if (day_count > length(ds)) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
-        day_count <- length(ds)
+      if (day_count > length(as.numeric(ds_original))) {
+        warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds_original)))
+        day_count <- length(as.numeric(ds_original))
       }
+      #browser()
       from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
-                                  origin=c(year=1990, month=1, day=1)) - ds[1]) + 
+                                  origin=c(year=1990, month=1, day=1)) - as.numeric(ds_original)[1]) + 
                               start_tod) / tstep + 1 
+      #print(paste(year, month, from_day, ds[1], start_tod, tstep))
 	    if (from_day<1) from_day <-1
-	    start_array <- c(xmin, ymin, from_day)
-	    count_array <- c(xmax-xmin, ymax-ymin, as.integer(day_count/tstep))
+	    start_array <- c(xmin, ymin, floor(from_day))
+	    count_array <- c(xmax-xmin, ymax-ymin, if(tstep>1) {as.integer(day_count/tstep)} else  day_count)
+      #print(start_array)
+      #print(count_array)
 	    fileslist <- 1
-    } else if (ereefs_case[1] == "thredds_catalog") { 
-      tstep <- as.numeric(ds[2]-ds[1])
-      month_startdate <- chron::chron(paste(year, month, 1, sep = '-'), format = 'y-m-d',
-                                      origin=c(year=1990, month=1, day=1))
-      month_enddate <- chron::chron(paste(year, month, daysIn(as.Date(paste(year, month, 1, sep='-'))) , sep = '-'), format = 'y-m-d',
-                                      origin=c(year=1990, month=1, day=1))
-      ix <- which((catalog_startdates >= month_startdate) & (catalog_enddates <= (month_enddate + 0.999)))
-      icatalog <- ix[1]
-      fileslist <- catalog_list[ix]
-      if (end_date > catalog_enddates[length(catalog_enddates)]) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', catalog_enddates[length(catalog_enddates)]))
-      }
     } else stop("Shouldn't happen: ereefs_case not recognised")
 
     if (stride == 'daily') {
@@ -998,25 +949,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
       if (ereefs_case[2] == '1km') { 
          input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc') 
          #ds <- as.Date(paste(year, month, fileslist[dcount], sep="-", '%Y-%m-%d'))
-      } else if (ereefs_case[1] == "thredds_catalog") {
-         icatalog <- ix[dcount]
-         input_file <- catalog_list[icatalog]
-         ds <- catalog_times[[icatalog]]
-         if (length(ds)>1) {
-           tstep <- as.numeric(ds[2] - ds[1])
-           first_day <- as.integer((as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format='y-m-d',
-                                  origin=c(year=1990, month=1, day=1)) - catalog_startdates[icatalog]) +
-                                  start_tod) / tstep + 1 )
-           if (first_day<1) first_day <- 1
-           last_day <- min(length(ds) - first_day, as.integer(day_count/tstep))
-           if (last_day <1) last_day <- 1
-         } else {
-           tstep <- 1
-           first_day <- 1
-           last_day <- 1
-         }
-	       start_array <- c(xmin, ymin, first_day)
-	       count_array <- c(xmax-xmin, ymax-ymin, last_day)
       }
       if (verbosity>0) print(input_file)
       if (var_name=="plume") {
@@ -1178,7 +1110,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                                layer,
                                seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
           }
-          ds <- ds[seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+          ds <- ds_original[seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
           if (add_arrows) {
             current_u <- current_u[start_array[1] : (start_array[1] + count_array[1]),
                                    start_array[2] : (start_array[2] + count_array[2]),
@@ -1327,6 +1259,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                dir.create(output_dir)
             }
             fname <- paste0(output_dir, '/', var_name, '_', 100000 + icount, '.png', collapse='')
+            if (verbosity>0) print(paste(var_longname, format(ds[jcount], format=c('d-m-yyyy', 'h:m'))))
             ggplot2::ggsave(fname, p, dpi=100)
             #rm('p')
          }  else {
