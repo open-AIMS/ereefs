@@ -2,7 +2,8 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{check_platform_ok}
 \alias{check_platform_ok}
-\title{Check whether the platform is Windows and the filename contains "http": if so, return a warning}
+\title{Check whether the platform is Windows and the filename contains "http": if so, return a warning
+Now always returns TRUE as the CRAN version of ncdf4 for Windows can now handle THREDDS services}
 \usage{
 check_platform_ok(input_stem)
 }

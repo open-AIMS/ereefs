@@ -24,9 +24,11 @@ Otherwise, extract only the locations corresponding to the cells nearest the spe
 Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the calculated date to bring it as
 close to midday as possible.}
 
-\item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
+\item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+Numeric values are interpreted as references to selections available from the old menu.
+Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for

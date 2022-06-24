@@ -28,9 +28,11 @@ is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
-\item{input_file}{is the URI or file location of any of the EMS output files, 
-Defaults to a menu selection. Set to "choices" to see some other pre-defined options that
-can be used (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
+\item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
+Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
+Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
+Numeric values are interpreted as references to selections available from the old menu.
+Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
 
 \item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
 coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for

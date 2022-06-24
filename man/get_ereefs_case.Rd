@@ -2,7 +2,8 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{get_ereefs_case}
 \alias{get_ereefs_case}
-\title{Determines whether the file provided looks like an example of daily (e.g. GBR1), monthly (e.g. GBR4) or other (e.g. RECOM) output}
+\title{Determines whether the file provided looks like a THREDDS catalog, or an example of daily (e.g. GBR1), 
+monthly (e.g. GBR4) or other (e.g. RECOM) netcdf file output}
 \usage{
 get_ereefs_case(filename)
 }
@@ -13,6 +14,10 @@ get_ereefs_case(filename)
 1 for daily, 4 for monthly, 0 for other
 }
 \description{
-If there are two dashes ('-') in the filename, it is assumed to be a daily output file. If there is one, it is assumed to
-be monthly. If there are no dashes, it's something else, such as a RECOM file.
+If the filename contains "catalog.html", it's a THREDDS catalog. 
+If not, if it ends with ".nc", it's a netcdf file. Any trailing ".html" after the ".nc" part is clipped off.
+If there are two dashes ('-') in the last 13 characters of the netcdf filename, it is assumed to be a daily output file. 
+If there is one, it is assumed to be monthly. If there are no dashes, it's something else, such as a RECOM file.
+If the output is not consistently in monthly or daily netcdf files but switches between the two, it is best to provide 
+a THREDDS catalog URI.
 }

@@ -443,6 +443,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       dum1 <- get_origin_and_times(input_file)
       ereefs_origin <- dum1[[1]]
       ds <- dum1[[2]]
+      # This is used for now but over-written later
       blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   }
 
@@ -516,125 +517,193 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
   #ts_frame <- data.frame(blanks, array(blanks, dim=c(length(blanks), length(var_names))))
   colnames(ts_frame) <- c("date", var_names)
-  class(ts_frame[,"date",]) <- 
+  #class(ts_frame[,"date",]) <- 
 
   # Loop through relevant daily or monthly eReefs files to extract the data
   ndims <- rep(NA, length(var_names))
   layer_actual <- rep(NA, length(var_names))
-  i <- 0
-  mcount <- 0
-  if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
-  for (month in mths) {
-    mcount <- mcount + 1
-    year <- years[mcount]
-    if (mcount == 1) {
-       from_day <- start_day
-    } else {
-       from_day <- 1
-       start_tod <- 0
-    }
-    if ((start_year==end_year)&&(start_month==end_month)) {
-       day_count <- end_day - start_day + 1
-    } else if (mcount == 1) {
-       day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
-    } else if (mcount == (length(mths))) {
-       day_count <- end_day
-    } else {
-       day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
-    }
-    if (ereefs_case[2] == '4km') { 
-      fileslist <- 1
-      input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
-	    day_count <- day_count / as.numeric(ds[2]-ds[1])
-      if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
-      if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
-      if(ds[2]==ds[1]) stop(paste('Error reading time from', input_file, '(t[2]==t[1])'))
-      if (day_count > length(ds)) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
-        day_count <- length(ds)
+  if ((ereefs_case[2] == "1km")|(ereefs_case[2] == "4km")) {
+    i <- 0
+    mcount <- 0
+    if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
+    for (month in mths) {
+      mcount <- mcount + 1
+      year <- years[mcount]
+      if (mcount == 1) {
+         from_day <- start_day
+      } else {
+         from_day <- 1
+         start_tod <- 0
       }
-    } else if (ereefs_case[2] == '1km') {
-	    fileslist <- from_day:(from_day+day_count-1)
-	    from_day <- 1
-	    day_count <- 1
-    } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
-      #browser()
-      day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
-      if (day_count > length(ds)) {
-        warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
-        day_count <- length(ds)
+      if ((start_year==end_year)&&(start_month==end_month)) {
+         day_count <- end_day - start_day + 1
+      } else if (mcount == 1) {
+         day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
+      } else if (mcount == (length(mths))) {
+         day_count <- end_day
+      } else {
+         day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
       }
-      from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
-                                  origin=c(year=1990, month=1, day=1)) - ds[1]) + 
-                              start_tod) / as.numeric(ds[2] - ds[1]) + 1 
-	    if (from_day<1) from_day <-1
-	    fileslist <- 1
-    } else stop("Shouldn't happen: ereefs_case not recognised")
+      if (ereefs_case[2] == '4km') { 
+        fileslist <- 1
+        input_file <- paste0(input_stem, format(as.Date(paste(year, month, 1, sep="-")), '%Y-%m'), '.nc')
+	      day_count <- day_count / as.numeric(ds[2]-ds[1])
+        if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
+        if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
+        if(ds[2]==ds[1]) stop(paste('Error reading time from', input_file, '(t[2]==t[1])'))
+        if (day_count > length(ds)) {
+          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+          day_count <- length(ds)
+        }
+      } else if (ereefs_case[2] == '1km') {
+	      fileslist <- from_day:(from_day+day_count-1)
+	      from_day <- 1
+	      day_count <- 1
+#      } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
+#
+#        #browser()
+#        day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
+#        if (day_count > length(ds)) {
+#          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
+#          day_count <- length(ds)
+#        }
+#        from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
+#                                    origin=c(year=1990, month=1, day=1)) - ds[1]) + 
+#                                start_tod) / as.numeric(ds[2] - ds[1]) + 1 
+#	      if (from_day<1) from_day <-1
+#	      fileslist <- 1
+      } else stop("Shouldn't happen: ereefs_case not recognised")
 
-    for (dcount in 1:length(fileslist)) {
-      if (ereefs_case[2] == '1km') {
-	      input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc')
-      }
-      #input_file <- paste0(input_file, '?', var_list, ',time')
-      nc <- safe_nc_open(input_file)
-#      if ((ereefs_case[2] == "1km")||(ereefs_case[2] == "4km")) {
-#          if (!is.null(nc$var[['t']])) {
-#            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
-#          } else {
-#            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
-#          }
-#      } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
-#         d <- ds[from_day:(from_day + day_count - 1)]
-      d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
-      im1 = i+1
-      i <- i + length(d)
+      for (dcount in 1:length(fileslist)) {
+        if (ereefs_case[2] == '1km') {
+	        input_file <- paste0(input_stem, format(as.Date(paste(year, month, fileslist[dcount], sep="-")), '%Y-%m-%d'), '.nc')
+        }
+        #input_file <- paste0(input_file, '?', var_list, ',time')
+        nc <- safe_nc_open(input_file)
+  #      if ((ereefs_case[2] == "1km")||(ereefs_case[2] == "4km")) {
+  #          if (!is.null(nc$var[['t']])) {
+  #            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+  #          } else {
+  #            d <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
+  #          }
+  #      } else if ((ereefs_case[2] == "recom")|(ereefs_case[1] == "ncml")) { 
+  #         d <- ds[from_day:(from_day + day_count - 1)]
+        d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
+        im1 = i+1
+        i <- i + length(d)
 
-      ts_frame[im1:i,"date",] <- d
-      for (j in 1:length(var_names)) {
-          if (is.na(ndims[j])) {
-             # We don't yet know the dimensions of the variable, so let's get them
-              dims <- nc$var[[var_names[j]]][['size']]
-              if (is.null(dims)) stop(paste(var_names[j], ' not found in netcdf file.')) 
-              ndims[j] <- length(dims)
-           }
-           if (layer == 'surface') { 
-              dims <- nc$var[[var_names[j]]][['size']]
-              layer_actual <- dims[3] 
-           } else if (layer == 'bottom') { 
-              # find the bottom layer -- assume it is the first layer that is not NA
-              if (ndims[j] == 4) { 
-                 dum1 <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,1)) 
-                 if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
-                 layer <- min(which(!is.na(dum1)))
-                 layer_actual <- layer
-                 if (verbosity>0) print(paste('bottom layer = ', layer))
-              } 
-           } else if (layer < 0) { 
-             z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
-             layer <- max(which(z_grid<layer)) 
-             layer_actual <- layer 
-           } else {
-              layer_actual <- layer 
-           }
+        ts_frame[im1:i,"date",] <- d
+        for (j in 1:length(var_names)) {
+            if (is.na(ndims[j])) {
+               # We don't yet know the dimensions of the variable, so let's get them
+                dims <- nc$var[[var_names[j]]][['size']]
+                if (is.null(dims)) stop(paste(var_names[j], ' not found in netcdf file.')) 
+                ndims[j] <- length(dims)
+             }
+             if (layer == 'surface') { 
+                dims <- nc$var[[var_names[j]]][['size']]
+                layer_actual <- dims[3] 
+             } else if (layer == 'bottom') { 
+                # find the bottom layer -- assume it is the first layer that is not NA
+                if (ndims[j] == 4) { 
+                   dum1 <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,1)) 
+                   if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
+                   layer <- min(which(!is.na(dum1)))
+                   layer_actual <- layer
+                   if (verbosity>0) print(paste('bottom layer = ', layer))
+                } 
+             } else if (layer < 0) { 
+               z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
+               layer <- max(which(z_grid<layer)) 
+               layer_actual <- layer 
+             } else {
+                layer_actual <- layer 
+             }
 
-          if (ndims[j] == 4) {
-             wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual,from_day), count=c(countv,1,day_count))
-             #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
-          } else {
-             #print(c(startv,from_day))
-             #print(c(countv,day_count))
-             wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
-             #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
-          }
-          #print(wc)
-          wc <- array(wc, c(countv[1]*countv[2], day_count))
-          ts_frame[im1:i, j+1,] <- t(wc[grid_index,])
+            if (ndims[j] == 4) {
+               wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual,from_day), count=c(countv,1,day_count))
+               #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+            } else {
+               #print(c(startv,from_day))
+               #print(c(countv,day_count))
+               wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
+               #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
+            }
+            #print(wc)
+            wc <- array(wc, c(countv[1]*countv[2], day_count))
+            ts_frame[im1:i, j+1,] <- t(wc[grid_index,])
+        }
+        ncdf4::nc_close(nc)
+        if (verbosity>0) setTxtProgressBar(pb,mcount)
       }
-      ncdf4::nc_close(nc)
-      if (verbosity>0) setTxtProgressBar(pb,mcount)
     }
+    if (verbosity>0) close(pb)
+  } else { 
+    # Single nc or ncml file. No need to loop through months, but might need to check for monotonicity of timeseries 
+    warning(paste('No waitbar shown in this case. If you have asked for a large dataset, please be patient.',
+                  'If you have asked for a long time-series from a THREDDS server,',
+                  'you might encounter transfer errors, but it should self-correct.',
+                  'If not, consider breaking it up into shorter sections or pointing to an individual netcdf file.'))
+    if (end_date > max(ds, na.rm=TRUE)) {
+      warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds, na.tm=TRUE)))
+      end_date <- max(ds, na.rm=TRUE)
+    }
+    if (start_date < min(ds, na.rm=TRUE)) {
+      warning(paste('start_date', end_date, 'is beyond available data. Ending at', min(ds, na.tm=TRUE)))
+      start_date <- min(ds, na.rm=TRUE)
+    }
+    from_day <- max(which(ds<=start_date))
+    to_day <- min(which(ds>=end_date))
+    day_count <- to_day - from_day + 1
+    nc <- safe_nc_open(input_file)
+    blank_length <- to_day - from_day + 1
+    blanks <- rep(NA, blank_length)
+    ts_frame <- array(NA, c(blank_length, length(var_names)+1, numpoints))
+    colnames(ts_frame) <- c("date", var_names)
+    ts_frame[,"date",] <- ds[from_day:to_day]
+    for (j in 1:length(var_names)) { 
+      if (is.na(ndims[j])) {
+        # We don't yet know the dimensions of the variable, so let's get them
+        dims <- nc$var[[var_names[j]]][['size']]
+        if (is.null(dims)) stop(paste(var_names[j], ' not found in netcdf file.')) 
+          ndims[j] <- length(dims)
+        }
+        if (layer == 'surface') { 
+          dims <- nc$var[[var_names[j]]][['size']]
+          layer_actual <- dims[3] 
+        } else if (layer == 'bottom') { 
+          # find the bottom layer -- assume it is the first layer that is not NA
+          if (ndims[j] == 4) { 
+            dum1 <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,1)) 
+            if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
+            layer <- min(which(!is.na(dum1)))
+            layer_actual <- layer
+            if (verbosity>0) print(paste('bottom layer = ', layer))
+          } 
+        } else if (layer < 0) { 
+          z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
+          layer <- max(which(z_grid<layer)) 
+          layer_actual <- layer 
+        } else {
+          layer_actual <- layer 
+        }
+
+        if (ndims[j] == 4) {
+           wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,layer_actual,from_day), count=c(countv,1,day_count))
+           #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],layer_actual[j],from_day), count=c(1,1,1,day_count))
+        } else {
+           #print(c(startv,from_day))
+           #print(c(countv,day_count))
+           wc <- safe_ncvar_get(nc, var_names[j], start=c(startv,from_day), count=c(countv,day_count))
+           #ts_frame[im1:i, j+1] <- safe_ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],from_day), count=c(1,1,day_count))
+        }
+        #print(wc)
+        wc <- array(wc, c(countv[1]*countv[2], day_count))
+        ts_frame[, j+1,] <- t(wc[grid_index,])
+    }
+    ts_frame <- unique(ts_frame)
+    ncdf4::nc_close(nc)
   }
-  if (verbosity>0) close(pb)
 
   #dum1 <- dim(ts_frame)[3]
   #if (dum1==1) {
