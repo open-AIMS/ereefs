@@ -645,11 +645,11 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                   'you might encounter transfer errors, but it should self-correct.',
                   'If not, consider breaking it up into shorter sections or pointing to an individual netcdf file.'))
     if (end_date > max(ds, na.rm=TRUE)) {
-      warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds, na.tm=TRUE)))
+      warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds, na.rm=TRUE)))
       end_date <- max(ds, na.rm=TRUE)
     }
     if (start_date < min(ds, na.rm=TRUE)) {
-      warning(paste('start_date', end_date, 'is beyond available data. Ending at', min(ds, na.tm=TRUE)))
+      warning(paste('start_date', start_date, 'is beyond available data. Starting at', min(ds, na.rm=TRUE)))
       start_date <- min(ds, na.rm=TRUE)
     }
     from_day <- max(which(ds<=start_date))
