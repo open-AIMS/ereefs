@@ -561,7 +561,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	      day_count <- 1
 #      } else if ((ereefs_case[2] == 'recom')|(ereefs_case[1] == "ncml")) { 
 #
-#        #browser()
 #        day_count <- day_count / as.numeric(median((ds[2:length(ds)] - ds[1:(length(ds) - 1)]), na.rm=TRUE))
 #        if (day_count > length(ds)) {
 #          warning(paste('end_date', end_date, 'is beyond available data. Ending at', ds[length(ds)]))
@@ -1558,19 +1557,19 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @return variable extracted using ncvar_get()
 #' @export
 safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
- signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=11) {
+ signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=20) {
    if (substr(nc$filename, 1, 4)!="http") {
      myvar <- ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals)
    } else {
      myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
      trywait = 1
-     while ((class(myvar)=='try-error')&&(trywait<=(tries+1))) { 
+     while ((class(myvar)=='try-error')&&(trywait<=(tries*2))) { 
         print(paste('retrying in ', trywait, 'second(s)')) 
         Sys.sleep(trywait) 
         trywait <- trywait+1 
         myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
      }
-     if (trywait>(tries+1)) stop(paste('Cannot access netcdf file', nc$filename))
+     if (trywait>(tries*2+1)) stop(paste('Cannot access netcdf file', nc$filename))
    }
    return(myvar)
 }

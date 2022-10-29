@@ -171,9 +171,16 @@ map_ereefs <- function(var_name = "true_colour",
 input_file <- substitute_filename(input_file)
 
 # Check whether this is a locally-stored netcdf file or a web-served file
-if (substr(input_file, 1, 4)=="http") {
-  local_file = FALSE
-} else local_file = TRUE
+#if (substr(input_file, 1, 4)=="http") {
+#  local_file = FALSE
+#} else local_file = TRUE
+# @Diego:
+# I'm now setting local_file to TRUE regardless. Using this used to save a lot of memory and speed things up, but doesn't seem to 
+# do so in the current ncdf4 version and causes problems with the latest ncdf4 library because it can't access variables 
+# not included (such as latitude, x_centre).
+# I'm leaving the code that uses local_file==FALSE in just in case for now because it was a pain to work out, but it
+# should probably be deleted -- can always recover from an older version if needed.
+local_file <- TRUE
 
 if (length(p)!=1) Land_map <- FALSE
 if (suppress_print) Land_map <- FALSE
@@ -203,28 +210,40 @@ if (is.vector(target_date)) {
 } else if (is.character(target_date)) {
 	target_date <- as.Date(target_date)
 }
-if (ereefs_case[2] == '4km') { 
-	input_file <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
-	nc <- safe_nc_open(input_file)
-	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	}
-	day <- which.min(abs(target_date - ds))
-	ncdf4::nc_close(nc)
-} else if (ereefs_case[2] == '1km') {
-	day <- 1
-	ds <- target_date
-	input_file <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
+# @Diego: to explain why this is so convoluted:
+# We have to do different things here depending on what type of eReefs output file we have. Earlier ereefs runs did not
+# provide ncml files or OpeNDAP catalog information, and this is still true of some runs on servers other than the NCI server.
+# In this case, we need to make some assumptions about the data structures. 4km resolution ereefs model output was served in
+# monthly blocks, so we need to find the right month and then step through it. 1km resolution ereefs model output was served
+# in daily netcdf files. RECOM files have all the data in one file. ncml files, where provided, can be treated as if all the
+# data were in one file (by opening the shell ncml file instead of the individual nc files). Where the server provides a
+# catalog and the user has chosen this approach, we can use the metadata in the catalog.
+if ((!is.na(ereefs_case[1]))&&(ereefs_case[2]!="unknown")) {
+  if (ereefs_case[2] == '4km') { 
+	  input_file <- paste0(input_stem, format(target_date, '%Y-%m'), '.nc')
+	  nc <- safe_nc_open(input_file)
+	  if (!is.null(nc$var[['t']])) { 
+	      ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+          } else {
+	      ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	  }
+	  day <- which.min(abs(target_date - ds))
+	  ncdf4::nc_close(nc)
+  } else if (ereefs_case[2] == '1km') {
+	  day <- 1
+	  ds <- target_date
+	  input_file <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
+  }
 } else { #recom or other netcdf or ncml file
-	input_file <- paste0(input_stem, '.nc')
+  #input_file <- input_file
 	nc <- safe_nc_open(input_file)
 	if (!is.null(nc$var[['t']])) { 
 	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
         } else {
 	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
 	}
+  dum1 <- abs(target_date - ds)
+  if (min(dum1)>1) warning(paste("Target date", target_date, "is", min(dum1), "days from closest available date in", input_file, ds[min(dum1)]))
 	day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
 }
@@ -283,6 +302,9 @@ x_grid <- x_grid[xmin:(xmax+1), ymin:(ymax+1)]
 y_grid <- y_grid[xmin:(xmax+1), ymin:(ymax+1)]
 
 
+# There are a few options for var_name. In most cases, we just plot the variable with the given name from the netcdf file.
+# There are two special cases using optical output data: "plume" calculates and plots the optical colour class of the water,
+# while "true_colour" produces something that looks like a satellite image from the model output
 if (var_name=="plume") {
     if (!local_file) {
       input_file <- paste0(input_file, '?R_412,R_443,R_488,R_531,R_547,R_667,R_678')
@@ -641,6 +663,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
   if (substr(input_file, 1, 4)=="http") {
     local_file = FALSE
   } else local_file = TRUE
+  #temporary hack:
+  local_file <- TRUE
 
   # Check whether this is a GBR1 or GBR4 ereefs file, a THREDDS catalog or something else
   ereefs_case <- get_ereefs_case(input_file) 
@@ -654,7 +678,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                     longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
                     town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
 
-  # Dates to map:
+  # Dates to map. We offer quite a few date format options for flexibility.
   if (is.vector(start_date)) {
     if ((length(start_date==2)) && is.character(start_date[1])) { 
           start_date <- chron::chron(start_date[1], start_date[2], format=c('d-m-y', 'h:m:s'), 
@@ -716,6 +740,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
     stop('start_date must preceed end_date')
   }
 
+  # Points of interest provided by the user to mark on the map, and possibly plot a surface elevation timeseries for:
   if (!is.null(mark_points)) {
    # If mark_points is a vector, change it into a data frame
    if (is.null(dim(mark_points))) {
@@ -923,7 +948,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
         warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds_original)))
         day_count <- length(as.numeric(ds_original))
       }
-      #browser()
       from_day <- (as.numeric(chron::chron(paste(year, month, from_day, sep = '-'), format=c('y-m-d'),
                                   origin=c(year=1990, month=1, day=1)) - as.numeric(ds_original)[1]) + 
                               start_tod) / tstep + 1 
@@ -951,26 +975,30 @@ map_ereefs_movie <- function(var_name = "true_colour",
          #ds <- as.Date(paste(year, month, fileslist[dcount], sep="-", '%Y-%m-%d'))
       }
       if (verbosity>0) print(input_file)
+      # There are a few options for var_name. In most cases, we just plot the variable with the given name from the netcdf file.
+      # There are two special cases using optical output data: "plume" calculates and plots the optical colour class of the water,
+      # while "true_colour" produces something that looks like a satellite image from the model output
       if (var_name=="plume") {
         if (!local_file) {
           slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                           '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
           input_file <- paste0(input_file, '?R_412', slice, ',R_443', slice, ',R_488', slice, ',R_531', slice, ',R_547', slice, ',R_667', slice, ',R_678', slice)
+          count_array <- c(count_array[1:2]+1, count_array[3])
         } else input_file <- input_file
         nc <- safe_nc_open(input_file)
-        R_412 <- safe_ncvar_get(nc, "R_412")
-        R_443 <- safe_ncvar_get(nc, "R_443")
-        R_488 <- safe_ncvar_get(nc, "R_488")
-        R_531 <- safe_ncvar_get(nc, "R_531")
-        R_547 <- safe_ncvar_get(nc, "R_547")
-        R_667 <- safe_ncvar_get(nc, "R_667")
-        R_678 <- safe_ncvar_get(nc, "R_678")
-        if (local_file) {
-          R_412 <- R_412[(start_array[1] - 1) : (start_array[1] + count_array[1] - 1),
-                         (start_array[2] - 1) : (start_array[2] + count_array[2] - 1),
-                         seq(from = start_array[3] - 1, to = start_array[3] + count_array[3] - 2, by = stride)]
-        }
+        R_412 <- safe_ncvar_get(nc, "R_412", start=start_array, count=count_array)
+        R_443 <- safe_ncvar_get(nc, "R_443", start=start_array, count=count_array)
+        R_488 <- safe_ncvar_get(nc, "R_488", start=start_array, count=count_array)
+        R_531 <- safe_ncvar_get(nc, "R_531", start=start_array, count=count_array)
+        R_547 <- safe_ncvar_get(nc, "R_547", start=start_array, count=count_array)
+        R_667 <- safe_ncvar_get(nc, "R_667", start=start_array, count=count_array)
+        R_678 <- safe_ncvar_get(nc, "R_678", start=start_array, count=count_array)
+        #if (local_file) {
+        #  R_412 <- R_412[(start_array[1] - 1) : (start_array[1] + count_array[1] - 1),
+        #                 (start_array[2] - 1) : (start_array[2] + count_array[2] - 1),
+        #                 seq(from = start_array[3] - 1, to = start_array[3] + count_array[3] - 2, by = stride)]
+        #}
         ems_var <- NA*R_678
         if (ereefs_case[2] == '4km') {
            for (day in 1:dim(R_412)[3]) {
@@ -988,14 +1016,15 @@ map_ereefs_movie <- function(var_name = "true_colour",
         slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                         '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                         '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
+        count_array <- c(count_array[1:2]+1, count_array[3])
         if (!local_file) {
           input_file <- paste0(input_file, '?R_470', slice, ',R_555', slice, ',R_645', slice)
         } else input_file <- input_file
         nc <- safe_nc_open(input_file)
         TCbright <- 10
-        R_470 <- safe_ncvar_get(nc, "R_470") * TCbright
-        R_555 <- safe_ncvar_get(nc, "R_555") * TCbright
-        R_645 <- safe_ncvar_get(nc, "R_645") * TCbright
+        R_470 <- safe_ncvar_get(nc, "R_470", start=start_array, count=count_array) * TCbright
+        R_555 <- safe_ncvar_get(nc, "R_555", start=start_array, count=count_array) * TCbright
+        R_645 <- safe_ncvar_get(nc, "R_645", start=start_array, count=count_array) * TCbright
         R_470[R_470>1] <- 1
         R_555[R_555>1] <- 1
         R_645[R_645>1] <- 1
@@ -1051,10 +1080,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
                           '[', layer-1, ']',                                                    # layer
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                           '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
+          start_array <- c(start_array[1:2], layer-1, start_array[3])
+          count_array <- c(count_array[1:2]+1, 1, count_array[3])
         } else {
           slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                           '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
+          count_array <- c(count_array[1:2]+1, count_array[3])
         }
         if (verbosity>1) print(paste('slice = ', slice))
         if (var_name == "speed") { 
@@ -1062,7 +1094,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
              input_file <- paste0(input_file, '?u', slice, ',v', slice)
            } else input_file <- input_file
            nc <- safe_nc_open(input_file)
-           ems_var <- sqrt(safe_ncvar_get(nc, 'u')^2 + safe_ncvar_get(nc, 'v')^2)
+           ems_var <- sqrt(safe_ncvar_get(nc, 'u', start=start_array, count=count_array)^2 + safe_ncvar_get(nc, 'v', start=start_array, count=count_array)^2)
            vat <- ncdf4::ncatt_get(nc, 'u')
            var_longname <- 'Current speed'
            var_units <- vat$units
@@ -1071,7 +1103,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
              input_file <- paste0(input_file, '?ZooL_N', slice, ',ZooS_N', slice)
            } else input_file <- input_file
            nc <- safe_nc_open(input_file)
-           ems_var <- safe_ncvar_get(nc, 'ZooL_N') + safe_ncvar_get(nc, 'ZooS_N')
+           ems_var <- safe_ncvar_get(nc, 'ZooL_N', start=start_array, count=count_array) + safe_ncvar_get(nc, 'ZooS_N', start=start_array, count=count_array)
            vat <- ncdf4::ncatt_get(nc, 'ZooL_N')
            var_longname <- 'Total Zooplankton'
            var_units <- vat$units
@@ -1085,10 +1117,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
            } else input_file <- input_file
            if (verbosity>1) print(paste("Before nc_open, input_file = ", input_file))
            nc <- safe_nc_open(input_file)
-           ems_var <- safe_ncvar_get(nc, var_name)
+           browser()
+           ems_var <- safe_ncvar_get(nc, var_name, start=start_array, count = count_array)
            if (add_arrows) {
-             current_u <- ncvar_get(nc, 'u1')
-             current_v <- ncvar_get(nc, 'u2')
+             current_u <- ncvar_get(nc, 'u1', start=start_array, count = count_array)
+             current_v <- ncvar_get(nc, 'u2', start=start_array, count = count_array)
              if ((dcount==1)&(is.na(max_u))) {
                max_u <- max(max(abs(c(current_u)), na.rm = TRUE), max(abs(c(current_v)), na.rm=TRUE)) 
                if (!is.na(scale_arrows)) max_u <- max_u / scale_arrows
@@ -1099,27 +1132,27 @@ map_ereefs_movie <- function(var_name = "true_colour",
            var_units <- vat$units
         }
       }
-        if (local_file) { 
-          if (ndims == 3) {
-            ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
-                               start_array[2] : (start_array[2] + count_array[2]),
-                               seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
-          }  else {
-            ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
-                               start_array[2] : (start_array[2] + count_array[2]),
-                               layer,
-                               seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
-          }
-          ds <- ds_original[seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
-          if (add_arrows) {
-            current_u <- current_u[start_array[1] : (start_array[1] + count_array[1]),
-                                   start_array[2] : (start_array[2] + count_array[2]),
-                                   seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
-            current_v <- current_v[start_array[1] : (start_array[1] + count_array[1]),
-                         start_array[2] : (start_array[2] + count_array[2]),
-                         seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
-          }
-      }
+        #if (local_file) { 
+        #  if (ndims == 3) {
+        #    ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
+        #                       start_array[2] : (start_array[2] + count_array[2]),
+        #                       seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+        #  }  else {
+        #    ems_var <- ems_var[start_array[1] : (start_array[1] + count_array[1]),
+        #                       start_array[2] : (start_array[2] + count_array[2]),
+        #                       layer,
+        #                       seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+        #  }
+        #  ds <- ds_original[seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+        #  if (add_arrows) {
+        #    current_u <- current_u[start_array[1] : (start_array[1] + count_array[1]),
+        #                           start_array[2] : (start_array[2] + count_array[2]),
+        #                           seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+        #    current_v <- current_v[start_array[1] : (start_array[1] + count_array[1]),
+        #                 start_array[2] : (start_array[2] + count_array[2]),
+        #                 seq(from = start_array[3], to = start_array[3] + count_array[3] - 1, by = stride)] 
+        #  }
+        #}
       #ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
     
       dum1 <- length(dim(ems_var))
@@ -1172,7 +1205,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
             }
   
             if (Land_map) {
-               p <- ggplot2::gplot() + geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
+               p <- ggplot2::ggplot() + geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
 	          } else {
 	             p <- ggplot2::ggplot()
             }
