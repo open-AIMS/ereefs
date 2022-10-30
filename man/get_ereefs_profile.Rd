@@ -9,7 +9,7 @@ get_ereefs_profile(
   location_latlon = c(-23.39189, 150.88852),
   start_date = c(2016, 2, 4),
   end_date = c(2016, 3, 2),
-  input_file = "menu",
+  input_file = "catalog",
   input_grid = NA,
   eta_stem = NA,
   squeeze = TRUE,

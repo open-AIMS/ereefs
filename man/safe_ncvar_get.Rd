@@ -14,7 +14,7 @@ safe_ncvar_get(
   signedbyte = TRUE,
   collapse_degen = TRUE,
   raw_datavals = FALSE,
-  tries = 11
+  tries = 20
 )
 }
 \arguments{

@@ -1,3 +1,4 @@
+if (0) {
 library(ereefs)
 
 # 1. Making maps and animations from eReefs output
@@ -61,4 +62,4 @@ p <- plot_ereefs_slice(temp_slice, var_name="temp")
   p <- plot_ereefs_zvt(profile_data, var_name = "TN")
 
 # Extract a time-series of data
-
+}
