@@ -1351,7 +1351,8 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                                           input_file = "menu", 
                                           input_grid = NA, 
                                           eta_stem = NA, 
-                                          verbosity = 1)
+                                          verbosity = 1,
+                                          date_format = "date")
 {
 
   input_file <- substitute_filename(input_file)
@@ -1364,12 +1365,13 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Dates to plot
   start_date <- get_chron_date(start_date)
   end_date <- get_chron_date(end_date)
-  start_day <- as.integer(format(start_date, '%d'))
-  start_month <- as.integer(format(start_date, '%m'))
-  start_year <- as.integer(format(start_date, '%Y'))
-  end_day <- as.integer(format(end_date, '%d'))
-  end_month <- as.integer(format(end_date, '%m'))
-  end_year <- as.integer(format(end_date, '%Y'))
+  start_day <- as.integer(chron::days(start_date))
+  start_tod <- as.numeric(start_date) - as.integer(start_date)
+  start_month <- as.integer(months(start_date))
+  start_year <- as.integer(as.character(chron::years(start_date)))
+  end_day <- as.integer(chron::days(end_date))
+  end_month <- as.integer(months(end_date))
+  end_year <- as.integer(as.character(chron::years(end_date)))
   
   if (start_date > end_date) {
     stop('start_date must preceed end_date')
@@ -1423,7 +1425,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   # Initialise
   blanks <- rep(NA, blank_length)
-  ts_frame <- data.frame(as.Date(blanks), array(blanks, dim=c(length(blanks), length(var_names))))
+  ts_frame <- data.frame(blanks, array(blanks, dim=c(length(blanks), length(var_names))))
   names(ts_frame) <- c("date", var_names)
 
   nc <- safe_nc_open(input_file)
@@ -1545,6 +1547,8 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
     }
     if (verbosity>0) close(pb)
+    ts_frame$date <- (chron::chron(chron::as.chron(ts_frame$date, origin=c(year=1990, month=1, day=1)), origin=c(1,1,1990), format=c('y-m-d', 'h:m:s')))
+    if (date_format == "date") ts_frame$date <- as.Date(ts_frame$date) + (as.numeric(ts_frame$date) - floor(as.numeric(ts_frame$date)))
     return(ts_frame)
 }
 
