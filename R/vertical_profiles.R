@@ -112,8 +112,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
     crossref <- crossref[2:length(crossref)]
     location_ll <- location_ll[2:dim(location_ll)[1],]
   }
-  print(llind)
-  print(location_ll)
+  #print(llind)
+  #print(location_ll)
   #browser()
   #dum1 <- location_ll; dum1$key <- 1:length(location_ll$latitude)
   #dum1 <- distinct(dum1, latitude, longitude, .keep_all=TRUE)
@@ -336,7 +336,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=c(-23.39189, 150.88852),
 			 start_date = c(2016, 02, 04),
 			 end_date = c(2016, 03, 02),
-          input_file = "menu",
+          input_file = "catalog",
 			 input_grid = NA,
 			 eta_stem = NA,
 			 squeeze = TRUE,
@@ -641,7 +641,7 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
   mydata <- data.frame(z=z, values=values)
   if (length(p)==1) p <- ggplot2::ggplot(mydata)
   p <- p + ggplot2::geom_path(data=mydata, ggplot2::aes(x=values, y=z), colour=colour) + ggplot2::xlab(var_name) + ggplot2::ylab('metres above msl')
-  print(p)
+  #print(p)
   return(p)
 }
 
@@ -795,6 +795,7 @@ return(d)
 }
 
 find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude, first_point = FALSE) {
+  library(dplyr)
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
 	intersected <- array(FALSE, dim=c(a,b))

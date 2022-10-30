@@ -479,7 +479,7 @@ if (Land_map) {
  		max(gx, na.rm=TRUE)+0.5, 
  		max(gy, na.rm=TRUE)+0.5)
   p <- ggplot2::ggplot() +
-           ggplot2::geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
+           ggplot2::geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, ggplot2::aes(x = long, y=lat, group=group))
 } else if (length(p)==1) {
   p <- ggplot2::ggplot()
 }
@@ -1117,7 +1117,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
            } else input_file <- input_file
            if (verbosity>1) print(paste("Before nc_open, input_file = ", input_file))
            nc <- safe_nc_open(input_file)
-           browser()
            ems_var <- safe_ncvar_get(nc, var_name, start=start_array, count = count_array)
            if (add_arrows) {
              current_u <- ncvar_get(nc, 'u1', start=start_array, count = count_array)
@@ -1205,7 +1204,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
             }
   
             if (Land_map) {
-               p <- ggplot2::ggplot() + geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, aes(x = long, y=lat, group=group))
+               p <- ggplot2::ggplot() + ggplot2::geom_polygon(data = map.df, colour = "black", fill="lightgrey", size=0.5, ggplot2::aes(x = long, y=lat, group=group))
 	          } else {
 	             p <- ggplot2::ggplot()
             }
