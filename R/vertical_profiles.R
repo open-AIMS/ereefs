@@ -362,23 +362,16 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   ncdf4::nc_close(nc)
 
   # Dates to plot
-  if (is.vector(start_date)) {
-	  start_date <- as.Date(paste(start_date[1], start_date[2], start_date[3], sep='-')) + 0.499
-  } else if (is.character(start_date)) {
-	  start_date <- as.Date(start_date) + 0.499
-  }
-  start_day <- as.integer(format(start_date, '%d'))
-  start_month <- as.integer(format(start_date, '%m'))
-  start_year <- as.integer(format(start_date, '%Y'))
+  start_date <- get_chron_date(start_date)
+  start_day <- as.integer(chron::days(start_date))
+  start_tod <- as.numeric(start_date) - as.integer(start_date)
+  start_month <- as.integer(months(start_date))
+  start_year <- as.integer(as.character(chron::years(start_date)))
 
-  if (is.vector(end_date)) {
-	  end_date <- as.Date(paste(end_date[1], end_date[2], end_date[3], sep='-')) + 0.499
-  } else if (is.character(end_date)) {
-	  end_date <- as.Date(end_date)
-  }
-  end_day <- as.integer(format(end_date, '%d'))
-  end_month <- as.integer(format(end_date, '%m'))
-  end_year <- as.integer(format(end_date, '%Y'))
+  end_date <- get_chron_date(end_date)
+  end_day <- as.integer(chron::days(end_date))
+  end_month <- as.integer(months(end_date))
+  end_year <- as.integer(as.character(chron::years(end_date)))
   
   if (start_date > end_date) {
     stop('start_date must preceed end_date')
@@ -438,7 +431,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   # Initialise the data frame with the right number of NAs
   blanks <- rep(NA, blank_length)
-  dates <- as.Date(blanks)
+  dates <- rep(get_origin_and_times(input_file)[[2]][1], blank_length)
   values <- array(blanks, dim=c(length(z_grid)-1, length(var_names), length(blanks)))
   colnames(values) <- var_names
   eta_record <- blanks
@@ -605,11 +598,13 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @export
 plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(2016,01,01), p=NA, colour='blue') {
   # Date to plot
-  if (is.vector(target_date)) {
-	  target_date <- as.Date(paste(target_date[1], target_date[2], target_date[3], sep='-'))
-  } else if (is.character(target_date)) {
-	  target_date <- as.Date(target_date)
-  }
+  # Dates to plot
+  target_date <- get_chron_date(target_date)
+  target_day <- as.integer(chron::days(target_date))
+  target_tod <- as.numeric(target_date) - as.integer(target_date)
+  target_month <- as.integer(months(target_date))
+  target_year <- as.integer(as.character(chron::years(target_date)))
+
   day <- which.min(abs(target_date-profileObj$dates))
   if (names(profileObj)[5]=="profiles") { 
      colnum <- which(colnames(profileObj$profiles)==var_name)

@@ -48,10 +48,13 @@ temp_slice <- get_ereefs_slice(var_names = "temp", target_date = c(2022, 8, 1), 
 # Todo: add "spectral" colour scale option to this function
 p <- plot_ereefs_slice(temp_slice, var_name="temp")
 
-# Extract a vertical profile of chlorophyll a and nitrate at a single location and time:
-# THIS DOESN"T CURRENTLY WORK BECAUSE I HAVEN'T YET UPDATED THE DATE FORMAT TO CHRON IN THIS FUNCTION
+# GET_EREEFS_PROFILE() DOESN'T CURRENTLY WORK AND NEEDS TO BE FIXED. These ought to work (and used to):
+# GET_EREEFS_PROFILE() HAS ONLY BEEN PARTLY CONVERTED FROM Date to chron, and there are incompatibilities.
+# MOST OF THE RELEVANT CODE CAN DOUBTLESS BE COPIED FROM GET_EREEFS_TS()
+# IT ALSO HASN'T BEEN TESTED WITH NCML INPUT FILES, AND NEEDS TO TEST THAT IT HAS BEEN GIVEN 3D DATA
+{
+  # Extract a vertical profile of chlorophyll a and nitrate at a single location and time:
   profile_data <- get_ereefs_profile(var_names = c("Chl_a_sum", "NO3"), start_date = c(2019, 2, 10), end_date = c(2019, 2, 10), location_latlon = c(-23.39, 150.89))
-
   # Visualise the results for NO3:
   p <- plot_ereefs_profile(profile_data, var_name = "NO3", target_date = c(2019, 2, 10))
   
@@ -60,6 +63,29 @@ p <- plot_ereefs_slice(temp_slice, var_name="temp")
   
   # Visualise the results:
   p <- plot_ereefs_zvt(profile_data, var_name = "TN")
+}
 
-# Extract a time-series of data
+# Extract a time-series of surface data at a single specified location:
+  mydata <- get_ereefs_ts(var_names = c("salt", "TN"), location_latlon = c(-23.4, 150.9), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28))
+
+# Extract a time-series of data, providing a data frame of locations:
+  mydata <- get_ereefs_ts(var_names = c("salt", "DIP", "ZooL_N"), location_latlon = data.frame(latitude=c(-23.4, -17), longitude = c(150.9, 147.0)), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28))
+
+# Extract a time-series of surface data at all the Marine Monitoring Program routine water quality sampling locations:
+  mydata <- get_ereefs_ts(var_names = c("salt", "TN"), location_latlon = "mmp", start_date = c(2018, 1, 1), end_date = c(2018, 2, 28))
+
+# Extract a time-series of data at a specified depth of 5m below MSL:
+  mydata <- get_ereefs_ts(var_names = "Chl_a_sum", location_latlon = c(-23.4, 150.9), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28), layer = -5)
+
+# Extract a time-series of data at the bottom of the water column:
+  mydata <- get_ereefs_ts(var_names = "Chl_a_sum", location_latlon = c(-23.4, 150.9), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28), layer = "bottom")
+
+# Extract a time-series of data averaged over the depth of the water column:
+  mydata <- get_ereefs_depth_integrated_ts(var_names = "Chl_a_sum", location_latlon = c(-23.4, 150.9), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28))
+
+# Extract a time-series of the mass per square metre of a variable, integrated over the depth of the water column:
+  mydata <- get_ereefs_depth_integrated_ts(var_names = "Chl_a_sum", location_latlon = c(-23.4, 150.9), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28), mass=TRUE)
+
+# Extract a time-series of data at a specified depth below the tidal free surface (rather than below MSL):
+  mydata <- get_ereefs_depth_specified_ts(var_names = "Chl_a_sum", location_latlon = c(-23.4, 150.9), start_date = c(2018, 1, 1), end_date = c(2018, 2, 28), depth=5.0)
 }
