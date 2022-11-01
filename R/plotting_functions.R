@@ -1054,16 +1054,19 @@ map_ereefs_movie <- function(var_name = "true_colour",
           # We don't yet know the dimensions of the variable, so let's get them
           if (var_name == "speed") {
              dims <- nc$var[['u']][['size']]
+             ndims <- nc$var[['u']][['ndims']]
           } else if (var_name == "ZooT") {
              dims <- nc$var[['ZooL_N']][['size']]
+             ndims <- nc$var[['ZooL_N']][['ndims']]
           } else { 
              dims <- nc$var[[var_name]][['size']]
+             ndims <- nc$var[[var_name]][['ndims']]
           }
           if (is.null(dims)) stop(paste(var_name, ' not found in netcdf file.')) 
-          ndims <- length(dims)
+          #ndims <- length(dims)
           # If there's only one layer (e.g. a surf.nc file) then we want to reduce ndims accordingly, but not if there is only one time-step
-          if ((length(dims[dims!=1])!=ndims)&&(dims[length(dims)]!=1)) ndims <- ndims - 1
-          if ((ndims > 3) && (layer == 'surface')) layer <- dims[3]
+          #if ((length(dims[dims!=1])!=ndims)&&(dims[length(dims)]!=1)) ndims <- ndims - 1
+          if ((ndims > 3) && (layer == 'surface')) layer <- dims[3] + 1
           ncdf4::nc_close(nc)
         }
 
@@ -1076,14 +1079,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
         }
 
         if (ndims == 4) {
-          slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+          slice <- paste0('[', start_array[3]-1, ':', stride, ':', floor(start_array[3] + count_array[3] - 2), ']', # time
                           '[', layer-1, ']',                                                    # layer
-                          '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
-                          '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
+                          '[', start_array[2]-1, ':', floor(start_array[2] + count_array[2] - 1), ']', # y
+                          '[', start_array[1]-1, ':', floor(start_array[1] + count_array[1] - 1), ']') # x
           start_array <- c(start_array[1:2], layer-1, start_array[3])
           count_array <- c(count_array[1:2]+1, 1, count_array[3])
         } else {
-          slice <- paste0('[', start_array[3]-1, ':', stride, ':', start_array[3] + count_array[3] - 2, ']', # time
+          slice <- paste0('[', start_array[3]-1, ':', stride, ':', floor(start_array[3] + count_array[3] - 2), ']', # time
                           '[', start_array[2]-1, ':', start_array[2] + count_array[2] - 1, ']', # y
                           '[', start_array[1]-1, ':', start_array[1] + count_array[1] - 1, ']') # x
           count_array <- c(count_array[1:2]+1, count_array[3])
@@ -1119,8 +1122,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
            nc <- safe_nc_open(input_file)
            ems_var <- safe_ncvar_get(nc, var_name, start=start_array, count = count_array)
            if (add_arrows) {
-             current_u <- ncvar_get(nc, 'u1', start=start_array, count = count_array)
-             current_v <- ncvar_get(nc, 'u2', start=start_array, count = count_array)
+             u_count_array <- c(count_array[1:2]+1, 1, count_array[length(start_array)])
+             u_start_array <- c(start_array[1:2], layer-1, start_array[length(start_array)])
+             print(u_count_array)
+             print(u_start_array)
+             current_u <- safe_ncvar_get(nc, 'u1', start=start_array, count = u_count_array)
+             current_v <- safe_ncvar_get(nc, 'u2', start=start_array, count = u_count_array)
              if ((dcount==1)&(is.na(max_u))) {
                max_u <- max(max(abs(c(current_u)), na.rm = TRUE), max(abs(c(current_v)), na.rm=TRUE)) 
                if (!is.na(scale_arrows)) max_u <- max_u / scale_arrows
@@ -1300,7 +1307,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
          }
          setTxtProgressBar(pb,icount/as.integer(end_date-start_date)/tstep*stride)
       } # end jcount loop
-  } # end fileslist loop
+    } # end fileslist loop
   } # end month loop
   close(pb)
   if (var_name=='true_colour') {
