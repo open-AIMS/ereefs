@@ -233,19 +233,19 @@ if ((!is.na(ereefs_case[1]))&&(ereefs_case[2]!="unknown")) {
 	  day <- 1
 	  ds <- target_date
 	  input_file <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
-  }
-} else { #recom or other netcdf or ncml file
-  #input_file <- input_file
-	nc <- safe_nc_open(input_file)
-	if (!is.null(nc$var[['t']])) { 
-	    ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-        } else {
-	    ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	}
-  dum1 <- abs(target_date - ds)
-  if (min(dum1)>1) warning(paste("Target date", target_date, "is", min(dum1), "days from closest available date in", input_file, ds[min(dum1)]))
-	day <- which.min(abs(target_date - ds))
+  } else { #recom or other netcdf or ncml file
+    #input_file <- input_file
+	  nc <- safe_nc_open(input_file)
+	  if (!is.null(nc$var[['t']])) { 
+	      ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+          } else {
+	      ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+	  }
+    dum1 <- abs(target_date - ds)
+    if (min(dum1)>1) warning(paste("Target date", target_date, "is", min(dum1), "days from closest available date in", input_file, ds[min(dum1)]))
+	  day <- which.min(abs(target_date - ds))
 	ncdf4::nc_close(nc)
+  }
 }
 #day <- day + 6
 
