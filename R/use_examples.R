@@ -61,7 +61,7 @@ p <- plot_ereefs_slice(temp_slice, var_name="temp")
   # Exctract a vertical profile of TN at the same location for each date in September 2022:
   profile_data <- get_ereefs_profile(var_names = "TN", start_date = c(2022, 9, 1), end_date = c(2022, 9, 30), location_latlon = c(-23.39, 150.89))
   
-  # Visualise the results:
+  # Visualise the results over time:
   p <- plot_ereefs_zvt(profile_data, var_name = "TN")
 }
 
