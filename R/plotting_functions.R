@@ -679,59 +679,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
                     town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
 
   # Dates to map. We offer quite a few date format options for flexibility.
-  if (is.vector(start_date)) {
-    if ((length(start_date==2)) && is.character(start_date[1])) { 
-          start_date <- chron::chron(start_date[1], start_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1))
-    } else if (length(start_date==3)) { 
-      # Set time to midday
-      if (verbosity > 1) {
-        print('Setting time to midday. start_date = ')
-        print(start_date)
-      }
-      start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), 
-                                 "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-    } else if (length(start_date==4)) {
-       if (!is.character(start_date[4])) start_date[4] <- paste0(start_date[4], ':00')
-       start_date <- chron::chron(paste(start_date[3], start_date[2], start_date[1], sep = '-'), 
-                                  start_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1)) 
-    } else {
-      stop("start_date format not recognised")
-    }
-  } else if (is.character(start_date)) {
-    start_date <- chron::chron(start_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-  } else if (class(start_date)[1] == "Date") {
-    start_date <- chron::as.chron(start_date)
-  }
+  start_date <- get_chron_date(start_date)
   start_day <- as.integer(chron::days(start_date))
   start_tod <- as.numeric(start_date) - as.integer(start_date)
   start_month <- as.integer(months(start_date))
   start_year <- as.integer(as.character(chron::years(start_date)))
 
-  if (is.vector(end_date)) {
-    if (length(end_date==2) && is.character(end_date[1])) { 
-          end_date <- chron::chron(end_date[1], end_date[2], format=c('d-m-y', 'h:m:s'), 
-                                     origin=c(year=1990, month=1, day=1))
-    } else if (length(end_date==3)) { 
-      # Set time to midday
-      end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-    } else if (length(end_date==4)) {
-       if (!is.character(end_date[4])) end_date[4] <- paste0(end_date[4], ':00')
-       end_date <- chron::chron(paste(end_date[3], end_date[2], end_date[1], sep = '-'), end_date[4], format=c('d-m-y', 'h:m:s'), 
-                                  origin=c(year=1990, month=1, day=1)) 
-    } else {
-      stop("end_date format not recognised")
-    }
-  } else if (is.character(end_date)) {
-    end_date <- chron::chron(end_date, "12:00:00", format=c('d-m-y', 'h:m:s'), 
-                                 origin=c(year=1990, month=1, day=1))
-  } else if (class(end_date)[1] == "Date") {
-    end_date <- chron::as.chron(end_date)
-  }
+  end_date <- get_chron_date(end_date)
   end_day <- as.integer(chron::days(end_date))
   end_month <- as.integer(months(end_date))
   end_year <- as.integer(as.character(chron::years(end_date)))
@@ -1122,10 +1076,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
            nc <- safe_nc_open(input_file)
            ems_var <- safe_ncvar_get(nc, var_name, start=start_array, count = count_array)
            if (add_arrows) {
-             u_count_array <- c(count_array[1:2]+1, 1, count_array[length(start_array)])
+             u_count_array <- c(count_array[1:2], 1, count_array[length(start_array)])
              u_start_array <- c(start_array[1:2], layer-1, start_array[length(start_array)])
-             print(u_count_array)
-             print(u_start_array)
              current_u <- safe_ncvar_get(nc, 'u1', start=start_array, count = u_count_array)
              current_v <- safe_ncvar_get(nc, 'u2', start=start_array, count = u_count_array)
              if ((dcount==1)&(is.na(max_u))) {
