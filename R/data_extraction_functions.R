@@ -75,12 +75,12 @@ get_params <- function(start_date, end_date, input_file, var_names) {
   start_date <- get_chron_date(start_date)
   start_day <- as.integer(chron::days(start_date))
   start_tod <- as.numeric(start_date) - as.integer(start_date)
-  start_month <- chron::month.day.year(start_date)[[1]]
+  start_month <- as.integer(chron:::months.default(start_date))
   start_year <- as.integer(as.character(chron::years(start_date)))
 
   end_date <- get_chron_date(end_date)
   end_day <- as.integer(chron::days(end_date))
-  end_month <- chron::month.day.year(end_date)[[1]]
+  end_month <- as.integer(chron:::months.default(end_date))
   #end_month <- as.integer(months(end_date))
   end_year <- as.integer(as.character(chron::years(end_date)))
 
@@ -129,6 +129,16 @@ get_params <- function(start_date, end_date, input_file, var_names) {
      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   }
 
+  nc <- ncdf4::nc_open(input_file)
+  if (!is.null(nc$var[['latitude']])) {
+    latitude <- ncdf4::ncvar_get(nc, 'latitude')
+    longitude <- ncdf4::ncvar_get(nc, 'longitude')
+  } else {
+    latitude <- ncdf4::ncvar_get(nc, 'x_centre')
+    longitude <- ncdf4::ncvar_get(nc, 'y_centre')
+  }
+  ncdf4::nc_close(nc)
+
   params <- list(input_file = input_file,
                  ereefs_case = ereefs_case,
                  input_stem = input_stem,
@@ -147,7 +157,9 @@ get_params <- function(start_date, end_date, input_file, var_names) {
                  var_list = var_list,
                  ereefs_origin = ereefs_origin,
                  blank_length = blank_length,
-                 ds = ds)
+                 ds = ds, 
+                 latitude = latitude,
+                 longitude = longitude)
 }
 
 #' Opens the netcdf file, input_file, and extracts the origin (reference date/time) and time dimension.
@@ -499,20 +511,6 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      location_grid <- location_latlon
   } else { 
     # We have geocoordinates. Find the nearest grid-points to the sampling location
-
-    # First, get the model grid
-    nc <- safe_nc_open(input_file)
-    if (is.null(nc$var[['latitude']])) {
-      # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
-      latitude <- safe_ncvar_get(nc, "y_centre")
-      longitude <- safe_ncvar_get(nc, "x_centre")
-    } else { 
-      # Simple format netcdf file
-      latitude <- safe_ncvar_get(nc, "latitude")
-      longitude <- safe_ncvar_get(nc, "longitude")
-    }
-    ncdf4::nc_close(nc)
-
     if (is.null(dim(location_latlon))) {
        # Just one location
        grid_index <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
@@ -846,13 +844,6 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      location_grid <- location_latlon
   } else { 
     # Find the nearest grid-points to the sampling location
-    if (is.null(nc$var[['latitude']])) {
-      latitude <- safe_ncvar_get(nc, "y_centre")
-      longitude <- safe_ncvar_get(nc, "x_centre")
-    } else { 
-      latitude <- safe_ncvar_get(nc, "latitude")
-      longitude <- safe_ncvar_get(nc, "longitude")
-    }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
     #location_grid <- arrayInd(tmp, dim(latitude))
@@ -1054,18 +1045,6 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
      location_grid <- location_latlon
   } else { 
     # We have geocoordinates. Find the nearest grid-points to the sampling location
-
-    # First, get the model grid
-    #nc <- safe_nc_open(input_file)
-    if (is.null(nc$var[['latitude']])) {
-      # Not a simple format netcdf file, so assume it's a full EMS netcdf file.
-      latitude <- safe_ncvar_get(nc, "y_centre")
-      longitude <- safe_ncvar_get(nc, "x_centre")
-    } else { 
-      # Simple format netcdf file
-      latitude <- safe_ncvar_get(nc, "latitude")
-      longitude <- safe_ncvar_get(nc, "longitude")
-    }
 
     if (is.null(dim(location_latlon))) {
        # Just one location
@@ -1318,14 +1297,6 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (is.integer(location_latlon)) {
      location_grid <- location_latlon
   } else { 
-    # Find the nearest grid-points to the sampling location
-    if (is.null(nc$var[['latitude']])) {
-      latitude <- safe_ncvar_get(nc, "y_centre")
-      longitude <- safe_ncvar_get(nc, "x_centre")
-    } else { 
-      latitude <- safe_ncvar_get(nc, "latitude")
-      longitude <- safe_ncvar_get(nc, "longitude")
-    }
     tmp <- (latitude - location_latlon[1])^2 + (longitude - location_latlon[2])^2 
     tmp <- which.min(tmp) 
     #location_grid <- arrayInd(tmp, dim(latitude))

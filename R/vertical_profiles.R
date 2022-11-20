@@ -266,7 +266,6 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
       wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(startv, 1, from_record), count=c(countv, -1, 1))[ind3d]
       wc[dry] <- NA
       if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
-      #browser()
       values[1:(length(z_grid)-1), , j] <- wc
     }
     ncdf4::nc_close(nc)
@@ -346,6 +345,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
   # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  browser()
   assignList(get_params(start_date, end_date, input_file, var_names))
 
   if (length(dim(location_latlon)) > 0) stop('get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() instead if appropriate.')
@@ -354,15 +354,6 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 	      if (stringi::stri_endswith(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
   }
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
-  nc <- ncdf4::nc_open(input_file)
-  if (!is.null(nc$var[['latitude']])) {
-    latitude <- ncdf4::ncvar_get(nc, 'latitude')
-    longitude <- ncdf4::ncvar_get(nc, 'longitude')
-  } else {
-    latitude <- ncdf4::ncvar_get(nc, 'x_centre')
-    longitude <- ncdf4::ncvar_get(nc, 'y_centre')
-  }
-  ncdf4::nc_close(nc)
 
   if (!is.na(eta_stem)) {
     if (ereefs_case[2] == '4km') {
@@ -509,12 +500,12 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
    zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(d)))
    eta2 <- t(array(eta, dim=c(length(d), length(z_grid)-1)))
    wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
-	dry <- !wet                                # There is no water in this layer
+	 dry <- !wet                                # There is no water in this layer
 
    for (j in 1:length(var_names)) {
      wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
-	  wc[dry] <- NA
-	  if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
+	   wc[dry] <- NA
+	   if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
      values[1:(length(z_grid)-1), j, im1:i] <- wc 
    }
    ncdf4::nc_close(nc)
@@ -561,7 +552,7 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
   target_date <- get_chron_date(target_date)
   target_day <- as.integer(chron::days(target_date))
   target_tod <- as.numeric(target_date) - as.integer(target_date)
-  target_month <- as.integer(months(target_date))
+  target_month <- as.integer(chron:::months.default(target_date))
   target_year <- as.integer(as.character(chron::years(target_date)))
 
   day <- which.min(abs(target_date-profileObj$dates))
