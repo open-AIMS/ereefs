@@ -345,7 +345,6 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
   # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
-  browser()
   assignList(get_params(start_date, end_date, input_file, var_names))
 
   if (length(dim(location_latlon)) > 0) stop('get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() instead if appropriate.')
@@ -455,64 +454,64 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
               if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(start_date+dcount-1, sep="-", '%Y-%m-%d'), '.nc')
         }
         #input_file <- paste0(input_file, '?', var_list, ',time,eta')
-        d <- get_origin_and_times(input_file)[[2]]
+        d <- get_origin_and_times(input_file)[[2]][from_record:(from_record+day_count-1)]
         nc <- ncdf4::nc_open(input_file)
         if (!is.na(eta_stem)) nc3 <- ncdf4::nc_open(etafile)
         if (!is.null(nc$var[['eta']])) { 
           eta <- ncdf4::ncvar_get(nc, 'eta', start=c(location_grid[2], location_grid[1],from_record), count=c(1,1,day_count))
-	} else {
-	  if (is.na(eta_stem)) stop('eta not found in netcdf file. Please specify eta_stem.')
-          eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],eta_from_record), count=c(1,1,eta_day_count))
-	}
-   im1 = i+1
-   i <- i + length(d)
-	if (length(eta_ds)==length(ds)) {
-	  eta_record[im1:i] <- eta
-	} else {
-  	  if (length(eta_ds)<length(ds)) {
-	    if (dcount==1) warning(paste('Surface elevation (eta) in', etafile, 'is output less frequently than', var_names[1], 'in', input_file,
-			  '. Assuming eta always==0, though this is unlikely'))
-	    eta_record[im1:i] <- 0*c(im:i)
-	  } else {
-	    if (length(ds)==1) {
-         if (start_date==end_date) {
-            eta_record[im1:i] <- eta
-            ind <- 1
-         } else { 
-            ind <- which.min(abs(eta_ds-ds[1])) 
-         }
-	      if ((dcount==1)&((eta_ds[ind]-ds[1])>(1/48))) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
-			  '. Using eta from closest times to output of', var_names[1], ', which is more than 30 mins away from desired time.'))
-	    } else {
-	      interval <- as.numeric(ds[2] - ds[1])/as.numeric(eta_ds[2] - eta_ds[1])
-	      ind <- seq(from=which.min(abs(eta_ds-ds[1])), to=length(eta), by=interval)
-	      if (dcount==1) {
-		      tgap <- abs(eta_ds[ind] - ds)
-		      if (max(tgap)>(1/48)) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
-			  '. Using eta from closest times to output of', var_names[1], ', which is sometimes more than 30 mins away from desired time.'))
+	      } else {
+	        if (is.na(eta_stem)) stop('eta not found in netcdf file. Please specify eta_stem.')
+                eta <- ncdf4::ncvar_get(nc3, 'eta', start=c(location_grid[2], location_grid[1],eta_from_record), count=c(1,1,eta_day_count))
 	      }
-	      eta_record[im1:i] <- eta[ind]
+        im1 = i+1
+        i <- i + length(d)
+	      if (length(eta_ds)==length(ds)) {
+	      eta_record[im1:i] <- eta
+	    } else {
+  	      if (length(eta_ds)<length(ds)) {
+	        if (dcount==1) warning(paste('Surface elevation (eta) in', etafile, 'is output less frequently than', var_names[1], 'in', input_file,
+			      '. Assuming eta always==0, though this is unlikely'))
+	        eta_record[im1:i] <- 0*c(im:i)
+	      } else {
+	        if (length(ds)==1) {
+             if (start_date==end_date) {
+                eta_record[im1:i] <- eta
+                ind <- 1
+             } else { 
+                ind <- which.min(abs(eta_ds-ds[1])) 
+             }
+	          if ((dcount==1)&((eta_ds[ind]-ds[1])>(1/48))) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
+			      '. Using eta from closest times to output of', var_names[1], ', which is more than 30 mins away from desired time.'))
+	        } else {
+	          interval <- as.numeric(ds[2] - ds[1])/as.numeric(eta_ds[2] - eta_ds[1])
+	          ind <- seq(from=which.min(abs(eta_ds-ds[1])), to=length(eta), by=interval)
+	          if (dcount==1) {
+		          tgap <- abs(eta_ds[ind] - ds)
+		          if (max(tgap)>(1/48)) warning(paste('Surface elevation (eta) in', etafile, 'is output more frequently than', var_names[1], 'in', input_file,
+			      '. Using eta from closest times to output of', var_names[1], ', which is sometimes more than 30 mins away from desired time.'))
+	          }
+	          eta_record[im1:i] <- eta[ind]
+	        }
+	      }
 	    }
-	  }
-	}
-   dates[im1:i] <- d
-   z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(d)))
-   zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(d)))
-   eta2 <- t(array(eta, dim=c(length(d), length(z_grid)-1)))
-   wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
-	 dry <- !wet                                # There is no water in this layer
+      dates[im1:i] <- d
+      z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(d)))
+      zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(d)))
+      eta2 <- t(array(eta, dim=c(length(d), length(z_grid)-1)))
+      wet <- (eta2 > zm1) & (z > botz)           # There is water in this layer
+	    dry <- !wet                                # There is no water in this layer
 
-   for (j in 1:length(var_names)) {
-     wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
-	   wc[dry] <- NA
-	   if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
-     values[1:(length(z_grid)-1), j, im1:i] <- wc 
-   }
-   ncdf4::nc_close(nc)
-   if (length(eta_stem)>1) ncdf4::nc_close(nc3)
-      setTxtProgressBar(pb,mcount)
-   }
-  }
+      for (j in 1:length(var_names)) {
+        wc <- ncdf4::ncvar_get(nc, var_names[j], start=c(location_grid[2],location_grid[1],1,from_record), count=c(1,1,-1,day_count))
+        wc[dry] <- NA
+        if (dim(z)[2] == 1) wc <- array(wc, dim=dim(z))
+         values[1:(length(z_grid)-1), j, im1:(im1+day_count-1)] <- wc 
+       }
+       ncdf4::nc_close(nc)
+       if (length(eta_stem)>1) ncdf4::nc_close(nc3)
+          setTxtProgressBar(pb,mcount)
+   } # end for dcount
+  } #end for month
   close(pb)
 
   if (squeeze&(dim(values)[3] == 1)) {                          # Only one time-step
