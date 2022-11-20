@@ -27,7 +27,7 @@
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), or the stem of
 #'       that filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).
-#' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.
+#' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Relatively robust but slow. Default FALSE.
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE
 #' @return a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
@@ -326,9 +326,9 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'      (not simple-format) ereefs netcdf output file such as                                                                                                                           
 #'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc". 
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), or the stem of that
-#'       filename minus the
-#'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
+#'       filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". 
+#'       Needed only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
+#'       Assumes that the eta files contain data on the same time-step as the input files.
 #' @param squeeze Whether to reduce the number of dimensions in the output profiles array if there is only one variable and/or 
 #'       only one time-step. Default TRUE.
 #' @export
@@ -336,16 +336,19 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 location_latlon=c(-23.39189, 150.88852),
 			 start_date = c(2016, 02, 04),
 			 end_date = c(2016, 03, 02),
-          input_file = "catalog",
+       input_file = "catalog",
 			 input_grid = NA,
 			 eta_stem = NA,
 			 squeeze = TRUE,
 			 override_positive=FALSE)
 {
+
+  # Get parameter values and assign results from returned list to relevant variable names
+  # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
+  # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  assignList(get_params(start_date, end_date, input_file, var_names))
+
   if (length(dim(location_latlon)) > 0) stop('get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() instead if appropriate.')
-  input_file <- substitute_filename(input_file)
-  ereefs_case <- get_ereefs_case(input_file)
-  input_stem <- get_file_stem(input_file)
   #check_platform_ok(input_stem)
   if (!is.na(eta_stem)) {
 	      if (stringi::stri_endswith(eta_stem, fixed='.nc')) eta_stem <- get_file_stem(eta_stem) 
@@ -361,72 +364,28 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   }
   ncdf4::nc_close(nc)
 
-  # Dates to plot
-  start_date <- get_chron_date(start_date)
-  start_day <- as.integer(chron::days(start_date))
-  start_tod <- as.numeric(start_date) - as.integer(start_date)
-  start_month <- as.integer(months(start_date))
-  start_year <- as.integer(as.character(chron::years(start_date)))
-
-  end_date <- get_chron_date(end_date)
-  end_day <- as.integer(chron::days(end_date))
-  end_month <- as.integer(months(end_date))
-  end_year <- as.integer(as.character(chron::years(end_date)))
-  
-  if (start_date > end_date) {
-    stop('start_date must preceed end_date')
+  if (!is.na(eta_stem)) {
+    if (ereefs_case[2] == '4km') {
+      etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
+			  '.nc')
+    } else if (ereefs_case[2] == '1km') {
+      etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
+			  '.nc')
+    } else {
+      etafile <- paste0(eta_stem, '.nc')
+    }
   }
 
-  if (start_year==end_year) {
-      mths <- start_month:end_month
-      years <- rep(start_year, length(mths))
-  } else if ((start_year + 1) == end_year) {
-      mths <- c(start_month:12, 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-  } else {
-      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep((start_year + 1) : (end_year - 1), each=12),
-                 rep(end_year, end_month))
-  }
-
-  #var_list <- paste(var_names, collapse=",")
-
-  if (ereefs_case[2] == '4km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-      if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-  } else if (ereefs_case[2] == '1km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-  } else {
-      input_file <- input_file
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-  }
   nc <- ncdf4::nc_open(input_file)
-  if (!is.null(nc$var[['t']])) { 
-    ds <- ncdf4::ncvar_get(nc, "t")
-    ds <- as.Date(ds, origin = as.Date("1990-01-01"))
-  } else {
-    ds <- ncdf4::ncvar_get(nc, "time")
-    ds <- as.Date(ds, origin = as.Date("1990-01-01"))
-  }
   if (!is.na(eta_stem)) {
     nc3 <- ncdf4::nc_open(etafile)
-    if (!is.null(nc3$var[['t']])) { 
-      eta_ds <- as.Date(ncdf4::ncvar_get(nc3, "t"), origin = as.Date("1990-01-01"))
-    } else {
-      eta_ds <- as.Date(ncdf4::ncvar_get(nc3, "time"), origin = as.Date("1990-01-01"))
-    }
+    eta_ds <- get_origin_and_times(etafile)
   } else {
     eta_ds <- ds
   }
-  if ((length(ds)==1)|((ds[2]-ds[1])<(10/86400))) { # if it's less than 10 seconds, assume there is a duplicate output as in input_file=12
-    blank_length <- as.numeric(end_date - start_date + 1)
-  } else {
+  if ((length(ds)!=1) & ((ds[2]-ds[1])<(10/86400))) { 
+    # if it's less than 10 seconds, assume there is a duplicate output as in input_file=12
+    # In this case, blank_length has already been set by get_params()
     blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
   }
   # Initialise the data frame with the right number of NAs
@@ -646,11 +605,16 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #'
 #' @param slice A list object as output by get_ereefs_slice(), containing dates, eta, z_grid, botz,
 #'              a data frame of values and a data frame of latitudes and longitudes
-#' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
+#' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
+#'      from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
+#'      Example: c('ivory', 'coral4').
+#'      If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
+#'      If three values are given, uses scale_fill_gradient2 (spectrum from low to high through middle value).
+#'      Defaults to "spectral"
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
 #' @export
-plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "navy"), scale_lim=NA, var_units="") {
+plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral", scale_lim=NA, var_units="") {
 	numprofiles <- dim(slice$values)[2]
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
@@ -682,24 +646,37 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", 
 		ggplot2::geom_rect() +
 		ggplot2::ylab('metres above msl') +
 		ggplot2::xlab('kilometres from start of transect')
-  if (length(scale_col)==1) scale_col <- c('ivory', scale_col)
-  if (length(scale_col)==2) { 
-     p <- p + ggplot2::scale_fill_gradient(low=scale_col[1],
-                        high=scale_col[2],
-                        na.value="transparent", 
-                        guide="colourbar",
-                        limits=scale_lim,
-                        name=var_units,
-                        oob=scales::squish)
-  } else {
-     p <- p + ggplot2::scale_fill_gradient2(low=scale_col[1],
-                        mid=scale_col[2],
-                        high=scale_col[3],
-                        na.value="transparent", 
-                        guide="colourbar",
-                        limits=scale_lim,
-                        name=var_units,
-                        oob=scales::squish)
+  if (var_name=="true_colour") {
+    p <- p + ggplot2::scale_fill_identity() 
+  } else if (scale_col[1] == "spectral") { 
+    p <- p + ggplot2::scale_fill_distiller(palette = 'Spectral',
+                                           na.value="transparent", 
+                                           guide="colourbar", 
+                                           limits=scale_lim, 
+                                           name=var_units, 
+                                           oob=scales::squish) 
+  } else if (length(scale_col)<3) { 
+    if (length(scale_col)==1) scale_col <- c('ivory', scale_col) 
+    p <- p + ggplot2::scale_fill_gradient(low=scale_col[1], 
+                                          high=scale_col[2], 
+				                                  na.value="transparent", 
+				                                  guide="colourbar",
+				                                  limits=scale_lim,
+				                                  #name=expression(paste('cells m'^'-3')),
+				                                  name=var_units,
+				                                  oob=scales::squish) 
+  } else { 
+    p <- p + ggplot2::scale_fill_gradient2(low=scale_col[1], 
+                                           mid=scale_col[2], 
+                                           high=scale_col[3], 
+                                           na.value="transparent", 
+                                           guide="colourbar",
+     			                                 limits=scale_lim,
+                                           midpoint=(scale_lim[2] - scale_lim[1])/2,
+                                           space="Lab",
+      		                                 #name=expression(paste('cells m'^'-3')),
+  	    	                                 name=var_units,
+  		                                     oob=scales::squish) 
   }
 	plot(p)
 	return(p)

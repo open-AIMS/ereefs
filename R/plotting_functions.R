@@ -169,6 +169,9 @@ map_ereefs <- function(var_name = "true_colour",
 {
 
 input_file <- substitute_filename(input_file)
+# Check whether this is a GBR1 or GBR4 ereefs file, or something else
+ereefs_case <- get_ereefs_case(input_file)
+input_stem <- get_file_stem(input_file)
 
 # Check whether this is a locally-stored netcdf file or a web-served file
 #if (substr(input_file, 1, 4)=="http") {
@@ -182,16 +185,13 @@ input_file <- substitute_filename(input_file)
 # should probably be deleted -- can always recover from an older version if needed.
 local_file <- TRUE
 
-if (length(p)!=1) Land_map <- FALSE
-if (suppress_print) Land_map <- FALSE
+if (length(p)!=1) Land_map <- FALSE # Don't add a land map if we are adding to an existing plot
+if (suppress_print) Land_map <- FALSE # No need for a land map if we just want numbers, not an image
 
 towns <- data.frame(latitude = c(-15.47027987, -16.0899, -16.4840, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
                     longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
                     town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
 
-# Check whether this is a GBR1 or GBR4 ereefs file, or something else
-ereefs_case <- get_ereefs_case(input_file)
-input_stem <- get_file_stem(input_file)
 #check_platform_ok(input_stem)
 grids <- get_ereefs_grids(input_file, input_grid)
 x_grid <- grids[['x_grid']]
@@ -202,7 +202,6 @@ if (layer<=0) {
    z_grid <- grids[['z_grid']]
    layer <- max(which(z_grid<layer))
 }
-
 
 # Date to map:
 if (is.vector(target_date)) {
@@ -233,19 +232,19 @@ if ((!is.na(ereefs_case[1]))&&(ereefs_case[2]!="unknown")) {
 	  day <- 1
 	  ds <- target_date
 	  input_file <- paste0(input_stem, format(target_date, '%Y-%m-%d'), '.nc')
-  } else { #recom or other netcdf or ncml file
-    #input_file <- input_file
-	  nc <- safe_nc_open(input_file)
-	  if (!is.null(nc$var[['t']])) { 
-	      ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-          } else {
-	      ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	  }
-    dum1 <- abs(target_date - ds)
-    if (min(dum1)>1) warning(paste("Target date", target_date, "is", min(dum1), "days from closest available date in", input_file, ds[min(dum1)]))
-	  day <- which.min(abs(target_date - ds))
-	ncdf4::nc_close(nc)
   }
+} else { #recom or other netcdf or ncml file
+   #input_file <- input_file
+  nc <- safe_nc_open(input_file)
+  if (!is.null(nc$var[['t']])) { 
+      ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
+         } else {
+      ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
+  }
+   dum1 <- abs(target_date - ds)
+   if (min(dum1)>1) warning(paste("Target date", target_date, "is", min(dum1), "days from closest available date in", input_file, ds[min(dum1)]))
+  day <- which.min(abs(target_date - ds))
+  ncdf4::nc_close(nc)
 }
 #day <- day + 6
 
@@ -656,7 +655,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              contour_breaks=c(5,10,20))
 {
   plot_eta <- FALSE
-  input_file <- substitute_filename(input_file)
+  # Get parameter values and assign results from returned list to relevant variable names
+  # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
+  # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  assignList(get_params(start_date, end_date, input_file, var_name))
+
   if (verbosity > 1) print(paste('After substitute_filename() input_file = ', input_file))
 
   # Check whether this is a locally-stored netcdf file or a web-served file
@@ -666,33 +669,12 @@ map_ereefs_movie <- function(var_name = "true_colour",
   #temporary hack:
   local_file <- TRUE
 
-  # Check whether this is a GBR1 or GBR4 ereefs file, a THREDDS catalog or something else
-  ereefs_case <- get_ereefs_case(input_file) 
-  if (verbosity > 1) print(paste('ereefs_case = ', ereefs_case[1], ereefs_case[2]))
   if (ereefs_case[2]=='1km') warning('Assuming that only one timestep is output per day/file') # find matching commented warning to fix this
-  input_stem <- get_file_stem(input_file)
-  if (verbosity > 1) print(paste('input_stem = ', input_stem))
   #check_platform_ok(input_stem)
 
   towns <- data.frame(latitude = c(-15.47027987, -16.0899, -16.4840, -16.92303816, -19.26639219, -20.0136699, -20.07670986, -20.40109791, -21.15345122, -22.82406858, -23.38031858, -23.84761069, -24.8662122, -25.54073075, -26.18916037),
                     longitude = c(145.2498605, 145.4622, 145.4623, 145.7710, 146.805701, 148.2475387, 146.2635394, 148.5802016, 149.1655418, 147.6363616, 150.5059485, 151.256349, 152.3478987, 152.7049316, 152.6581893),
                     town = c('Cooktown', 'Cape Tribulation', 'Port Douglas', 'Cairns', 'Townsville', 'Bowen', 'Charters Towers', 'Prosperine', 'Mackay', 'Clermont', 'Rockhampton', 'Gladstone', 'Bundaberg', 'Maryborough', 'Gympie'))
-
-  # Dates to map. We offer quite a few date format options for flexibility.
-  start_date <- get_chron_date(start_date)
-  start_day <- as.integer(chron::days(start_date))
-  start_tod <- as.numeric(start_date) - as.integer(start_date)
-  start_month <- as.integer(months(start_date))
-  start_year <- as.integer(as.character(chron::years(start_date)))
-
-  end_date <- get_chron_date(end_date)
-  end_day <- as.integer(chron::days(end_date))
-  end_month <- as.integer(months(end_date))
-  end_year <- as.integer(as.character(chron::years(end_date)))
-  
-  if (start_date > end_date) {
-    stop('start_date must preceed end_date')
-  }
 
   # Points of interest provided by the user to mark on the map, and possibly plot a surface elevation timeseries for:
   if (!is.null(mark_points)) {
@@ -708,20 +690,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
   if (suppress_print) Land_map <- FALSE
   
-  if (start_year==end_year) {
-      mths <- start_month:end_month
-      years <- rep(start_year, length(mths))
-  } else if ((start_year + 1) == end_year) {
-      mths <- c(start_month:12, 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-  } else {
-      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep((start_year + 1) : (end_year - 1), each=12),
-                 rep(end_year, end_month))
-  }
-
-
   # Allow for US English:
   if (var_name == "true_color") {
 	  var_name <- "true_colour"

@@ -45,6 +45,111 @@ get_ereefs_case <- function(filename) {
   return(ereefs_case)
 }
 
+#' Utility function copied directly from the package 'tis' by Jeff Hallman (https://github.com/cran/tis/blob/master/R/assignList.R)
+#' Assigns the values in a list to variables in an environment. The variable names are taken from the names of the list, so all of the elements of the list must have non-blank names.
+
+assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = FALSE){
+  if(is.null(nms <- names(aList))) stop("names(aList) is NULL")
+  if(any(nms == "")) stop("blank name")
+  if(missing(envir) && pos < 0)
+    envir <- parent.frame(-pos)
+  for(nm in nms)
+    assign(x = nm, value = aList[[nm]], envir = envir, inherits = inherits)
+}
+
+#' Set up various parameters needed by many of the data extraction and plotting functions
+#'
+#' @param start_date
+#' @param end_date
+#' @param input_file
+#' @param var_names
+#' @return list of parameter values
+get_params <- function(start_date, end_date, input_file, var_names) {
+
+  input_file <- substitute_filename(input_file)
+  # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
+  ereefs_case <- get_ereefs_case(input_file)
+  input_stem <- get_file_stem(input_file)
+
+  # Dates to plot
+  start_date <- get_chron_date(start_date)
+  start_day <- as.integer(chron::days(start_date))
+  start_tod <- as.numeric(start_date) - as.integer(start_date)
+  start_month <- chron::month.day.year(start_date)[[1]]
+  start_year <- as.integer(as.character(chron::years(start_date)))
+
+  end_date <- get_chron_date(end_date)
+  end_day <- as.integer(chron::days(end_date))
+  end_month <- chron::month.day.year(end_date)[[1]]
+  #end_month <- as.integer(months(end_date))
+  end_year <- as.integer(as.character(chron::years(end_date)))
+
+  
+  if (start_date > end_date) {
+    stop('start_date must preceed end_date')
+  }
+
+  if (start_year==end_year) {
+      mths <- start_month:end_month
+      years <- rep(start_year, length(mths))
+  } else if ((start_year + 1) == end_year) {
+      mths <- c(start_month:12, 1:end_month)
+      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
+  } else {
+      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
+      years <- c(rep(start_year, 12 - start_month + 1), 
+                 rep((start_year + 1) : (end_year - 1), each=12),
+                 rep(end_year, end_month))
+  }
+
+  var_list <- paste(var_names, collapse=",")
+
+  if (ereefs_case[2] == '4km') {
+      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
+			  '.nc')
+    dum1 <- get_origin_and_times(input_file)
+    ereefs_origin <- dum1[[1]]
+    ds <- dum1[[2]]
+    blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
+  } else if (ereefs_case[2] == '1km') {
+    input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
+		  '.nc')
+     if (verbosity>1) print(input_file)
+     blank_length <- end_date - start_date + 1
+     ereefs_origin <- get_origin_and_times(input_file)[[1]]
+     ds <- NULL
+     # We don't need ds in this case because we are taking just one output per day
+  } else {
+     # We are looking at a single netcdf file such as a RECOM output file or a ncml file
+     input_file <- input_file
+     dum1 <- get_origin_and_times(input_file)
+     ereefs_origin <- dum1[[1]]
+     ds <- dum1[[2]]
+     # This is used for now but over-written later
+     blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
+  }
+
+  params <- list(input_file = input_file,
+                 ereefs_case = ereefs_case,
+                 input_stem = input_stem,
+                 start_date = start_date,
+                 end_date = end_date,
+                 start_day = start_day,
+                 start_tod = start_tod,
+                 start_month = start_month,
+                 start_year = start_year,
+                 end_date = end_date,
+                 end_day = end_day,
+                 end_month = end_month,
+                 end_year = end_year,
+                 mths = mths,
+                 years = years,
+                 var_list = var_list,
+                 ereefs_origin = ereefs_origin,
+                 blank_length = blank_length,
+                 ds = ds)
+}
+
 #' Opens the netcdf file, input_file, and extracts the origin (reference date/time) and time dimension.
 #'
 #' @param input_file The name of the netcdf file (in standard or simple EMS netcdf format) from which
@@ -155,7 +260,7 @@ get_file_stem <- function(filename) {
 #' Check whether the platform is Windows and the filename contains "http": if so, return a warning
 #' Now always returns TRUE as the CRAN version of ncdf4 for Windows can now handle THREDDS services
 #'
-#' Utility function for the eReefs package
+#' Utility function for the eReefs package. 
 #' @param input_stem A netcdf filename or file stem
 #' @return TRUE or stop error
 #' @export
@@ -358,8 +463,8 @@ substitute_filename <- function(input_file = "catalog") {
 get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                           location_latlon=c(-23.39189, 150.88852), 
                           layer='surface', 
-		                    start_date = c(2010,12,31), 
-		                    end_date = c(2016,10,31), 
+		                      start_date = c(2010,12,31), 
+		                      end_date = c(2016,10,31), 
                           input_file = "menu",
                           #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                           input_grid = NA,
@@ -373,78 +478,20 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (is.null(dim(location_latlon))) {
      location_latlon <- array(location_latlon, c(1,2))
   }
-  input_file <- substitute_filename(input_file)
+
+  # Get parameter values and assign results from returned list to relevant variable names
+  # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
+  # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  assignList(get_params(start_date, end_date, input_file, var_names))
+
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if ((layer=='bottom')&&(length(location_latlon[,1])>1)) stop('Only one location can be given if layer==bottom')
 #  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if (is.character(location_latlon)&&(location_latlon=="mmp")) {
+  if (location_latlon[[1]]=="mmp") {
      location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
      mmp <- TRUE
   } else {
      mmp <- FALSE
-  }
-
-  # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
-  ereefs_case <- get_ereefs_case(input_file)
-  input_stem <- get_file_stem(input_file)
-
-  # Dates to plot
-  start_date <- get_chron_date(start_date)
-  start_day <- as.integer(chron::days(start_date))
-  start_tod <- as.numeric(start_date) - as.integer(start_date)
-  start_month <- as.integer(months(start_date))
-  start_year <- as.integer(as.character(chron::years(start_date)))
-
-  end_date <- get_chron_date(end_date)
-  end_day <- as.integer(chron::days(end_date))
-  end_month <- as.integer(months(end_date))
-  end_year <- as.integer(as.character(chron::years(end_date)))
-  
-  if (start_date > end_date) {
-    stop('start_date must preceed end_date')
-  }
-
-  if (start_year==end_year) {
-      mths <- start_month:end_month
-      years <- rep(start_year, length(mths))
-  } else if ((start_year + 1) == end_year) {
-      mths <- c(start_month:12, 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-  } else {
-      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep((start_year + 1) : (end_year - 1), each=12),
-                 rep(end_year, end_month))
-  }
-
-  var_list <- paste(var_names, collapse=",")
-
-  # Should make this a function as this block of code is also used by other functions
-  if (ereefs_case[2] == '4km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-    dum1 <- get_origin_and_times(input_file)
-    ereefs_origin <- dum1[[1]]
-    ds <- dum1[[2]]
-    blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-  } else if (ereefs_case[2] == '1km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      if (verbosity>1) print(input_file)
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      blank_length <- end_date - start_date + 1
-      ereefs_origin <- get_origin_and_times(input_file)[[1]]
-      # We don't need ds in this case because we are taking just one output per day
-  } else {
-      # We are looking at a single netcdf file such as a RECOM output file or a ncml file
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      input_file <- input_file
-      dum1 <- get_origin_and_times(input_file)
-      ereefs_origin <- dum1[[1]]
-      ds <- dum1[[2]]
-      # This is used for now but over-written later
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
   }
 
   if (is.integer(location_latlon)) {
@@ -780,65 +827,12 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			                 override_positive=FALSE, 
                           verbosity = 1)
 {
-  input_file <- substitute_filename(input_file)
+  # Get parameter values and assign results from returned list to relevant variable names
+  # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
+  # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  assignList(get_params(start_date, end_date, input_file, var_names))
 
-  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- get_ereefs_case(input_file)
-  input_stem <- get_file_stem(input_file)
-  #check_platform_ok(input_stem)
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
-
-  # Dates to plot
-  start_date <- get_chron_date(start_date)
-  end_date <- get_chron_date(end_date)
-  start_day <- as.integer(format(start_date, '%d'))
-  start_month <- as.integer(format(start_date, '%m'))
-  start_year <- as.integer(format(start_date, '%Y'))
-  end_day <- as.integer(format(end_date, '%d'))
-  end_month <- as.integer(format(end_date, '%m'))
-  end_year <- as.integer(format(end_date, '%Y'))
-  
-  if (start_date > end_date) {
-    stop('start_date must preceed end_date')
-  }
-
-  if (start_year==end_year) {
-      mths <- start_month:end_month
-      years <- rep(start_year, length(mths))
-  } else if ((start_year + 1) == end_year) {
-      mths <- c(start_month:12, 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-  } else {
-      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep((start_year + 1) : (end_year - 1), each=12),
-                 rep(end_year, end_month))
-  }
-
-  var_list <- paste(var_names, collapse=",")
-
-  if (ereefs_case[2] == '4km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-      if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-      ds <- get_origin_and_times(input_file)[[2]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-  } else if (ereefs_case[2] == '1km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc') 
-      blank_length <- end_date - start_date + 1
-  } else {
-      # We are looking at a single netcdf file such as a RECOM output file or a ncml file
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      input_file <- input_file
-      dum1 <- get_origin_and_times(input_file)
-      ereefs_origin <- dum1[[1]]
-      ds <- dum1[[2]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
-  }
 
   # Initialise
   blanks <- rep(NA, blank_length)
@@ -1025,71 +1019,24 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                         mass = FALSE,
                         date_format = "date")
 {
-  input_file <- substitute_filename(input_file)
-  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- get_ereefs_case(input_file)
-  input_stem <- get_file_stem(input_file)
-  #check_platform_ok(input_stem)
+  # Get parameter values and assign results from returned list to relevant variable names
+  # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
+  # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  assignList(get_params(start_date, end_date, input_file, var_names))
+
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
-  # Dates to plot
-  start_date <- get_chron_date(start_date)
-  end_date <- get_chron_date(end_date)
-  start_day <- as.integer(chron::days(start_date))
-  start_tod <- as.numeric(start_date) - as.integer(start_date)
-  start_month <- as.integer(months(start_date))
-  start_year <- as.integer(as.character(chron::years(start_date)))
-  end_day <- as.integer(chron::days(end_date))
-  end_month <- as.integer(months(end_date))
-  end_year <- as.integer(as.character(chron::years(end_date)))
-
-  if (start_date > end_date) {
-    stop('start_date must preceed end_date')
-  }
-
-  if (start_year==end_year) {
-      mths <- start_month:end_month
-      years <- rep(start_year, length(mths))
-  } else if ((start_year + 1) == end_year) {
-      mths <- c(start_month:12, 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-  } else {
-      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep((start_year + 1) : (end_year - 1), each=12),
-                 rep(end_year, end_month))
-  }
-
-  var_list <- paste(var_names, collapse=",")
  # Note that origin format must be m/d/y
-  if (ereefs_case[2] == '4km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-      if (verbosity>1) print(input_file)
-      if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
+  if (!is.na(eta_stem)) {
+    if (ereefs_case[2] == '4km') {
+      etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
 			  '.nc') 
-      dum1 <- get_origin_and_times(input_file)
-      ereefs_origin <- dum1[[1]]
-      ds <- dum1[[2]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-  } else if (ereefs_case[2] == '1km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      if (verbosity>1) print(input_file)
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      blank_length <- end_date - start_date + 1
-      dum1 <- get_origin_and_times(input_file)
-      ereefs_origin <- dum1[[1]]
-      ds <- dum1[[2]]
-  } else {
-      # We are looking at a single netcdf file such as a RECOM output file
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      input_file <- input_file
-      dum1 <- get_origin_and_times(input_file)
-      ereefs_origin <- dum1[[1]]
-      ds <- dum1[[2]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
+    } else if (ereefs_case[2] == '1km') {
+      etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
+			  '.nc') 
+    } else {
+      etafile <- paste0(eta_stem, '.nc')
+    }
   }
 
   if (!is.null(dim(location_latlon))) { 
@@ -1354,74 +1301,12 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                                           verbosity = 1,
                                           date_format = "date")
 {
+  # Get parameter values and assign results from returned list to relevant variable names
+  # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
+  # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
+  assignList(get_params(start_date, end_date, input_file, var_names))
 
-  input_file <- substitute_filename(input_file)
-  # Check whether this is a GBR1 or GBR4 ereefs file, or something else
-  ereefs_case <- get_ereefs_case(input_file)
-  input_stem <- get_file_stem(input_file)
-  #check_platform_ok(input_stem)
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
-
-  # Dates to plot
-  start_date <- get_chron_date(start_date)
-  end_date <- get_chron_date(end_date)
-  start_day <- as.integer(chron::days(start_date))
-  start_tod <- as.numeric(start_date) - as.integer(start_date)
-  start_month <- as.integer(months(start_date))
-  start_year <- as.integer(as.character(chron::years(start_date)))
-  end_day <- as.integer(chron::days(end_date))
-  end_month <- as.integer(months(end_date))
-  end_year <- as.integer(as.character(chron::years(end_date)))
-  
-  if (start_date > end_date) {
-    stop('start_date must preceed end_date')
-  }
-
-  if (start_year==end_year) {
-      mths <- start_month:end_month
-      years <- rep(start_year, length(mths))
-  } else if ((start_year + 1) == end_year) {
-      mths <- c(start_month:12, 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), rep(end_year, end_month))
-  } else {
-      mths <- c(start_month:12, rep(1:12, end_year - start_year - 1), 1:end_month)
-      years <- c(rep(start_year, 12 - start_month + 1), 
-                 rep((start_year + 1) : (end_year - 1), each=12),
-                 rep(end_year, end_month))
-  }
-
-  var_list <- paste(var_names, collapse=",")
-
-  if (ereefs_case[2] == '4km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-      if (!is.na(eta_stem)) etafile  <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
-	    nc <- safe_nc_open(input_file)
-	    if (!is.null(nc$var[['t']])) { 
-	        ds <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))
-            } else {
-	        ds <- as.Date(safe_ncvar_get(nc, "time"), origin = as.Date("1990-01-01"))
-	    }
-	    ncdf4::nc_close(nc)
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1])
-	    # '.nc?latitude,longitude')
-  } else if (ereefs_case[2] == '1km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, format(as.Date(paste(start_year, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			  '.nc')
-      blank_length <- end_date - start_date + 1
-			  # '.nc?latitude,longitude')
-  } else {
-      # We are looking at a single netcdf file such as a RECOM output file
-      if (!is.na(eta_stem)) etafile <- paste0(eta_stem, '.nc')
-      input_file <- input_file
-      dum1 <- get_origin_and_times(input_file)
-      ereefs_origin <- dum1[[1]]
-      ds <- dum1[[2]]
-      blank_length <- as.numeric(end_date - start_date + 1) / as.numeric(ds[2] - ds[1]) #+ 0.5/(as.numeric(ds[2] - ds[1]))
-  }
 
   # Initialise
   blanks <- rep(NA, blank_length)
@@ -1555,7 +1440,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
 #' if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.
 #'
-#' Parameters before 'tries' are passed through to ncvar_get
+#' Parameters before 'tries' are passed unlist(month.day.year(start_date))
 #'
 #' @param tries number of times to retry (increasing pause length by one second each time. Default 4 
 #' @return variable extracted using ncvar_get()
@@ -1567,13 +1452,13 @@ safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
    } else {
      myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
      trywait = 1
-     while ((class(myvar)=='try-error')&&(trywait<=(tries*2))) { 
+     while ((class(myvar)[[1]]=='try-error')&(trywait<=(tries*2))) { 
         print(paste('retrying in ', trywait, 'second(s)')) 
         Sys.sleep(trywait) 
         trywait <- trywait+1 
         myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
      }
-     if (trywait>(tries*2+1)) stop(paste('Cannot access netcdf file', nc$filename))
+     if (trywait>(tries*2)) stop(paste('Cannot access netcdf file', nc$filename))
    }
    return(myvar)
 }
@@ -1593,10 +1478,11 @@ safe_nc_open <- function(filename, tries=4) {
    } else {
     nc <- try(ncdf4::nc_open(filename))
     trywait = 1
-    while ((class(nc)=='try-error')&&(trywait<=(tries+1))) { 
-       warning(paste('This probably means the netcdf file name is incorrect or target date out of range for this eReefs run,\n',
-                     'but could be a network connection issue...\n', 
-                     '  Retrying in ', trywait, 'second(s). This will be attempt', trywait+1, 'of', tries+1)) 
+    while ((class(nc)[[1]]=='try-error')&(trywait<=(tries+1))) { 
+       warning(paste('Trouble opening', filename,
+              'This probably means the netcdf file name is incorrect or target date out of range for this eReefs run,\n',
+              'but could be a network connection issue...\n', 
+              '  Retrying in ', trywait, 'second(s). This will be attempt', trywait+1, 'of', tries+1)) 
        Sys.sleep(trywait) 
        trywait <- trywait+1 
        nc <- try(ncdf4::nc_open(filename))
