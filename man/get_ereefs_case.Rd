@@ -11,7 +11,8 @@ get_ereefs_case(filename)
 \item{filename}{Name of the file to examine}
 }
 \value{
-1 for daily, 4 for monthly, 0 for other
+a vector of strings. 1st value is either "nc" (for an individual netcdf file), "mnc" for a meta-netcdf file (list of .nc files), "xlm" or "ncml" (for catalogs). 
+If the first value is "nc", the second value is "1km" for GBR1, "4km" for GBR4 or "recom" (anything else). Otherwise, second value is "unknown".
 }
 \description{
 If the filename contains "catalog.html", it's a THREDDS catalog. 
