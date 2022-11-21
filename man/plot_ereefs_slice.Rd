@@ -7,7 +7,7 @@
 plot_ereefs_slice(
   slice,
   var_name = "Chl_a_sum",
-  scale_col = c("ivory", "navy"),
+  scale_col = "spectral",
   scale_lim = NA,
   var_units = ""
 )
@@ -16,7 +16,12 @@ plot_ereefs_slice(
 \item{slice}{A list object as output by get_ereefs_slice(), containing dates, eta, z_grid, botz,
 a data frame of values and a data frame of latitudes and longitudes}
 
-\item{scale_col}{Colours to use for low and high values. Default c("ivory", "hotpink").}
+\item{scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
+from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
+Example: c('ivory', 'coral4').
+If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
+If three values are given, uses scale_fill_gradient2 (spectrum from low to high through middle value).
+Defaults to "spectral"}
 
 \item{scale_lim}{values for low and high limits of colourscale. Defaults to full range.}
 }

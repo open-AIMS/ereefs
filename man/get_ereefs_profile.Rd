@@ -40,9 +40,9 @@ z grid from data files stored in this package. Alternatively, you can provide th
 "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
 
 \item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), or the stem of that
-filename minus the
-date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).}
+filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". 
+Needed only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
+Assumes that the eta files contain data on the same time-step as the input files.}
 
 \item{squeeze}{Whether to reduce the number of dimensions in the output profiles array if there is only one variable and/or 
 only one time-step. Default TRUE.}

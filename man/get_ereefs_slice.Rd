@@ -42,7 +42,7 @@ z grid from data files stored in this package. Alternatively, you can provide th
 that filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).}
 
-\item{robust}{If TRUE, extract one profile at a time to avoid running out of memory. Robust but slow. Default FALSE.}
+\item{robust}{If TRUE, extract one profile at a time to avoid running out of memory. Relatively robust but slow. Default FALSE.}
 
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 incorrect. Default FALSE}

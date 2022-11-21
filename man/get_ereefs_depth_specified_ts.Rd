@@ -14,7 +14,8 @@ get_ereefs_depth_specified_ts(
   input_file = "menu",
   input_grid = NA,
   eta_stem = NA,
-  verbosity = 1
+  verbosity = 1,
+  date_format = "date"
 )
 }
 \arguments{

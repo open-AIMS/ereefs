@@ -14,5 +14,5 @@ check_platform_ok(input_stem)
 TRUE or stop error
 }
 \description{
-Utility function for the eReefs package
+Utility function for the eReefs package.
 }
