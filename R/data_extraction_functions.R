@@ -9,7 +9,8 @@
 #' a THREDDS catalog URI.
 #'
 #' @param filename Name of the file to examine
-#' @return 1 for daily, 4 for monthly, 0 for other
+#' @return a vector of strings. 1st value is either "nc" (for an individual netcdf file), "mnc" for a meta-netcdf file (list of .nc files), "xlm" or "ncml" (for catalogs). 
+#' If the first value is "nc", the second value is "1km" for GBR1, "4km" for GBR4 or "recom" (anything else). Otherwise, second value is "unknown".
 #' @export
 get_ereefs_case <- function(filename) {
   # If the filename ends in ".nc.html", truncate to remove the ".html" part. These two lines should have already been taken care of
@@ -59,11 +60,37 @@ assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = 
 
 #' Set up various parameters needed by many of the data extraction and plotting functions
 #'
-#' @param start_date
-#' @param end_date
-#' @param input_file
-#' @param var_names
-#' @return list of parameter values
+#' @param start_date The date from which to start data extraction, in any format accepted by get_chron_date(). Can be any of:
+#'              c(year, month, day)
+#'              c(year, month, day, hour) 
+#'              POSIX date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
+#'              chron date
+#'              character format, e.g. '1970-01-01'
+#' @param end_date The end date of the data extraction request, as above.
+#' @param input_file The URI or filename from which to extract data, in any format accepted by substitute_filename(), or "menu" or "catalog".
+#' @param var_names A list of eReefs variable names for which to extract data.
+#' @return list of parameter values that includes:
+#'              input_file, the input filename, after transformation by substitute_filename()
+#'              ereefs_case, information about the format of the input file, as output by get)ereefs_case()
+#'              input_stem, the 'stem' of the filename in case the parent function needs to dynamically calculate filenames from an example netcdf filename.
+#'              start_date, start_date transformed to a chron date
+#'              start_day, the day of the month in start_date
+#'              start_tod, the time of day in start_date (0.5 if not given)
+#'              start_month, the integer month of the year in start_date
+#'              start_year, the integer year in start_date
+#'              end_date, end_date transformed to a chron date
+#'              end_day, the day of the month in end_date
+#'              end_tod, the time of day in end_date (0.5 if not given)
+#'              end_month, the integer month of the year in end_date
+#'              end_year, the integer year in end_date
+#'              mths, a vector of months for which to extract data
+#'              years, a vector of years for which to extract data
+#'              var_list, a list of variable names in var_names
+#'              ereefs_origin, the origin date specified for Julian dates in the netcdf file (assumed to be 1990-01-01 if not specified)
+#'              blank_length, for use in initiatisng variables to be populated with extracted data
+#'              ds, a date-time vector for extracted data
+#'              latitude, an array of latitudes matching the format of the input file
+#'              longitude, an array of longitudes
 get_params <- function(start_date, end_date, input_file, var_names) {
 
   input_file <- substitute_filename(input_file)
