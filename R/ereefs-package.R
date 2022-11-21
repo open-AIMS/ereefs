@@ -1,0 +1,22 @@
+#' The 'ereefs' package.
+#'
+#' @description An R package to easily access eReefs and other CSIRO-EMS
+#' output files. Functions encompass multiple tasks such as i) extracting
+#' time-series from \href{https://research.csiro.au/ereefs/}{eReefs}
+#' Network Common Data Form
+#' (\href{https://docs.unidata.ucar.edu/netcdf-c/current/faq.html#ncFAQGeneral}{netCDF})
+#' files; ii) producing maps or animations of eReefs model outputs; iii)
+#' calculating optical plume class from modelled surface reflectances; iv)
+#' extracting profiles and vertical slices; v) plotting profiles; and vi)
+#' converting outputs to GIS formats.
+#'
+#' @docType package
+#' @name ereefs-package
+#' @aliases ereefs
+#'
+#' @references
+#' https://research.csiro.au/ereefs/welcome-to-ereefs/about-ereefs/
+#' https://ereefs.aims.gov.au/ereefs-aims
+#' https://www.barrierreef.org/what-we-do/projects/eReefs
+#'
+NULL
