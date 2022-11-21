@@ -120,8 +120,8 @@ page](https://open-aims.github.io/ereefs/reference/).
 ## Further Information
 
 `ereefs` is provided by the [Australian Institute of Marine
-Science](https://www.aims.gov.au) under the GPL-2 License
-([GPL-2](https://opensource.org/licenses/GPL-2.0)).
+Science](https://www.aims.gov.au) under the MIT License
+([MIT](https://opensource.org/licenses/MIT)).
 
 ## Other related content
 
