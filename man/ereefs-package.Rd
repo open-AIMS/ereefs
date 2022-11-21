@@ -17,6 +17,7 @@ extracting profiles and vertical slices; v) plotting profiles; and vi)
 converting outputs to GIS formats.
 }
 \references{
+https://www.ereefs.org.au/about/
 https://research.csiro.au/ereefs/welcome-to-ereefs/about-ereefs/
 https://ereefs.aims.gov.au/ereefs-aims
 https://www.barrierreef.org/what-we-do/projects/eReefs
