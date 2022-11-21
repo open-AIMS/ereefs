@@ -46,6 +46,7 @@ LazyData: true
 Imports: ncdf4 (>= 1.16),
          plyr (>= 1.8.4),
          dplyr (>= 0.7.6),
+         magrittr,
 	       ggplot2 (>= 3.3.5),
          raster (>= 2.6),
          cowplot(>= 1.1.1),

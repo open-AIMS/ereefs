@@ -2,8 +2,7 @@
 % Please edit documentation in R/vertical_profiles.R
 \name{find_intersections}
 \alias{find_intersections}
-\title{An internal utility function to find the grid line intersections of a line segment
-importFrom(magrittr,"%>%")}
+\title{An internal utility function to find the grid line intersections of a line segment}
 \usage{
 find_intersections(
   location_latlon,
@@ -16,5 +15,4 @@ find_intersections(
 }
 \description{
 An internal utility function to find the grid line intersections of a line segment
-importFrom(magrittr,"%>%")
 }

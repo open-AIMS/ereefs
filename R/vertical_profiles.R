@@ -758,7 +758,8 @@ return(d)
 
 #' An internal utility function to find the grid line intersections of a line segment
 #
-#' importFrom(magrittr,"%>%")
+#' @importFrom magrittr %>%
+#' @importFrom dplyr filter mutate
 find_intersections <- function(location_latlon, x_grid, y_grid, latitude, longitude, first_point = FALSE) {
 	a <- (dim(x_grid) - 1)[1]
 	b <- (dim(x_grid) - 1)[2]
