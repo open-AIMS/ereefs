@@ -1,6 +1,7 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# ereefs <img src="man/figures/logo.png" width = 180 alt="eReefs Logo" align="right" />
+ereefs <img src="man/figures/logo.png" width = 180 alt="eReefs Logo" align="right" />
+=====================================================================================
 
 <!-- badges: start -->
 
@@ -16,7 +17,8 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 Love](https://badges.frapsoft.com/os/v2/open-source.svg?v=103)
 <!-- badges: end -->
 
-## Overview
+Overview
+--------
 
 **What is eReefs?**
 
@@ -84,14 +86,16 @@ to eReefs data. This includes things like:
         than the value at a particular depth);  
     -   Extracting data along the path of a boat or glider.
 
-## How does this R package compare to the existing eReefs services?
+How does this R package compare to the existing eReefs services?
+----------------------------------------------------------------
 
 Please see our [online
 vignette](https://open-aims.github.io/ereefs/articles/about.html) to
 learn more about how this package compares to the multiple sources of
 eReefs exploration tools and platforms.
 
-## Installation
+Installation
+------------
 
 To install the latest release from GitHub use
 
@@ -107,7 +111,8 @@ The current development version can be downloaded from GitHub via
     }
     remotes::install_github("open-aims/ereefs", ref = "dev")
 
-## Usage
+Usage
+-----
 
 Usage and further information about `ereefs` can be seen on the [project
 page](https://open-aims.github.io/ereefs/) and the
@@ -115,7 +120,8 @@ page](https://open-aims.github.io/ereefs/) and the
 for the individual functions can be found on the [reference
 page](https://open-aims.github.io/ereefs/reference/).
 
-## Further Information
+Further Information
+-------------------
 
 `ereefs` is provided by the [Australian Institute of Marine
 Science](https://www.aims.gov.au) under the MIT License
