@@ -80,18 +80,12 @@ eReefs data. This includes things like:
         than the value at a particular depth);  
     -   Extracting data along the path of a boat or glider.
 
-**How does it compare to the existing web portal?**
+## How does this R package compare to the existing eReefs services?
 
-If you want to extract time-series of the most commonly needed physical
-and chemical variables from the main versions of the eReefs model
-outputs at a fixed set of geolocations at a fixed depth from mean sea
-level, the [web-based eReefs data extraction
-tool](https://extraction.ereefs.aims.gov.au/) is usually faster and
-easier to use. If you want animations of the most commonly-needed
-variables at the surface, and do not need them to be customised, the
-[AIMS eReefs visualisation
-portal](https://ereefs.aims.gov.au/ereefs-aims) offers pre-generated
-animations at several scales in an easy-to-navigate format.
+Please see our [online
+vignette](https://open-aims.github.io/ereefs/articles/about.html) to
+learn more about how this package compares to the multiple sources of
+eReefs exploration tools and platforms.
 
 ## Installation
 
@@ -122,32 +116,3 @@ page](https://open-aims.github.io/ereefs/reference/).
 `ereefs` is provided by the [Australian Institute of Marine
 Science](https://www.aims.gov.au) under the MIT License
 ([MIT](https://opensource.org/licenses/MIT)).
-
-## Other related content
-
--   [Access](https://ereefs.aims.gov.au/ereefs-aims) to visualisations
-    that will give you an idea of the types of information that are in
-    the eReefs models.
-
--   [Snippets](https://ereefs.aims.gov.au/ereefs-aims/help) of code for
-    interactive with the eReefs data, including in
-    [python](https://ereefs.aims.gov.au/ereefs-aims/help/how-to-plot-aims-ereefs-data-with-python).
-
--   [CSIRO public data
-    service](https://dapds00.nci.org.au/thredds/catalogs/fx3/catalog.html)
-    providing access to the raw model data.
-
--   [Access](https://thredds.ereefs.aims.gov.au/thredds/s3catalogue/aims-ereefs-public-prod/derived/ncaggregate/ereefs/catalog.html)
-    to the derived aggregated AIMS data used in the aggregate products
-    on the AIMS visualisation portal. In general AIMS only keeps the
-    important variables, half the depths, and aggregations (raw hourly
-    hydro -&gt; daily, monthly, annual; raw daily BGC -&gt; monthly,
-    annual). AIMS derived products, along with temporal aggregation are
-    also resampled onto a regular grid to allow these files to be
-    processed in a GIS application. The raw model data is on a
-    curvilinear grid which requires special consideration when
-    manipulating in code.
-
--   The [GBRF
-    website](https://www.barrierreef.org/what-we-do/projects/eReefs),
-    with videos and descriptions by comms professionals.
