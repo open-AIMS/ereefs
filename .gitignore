@@ -12,6 +12,7 @@ docs/
 ignore/
 check/
 Animations/
+ToAnimate/
 .*Rcheck/
 
 ereefs.Rcheck/
