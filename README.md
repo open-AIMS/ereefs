@@ -49,10 +49,20 @@ communities.
 The `ereefs` R package provides easy access to
 [eReefs](https://www.ereefs.org.au/about/) and other
 [CSIRO-EMS](https://research.csiro.au/cem/software/ems/) output files.
-**`ereefs` focuses on accessing the data from the National Computational
+**`ereefs` focuses on accessing eReefs data model in its original
+format, including eReefs data from the National Computational
 Infrastructure (NCI) [eReefs data
 services](https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html),
-not the AIMS [eReefs data service](https://hyrax.ereefs.aims.gov.au/).**
+not the gridded AIMS eReefs model data [eReefs data
+service](https://hyrax.ereefs.aims.gov.au/).** It can also be used to
+explore and visualise other CSIRO-EMS model output data, including
+output from RECOM model runs. CSIRO-EMS is the
+hydrodynamic-biogeochemical modelling software that underpins the eReefs
+models for the Great Barrier Reef. RECOM is an online interface that
+helps registered users to set up higher-resolution instances of
+CSIRO-EMS for small areas such as individual reefs that are nested
+within the eReefs models.
+
 `ereefs` is designed to assist R users who need more customised access
 to eReefs data. This includes things like:
 
