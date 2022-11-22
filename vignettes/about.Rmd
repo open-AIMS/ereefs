@@ -6,7 +6,6 @@ vignette: >
   %\VignetteIndexEntry{eReefs and the ereefs package}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-bibliography: bayesnec.bib
 ---
 
 ```{r setup, include = FALSE}
