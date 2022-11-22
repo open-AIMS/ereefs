@@ -16,7 +16,7 @@ map_ereefs(
   zoom = 6,
   box_bounds = c(NA, NA, NA, NA),
   p = NA,
-  suppress_print = FALSE,
+  suppress_print = TRUE,
   return_poly = FALSE,
   label_towns = TRUE,
   strict_bounds = FALSE,
@@ -77,6 +77,8 @@ Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
 
 \item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
 If p is provided, Land_map is over-ridden and set to FALSE.}
+
+\item{suppress_print}{Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.}
 
 \item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
 

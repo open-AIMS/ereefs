@@ -18,7 +18,7 @@ map_ereefs_movie(
   scale_lim = c(NA, NA),
   zoom = 6,
   box_bounds = c(NA, NA, NA, NA),
-  suppress_print = FALSE,
+  suppress_print = TRUE,
   stride = "daily",
   verbosity = 0,
   label_towns = TRUE,
@@ -81,7 +81,7 @@ entire extent of the model output (though modified by the value of zoom).
 Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
 also specify an appropriate value for zoom if specifying box_bounds.}
 
-\item{suppress_print}{Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.}
+\item{suppress_print}{Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.}
 
 \item{stride}{Default 'daily', but can otherwise be set to a numeric interval indicating how many time-steps to step forward for each frame.}
 

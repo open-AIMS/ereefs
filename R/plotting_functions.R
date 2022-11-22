@@ -136,6 +136,7 @@ plume_class <- function(rsr) {
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max).
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
 #'        If p is provided, Land_map is over-ridden and set to FALSE.
+#' @param suppress_print Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.
 #' @param return_poly Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
 #' @param strict_bounds Obsolescent: ignored
@@ -160,7 +161,7 @@ map_ereefs <- function(var_name = "true_colour",
                        zoom = 6, 
                        box_bounds = c(NA, NA, NA, NA), 
                        p = NA, 
-                       suppress_print = FALSE, 
+                       suppress_print = TRUE, 
                        return_poly = FALSE,
                        label_towns = TRUE,
                        strict_bounds = FALSE,
@@ -609,7 +610,7 @@ if (return_poly) {
 #'        entire extent of the model output (though modified by the value of zoom). 
 #'        Format: c(longitude_min, longitude_max, latitude_min, latitude_max). It is recommended to
 #'        also specify an appropriate value for zoom if specifying box_bounds.
-#' @param suppress_print Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.
+#' @param suppress_print Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.
 #' @param stride Default 'daily', but can otherwise be set to a numeric interval indicating how many time-steps to step forward for each frame.
 #' @param verbosity Set 0 for just a waitbar, 1 for more updates, 2 for debugging information. Default 0.
 #' @param label_towns Add labels for town locations to the figure. Default TRUE
@@ -641,7 +642,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              scale_lim = c(NA, NA), 
                              zoom = 6, 
                              box_bounds = c(NA, NA, NA, NA), 
-                             suppress_print=FALSE, 
+                             suppress_print = TRUE,
                              stride = 'daily',
                              verbosity=0, 
                              label_towns = TRUE,
@@ -1258,7 +1259,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #'      Defaults to c('ivory', 'coral4').
 #' @param scale_lim Upper and lower bounds for colour scale. Defaults to full range of data.
 #'      Ignored for true_colour plots.
-#' @param suppress_print Default FALSE. If true, don't prdocue the map image.
+#' @param suppress_print Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.
 #' @param p Handle for an existing figure if you want to add a layer instead of creating a new figure.
 #'        If p is provided, Land_map is over-ridden and set to FALSE.
 #' @return p Handle for the figure generated.
@@ -1279,7 +1280,7 @@ plot_map <- function(datapoly,
              label_towns = TRUE,
              zoom = 6,
   		       p = NA,
-             suppress_print = FALSE,
+             suppress_print = TRUE,
              gbr_poly = FALSE)
 {
   if ("datapoly" %in% names(datapoly)) datapoly <- datapoly$datapoly

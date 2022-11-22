@@ -15,7 +15,7 @@ plot_map(
   label_towns = TRUE,
   zoom = 6,
   p = NA,
-  suppress_print = FALSE,
+  suppress_print = TRUE,
   gbr_poly = FALSE
 )
 }
@@ -42,7 +42,7 @@ Ignored for true_colour plots.}
 \item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
 If p is provided, Land_map is over-ridden and set to FALSE.}
 
-\item{suppress_print}{Default FALSE. If true, don't prdocue the map image.}
+\item{suppress_print}{Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.}
 }
 \value{
 p Handle for the figure generated.
