@@ -1,0 +1,50 @@
+---
+title: "eReefs and the ereefs package"
+output:
+  rmarkdown::html_vignette:
+vignette: >
+  %\VignetteIndexEntry{eReefs and the ereefs package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: bayesnec.bib
+---
+
+```{r setup, include = FALSE}
+stopifnot(require(knitr))
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE,
+  fig.path = "vignette-fig-",
+  fig.asp = 0.8,
+  out.width = "60%",
+  fig.align = "center",
+  dpi = 120,
+  eval = identical(Sys.getenv("NOT_CRAN"), "true")
+)
+```
+
+## What information and tools are there about eReefs?
+
+As mentioned on this package's [README page](https://open-aims.github.io/ereefs/), eReefs is a collaborative information system created by the [Great Barrier Reef Foundation](https://www.barrierreef.org/), [CSIRO](https://www.csiro.au/), the [Australian Institute of Marine Science](https://www.aims.gov.au/), [Bureau of Meteorology](https://www.bom.gov.au/), and [Queensland Government](https://www.qld.gov.au/). As such, each collaborator has been working on different ways to visualise and explore what is currently happening on the reef, and what will likely happen in the future.
+
+These tools and information are hosted on multiple websites. For example, while the main [website](https://www.ereefs.org.au/) combines info from all the parts:
+
+- CSIRO has a [visualisation portal](https://portal.ereefs.info/) and an [information site](https://research.csiro.au/ereefs/);
+
+- The National Computational Infrastructure (NCI)---Australia's leading high-performance data, storage and computing organisation---hosts [two main data services](https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html): the raw CSIRO model data with the highest time resolution (hourly for hydrology model, daily for biogeochemistry) and has curvilinear data;
+
+- The Bureau of Meteorology provides the [ReefTemp NextGen](http://www.bom.gov.au/environment/activities/reeftemp/reeftemp.shtml)---a set of high resolution mapping products that provide information on coral bleaching risk for the Great Barrier Reef region;
+
+- The Australian Institute of Marine Science (AIMS) also provides a [Visualisation Portal](https://ereefs.aims.gov.au/ereefs-aims), and maintains this [R package](https://github.com/open-aims/ereefs/). In addition, the AIMS [eReefs data service](https://hyrax.ereefs.aims.gov.au/) contains the aggregated data services (daily, monthly, annual for hydrology model, monthly and annual for biogeochemistry) on a regular grid. **Importantly, our R package focuses on accessing the data from NCI, not the AIMS eReefs data service.**
+
+## When is this R package not as useful?
+
+If you want to extract time-series of the most commonly needed physical and chemical variables from the main versions of the eReefs model outputs at a fixed set of geolocations at a fixed depth from mean sea level, the AIMS [web-based eReefs data extraction tool](https://extraction.ereefs.aims.gov.au/) is usually faster and easier to use. If you want animations of the most commonly-needed variables at the surface, and do not need them to be customised, the [AIMS eReefs visualisation portal](https://ereefs.aims.gov.au/ereefs-aims) offers pre-generated animations at several scales in an easy-to-navigate format.
+
+## Other related content
+
+- [Snippets](https://ereefs.aims.gov.au/ereefs-aims/help) of code for interactive with the eReefs data, including in [python](https://ereefs.aims.gov.au/ereefs-aims/help/how-to-plot-aims-ereefs-data-with-python).
+
+- The [GBRF website](https://www.barrierreef.org/what-we-do/projects/eReefs), with videos and descriptions by comms professionals.
