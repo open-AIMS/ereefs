@@ -45,6 +45,9 @@ or imageJ.  Barbara Robson (AIMS)."><meta property="og:image" content="/logo.png
   <ul class="dropdown-menu" role="menu"><li>
       <a href="../articles/about.html">eReefs and the ereefs package</a>
     </li>
+    <li>
+      <a href="../articles/howto.html">General usage</a>
+    </li>
   </ul></li>
       </ul><ul class="nav navbar-nav navbar-right"></ul></div><!--/.nav-collapse -->
   </div><!--/.container -->
@@ -88,7 +91,7 @@ or imageJ.  Barbara Robson (AIMS).</p>
 <span>  scale_lim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
 <span>  zoom <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
-<span>  suppress_print <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  suppress_print <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  stride <span class="op">=</span> <span class="st">"daily"</span>,</span>
 <span>  verbosity <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  label_towns <span class="op">=</span> <span class="cn">TRUE</span>,</span>
@@ -172,7 +175,7 @@ also specify an appropriate value for zoom if specifying box_bounds.</p></dd>
 
 
 <dt>suppress_print</dt>
-<dd><p>Set to TRUE if you don't want the plots generatedand saved. Defaults to FALSE.</p></dd>
+<dd><p>Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.</p></dd>
 
 
 <dt>stride</dt>

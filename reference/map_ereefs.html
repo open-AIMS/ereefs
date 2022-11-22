@@ -37,6 +37,9 @@ By Barbara Robson (AIMS)."><meta property="og:image" content="/logo.png"><!-- ma
   <ul class="dropdown-menu" role="menu"><li>
       <a href="../articles/about.html">eReefs and the ereefs package</a>
     </li>
+    <li>
+      <a href="../articles/howto.html">General usage</a>
+    </li>
   </ul></li>
       </ul><ul class="nav navbar-nav navbar-right"></ul></div><!--/.nav-collapse -->
   </div><!--/.container -->
@@ -72,7 +75,7 @@ By Barbara Robson (AIMS).</p>
 <span>  zoom <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  suppress_print <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  suppress_print <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  return_poly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  label_towns <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  strict_bounds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -154,6 +157,10 @@ Format: c(longitude_min, longitude_max, latitude_min, latitude_max).</p></dd>
 <dt>p</dt>
 <dd><p>Handle for an existing figure if you want to add a layer instead of creating a new figure.
 If p is provided, Land_map is over-ridden and set to FALSE.</p></dd>
+
+
+<dt>suppress_print</dt>
+<dd><p>Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.</p></dd>
 
 
 <dt>return_poly</dt>

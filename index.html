@@ -88,6 +88,9 @@
 <li>
       <a href="articles/about.html">eReefs and the ereefs package</a>
     </li>
+    <li>
+      <a href="articles/howto.html">General usage</a>
+    </li>
   </ul>
 </li>
       </ul>
@@ -114,7 +117,8 @@
 <p><a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> is a project that combines government commitment to reef protection, world-class science innovation and contributions from leading Australian businesses. It is a collaborative information system created (the <a href="https://www.barrierreef.org/" class="external-link">Great Barrier Reef Foundation</a>, <a href="https://www.csiro.au/" class="external-link">CSIRO</a>, the <a href="https://www.aims.gov.au/" class="external-link">Australian Institute of Marine Science</a>, <a href="https://www.bom.gov.au/" class="external-link">Bureau of Meteorology</a>, and <a href="https://www.qld.gov.au/" class="external-link">Queensland Government</a>) that provides a picture of what is currently happening on the reef, and what will likely happen in the future.</p>
 <p>Focused on the protection and preservation of the iconic Great Barrier Reef, it forms the first step in building comprehensive coastal information systems for Australia. Using the latest technologies to collate data, and new and integrated modelling, eReefs will produce powerful visualisation, communication and reporting tools. It will provide for the Reef information akin to that provided by the Bureau of Meteorology for weather. This information will benefit government agencies, Reef managers, policy makers, researchers, industry and local communities.</p>
 <p><strong>What does the <code>ereefs</code> R package do?</strong></p>
-<p>The <code>ereefs</code> R package provides easy access to <a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> and other <a href="https://research.csiro.au/cem/software/ems/" class="external-link">CSIRO-EMS</a> output files. <strong><code>ereefs</code> focuses on accessing the data from the National Computational Infrastructure (NCI) <a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">eReefs data services</a>, not the AIMS <a href="https://hyrax.ereefs.aims.gov.au/" class="external-link">eReefs data service</a>.</strong> <code>ereefs</code> is designed to assist R users who need more customised access to eReefs data. This includes things like:</p>
+<p>The <code>ereefs</code> R package provides easy access to <a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> and other <a href="https://research.csiro.au/cem/software/ems/" class="external-link">CSIRO-EMS</a> output files. <strong><code>ereefs</code> focuses on accessing eReefs data model in its original format, including eReefs data from the National Computational Infrastructure (NCI) <a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">eReefs data services</a>, not the gridded AIMS eReefs model data <a href="https://hyrax.ereefs.aims.gov.au/" class="external-link">eReefs data service</a>.</strong> It can also be used to explore and visualise other CSIRO-EMS model output data, including output from RECOM model runs. CSIRO-EMS is the hydrodynamic-biogeochemical modelling software that underpins the eReefs models for the Great Barrier Reef. RECOM is an online interface that helps registered users to set up higher-resolution instances of CSIRO-EMS for small areas such as individual reefs that are nested within the eReefs models.</p>
+<p><code>ereefs</code> is designed to assist R users who need more customised access to eReefs data. This includes things like:</p>
 <ul>
 <li><p>Accessing data from versions of the eReefs model that are not available through the web-based data service;</p></li>
 <li><p>Accessing data for less commonly-used variables that are not included in the web-based data service or visualisation portal;</p></li>
