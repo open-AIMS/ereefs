@@ -9,7 +9,7 @@ ereefs <img src="man/figures/logo.png" width = 180 alt="eReefs Logo" align="righ
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)
 <!-- [![R build status](https://github.com/open-AIMS/ereefs/actions/workflows/R-CMD-check.yaml/badge.svg?branch=dev)](https://github.com/open-AIMS/ereefs/actions) -->
 <!-- [![Codecov test coverage](https://codecov.io/gh/open-aims/ereefs/branch/master/graph/badge.svg)](https://app.codecov.io/gh/open-aims/ereefs?branch=master) -->
-<!-- ![pkgdown](https://github.com/open-AIMS/ereefs/workflows/pkgdown/badge.svg) -->
+![pkgdown](https://github.com/open-AIMS/ereefs/workflows/pkgdown/badge.svg)
 [![license](https://img.shields.io/badge/license-MIT%20+%20file%20LICENSE-lightgrey.svg)](https://choosealicense.com/)
 [![Ask Us Anything
 !](https://img.shields.io/badge/Ask%20us-anything-1abc9c.svg)](https://github.com/open-AIMS/ereefs/issues/new)
