@@ -47,8 +47,12 @@ communities.
 The `ereefs` R package provides easy access to
 [eReefs](https://www.ereefs.org.au/about/) and other
 [CSIRO-EMS](https://research.csiro.au/cem/software/ems/) output files.
-It is designed to assist R users who need more customised access to
-eReefs data. This includes things like:
+**`ereefs` focuses on accessing the data from the National Computational
+Infrastructure (NCI) [eReefs data
+services](https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html),
+not the AIMS [eReefs data service](https://hyrax.ereefs.aims.gov.au/).**
+`ereefs` is designed to assist R users who need more customised access
+to eReefs data. This includes things like:
 
 -   Accessing data from versions of the eReefs model that are not
     available through the web-based data service;
