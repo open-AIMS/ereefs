@@ -30,7 +30,7 @@ One can create a true colour image map from optical model output of the Great Ba
 map_ereefs(target_date = c(2019, 2, 28))
 ```
 
-<img src="vignette-fig-exmp1-1.png" alt="plot of chunk exmp1" width="60%" style="display: block; margin: auto;" />
+<img src="vignette-fig-exmp1-1.png" alt="plot of chunk exmp1" width="80%" style="display: block; margin: auto;" />
 
 It is also possible to map optical colour classes (note the default colour scheme is not great for this, so one might want to add a different colour scale after producing the figure handle):
 
@@ -39,7 +39,7 @@ It is also possible to map optical colour classes (note the default colour schem
 map_ereefs(var_name = "plume", target_date = c(2019, 2, 28))
 ```
 
-<img src="vignette-fig-exmp2-1.png" alt="plot of chunk exmp2" width="60%" style="display: block; margin: auto;" />
+<img src="vignette-fig-exmp2-1.png" alt="plot of chunk exmp2" width="80%" style="display: block; margin: auto;" />
 
 We can also map, for example, the extent of the influence of the Burdekin River (choose menu option 8 or 7):
 
@@ -51,11 +51,19 @@ map_ereefs(
 )
 ```
 
-<img src="vignette-fig-exmp3-1.png" alt="plot of chunk exmp3" width="60%" style="display: block; margin: auto;" />
+<img src="vignette-fig-exmp3-1.png" alt="plot of chunk exmp3" width="80%" style="display: block; margin: auto;" />
 
 The colour scale can be customised. For example, the code below changes the limits of the colour scale so that the max colour intensity is achieved when 1% of water is river water, and change the colours:
 
-<img src="vignette-fig-exmp4-1.png" alt="plot of chunk exmp4" width="60%" style="display: block; margin: auto;" />
+
+```r
+map_ereefs(
+  var_name = "bur", target_date = c(2022, 2, 28), scale_lim = c(0, 0.01),
+  input_file = "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0_rivers/gbr1_rivers_simple_2022-08-28.nc.html"
+)
+```
+
+<img src="vignette-fig-exmp4-1.png" alt="plot of chunk exmp4" width="80%" style="display: block; margin: auto;" />
 
 We can also plot different variables such as chlorophyll-a at a particular depth (e.g., 5 m below MSL; default is at the surface), add a land map to the plot, and focus on a particular region (choose menu option 9 for higher resolution):
 
@@ -67,14 +75,15 @@ map_ereefs(
 )
 ```
 
-<img src="vignette-fig-exmp5-1.png" alt="plot of chunk exmp5" width="60%" style="display: block; margin: auto;" />
+<img src="vignette-fig-exmp5-1.png" alt="plot of chunk exmp5" width="80%" style="display: block; margin: auto;" />
 
 ## Images for animations
 
-We can also create the image files needed for a true colour animation of surface salinity in this area (then use [`gifski`](https://cran.r-project.org/web/packages/gifski/index.html) or similar to generate the animation). Below, `salt_list` is a list that includes the plot handle as well as the temporal mean salinity for each point in the map over the period of the animation, plus the cell centre geo-locations (choose menu option 9). By default, images are saved to the directory `"ToAnimate"`, but can be changed via the argument `output_dir`:
+We can also create the image files needed for a true colour animation of surface salinity in this area (then use [`gifski`](https://cran.r-project.org/web/packages/gifski/index.html) or similar to generate the animation). Below, `salt_list` is a list that includes the plot handle as well as the temporal mean salinity for each point in the map over the period of the animation, plus the cell centre geo-locations (choose menu option 9). By default, images are saved to the directory `"ToAnimate"`, but can be changed via the argument `output_dir` (**NB: the code below is not run**):
 
 
 ```r
+# code not run
 map_ereefs_movie(
   var_name = "salt", start_date = c(2019, 2, 15), end_date = c(2019, 3, 10),
   Land_map = TRUE, box_bounds = c(145, 150, -22, -18), scale_col = "spectral",
@@ -95,9 +104,6 @@ temp_slice <- get_ereefs_slice(
 ```
 
 
-```
-#> [1] "transect section 1 of 1"
-```
 
 Now visualise the results:
 
@@ -106,9 +112,9 @@ Now visualise the results:
 plot_ereefs_slice(temp_slice, var_name = "temp", scale_col = "spectral")
 ```
 
-<img src="vignette-fig-exmp8-1.png" alt="plot of chunk exmp8" width="60%" style="display: block; margin: auto;" /><img src="vignette-fig-exmp8-2.png" alt="plot of chunk exmp8" width="60%" style="display: block; margin: auto;" />
+<img src="vignette-fig-exmp8-1.png" alt="plot of chunk exmp8" width="80%" style="display: block; margin: auto;" />
 
-We can also extract a vertical profile (rather than a slice) of, for example, chlorophyll-a and nitrate at a single location and time (choose menu options 11):
+We can also extract a vertical profile (rather than a slice) of, for example, chlorophyll-a and nitrate at a single location and time (choose menu option 11):
 
 
 ```r
@@ -119,9 +125,6 @@ profile_data <- get_ereefs_profile(
 ```
 
 
-```
-#>   |                                                                                                                                                                                          |                                                                                                                                                                                  |   0%  |                                                                                                                                                                                          |==================================================================================================================================================================================| 100%
-```
 
 Now visualise the results for NO~3^-^~:
 
@@ -132,7 +135,7 @@ plot_ereefs_profile(
 )
 ```
 
-<img src="vignette-fig-exmp10-1.png" alt="plot of chunk exmp10" width="60%" style="display: block; margin: auto;" />
+<img src="vignette-fig-exmp10-1.png" alt="plot of chunk exmp10" width="80%" style="display: block; margin: auto;" />
 
 We are currently working on improving the function `get_ereefs_profile` so that it can work for multiple time profiles.
 
