@@ -53,7 +53,7 @@ The `ereefs` R package provides easy access to
 format, including eReefs data from the National Computational
 Infrastructure (NCI) [eReefs data
 services](https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html),
-not the gridded AIMS eReefs model data [eReefs data
+not the gridded AIMS eReefs model data provided via the [eReefs data
 service](https://hyrax.ereefs.aims.gov.au/).** It can also be used to
 explore and visualise other CSIRO-EMS model output data, including
 output from RECOM model runs. CSIRO-EMS is the
