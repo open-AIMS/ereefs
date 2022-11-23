@@ -605,7 +605,7 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #' @return p handle for the generated figure
 #' @export
 plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral", scale_lim=NA, var_units="") {
-	numprofiles <- dim(slice$values)[2]
+  numprofiles <- dim(slice$values)[2]
 	layers <- length(slice$z_grid) - 1
 	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
 	zmax <- array(slice$z_grid[2:(layers+1)], c(layers, numprofiles))
@@ -644,9 +644,9 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral",
                                            guide="colourbar", 
                                            limits=scale_lim, 
                                            name=var_units, 
-                                           oob=scales::squish) 
-  } else if (length(scale_col)<3) { 
-    if (length(scale_col)==1) scale_col <- c('ivory', scale_col) 
+                                           oob=scales::squish)
+  } else if (scale_col[1] != "spectral" && length(scale_col) < 3) { 
+    if (length(scale_col) == 1) scale_col <- c("ivory", scale_col)
     p <- p + ggplot2::scale_fill_gradient(low=scale_col[1], 
                                           high=scale_col[2], 
 				                                  na.value="transparent", 
@@ -668,8 +668,7 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral",
   	    	                                 name=var_units,
   		                                     oob=scales::squish) 
   }
-	plot(p)
-	return(p)
+	p
 }
 
 #' Calculate rough distance in kilometers between two points
