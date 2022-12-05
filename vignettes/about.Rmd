@@ -36,7 +36,7 @@ These tools and information are hosted on multiple websites. For example, while 
 
 - The Bureau of Meteorology provides the [ReefTemp NextGen](http://www.bom.gov.au/environment/activities/reeftemp/reeftemp.shtml)---a set of high resolution mapping products that provide information on coral bleaching risk for the Great Barrier Reef region;
 
-- The Australian Institute of Marine Science (AIMS) also provides a [Visualisation Portal](https://ereefs.aims.gov.au/ereefs-aims), and maintains this [R package](https://github.com/open-aims/ereefs/). In addition, the AIMS [eReefs data service](https://hyrax.ereefs.aims.gov.au/) contains the aggregated data services (daily, monthly, annual for hydrology model, monthly and annual for biogeochemistry) on a regular grid. **Importantly, our R package focuses on accessing the data from NCI, not the AIMS eReefs data service.**
+- The Australian Institute of Marine Science (AIMS) also provides a [Visualisation Portal](https://ereefs.aims.gov.au/ereefs-aims), and maintains this [R package](https://github.com/open-aims/ereefs/). In addition, the AIMS [eReefs data service](https://thredds.ereefs.aims.gov.au/) contains the aggregated data services (daily, monthly, annual for hydrology model, monthly and annual for biogeochemistry) on a regular grid. **Importantly, our R package focuses on accessing the data from NCI, not the AIMS eReefs data service.**
 
 ## When is this R package not as useful?
 
