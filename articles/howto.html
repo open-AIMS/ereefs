@@ -75,7 +75,7 @@
 
       
 
-      </header><script src="howto_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>General usage</h1>
@@ -91,7 +91,11 @@
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
-<p>This guideline provides a series of practical examples on how a user might take advantage of the functionalities offered by <code>ereefs</code>. But first we need to load <code>ereefs</code> — if you have not done so yet, please see our <a href="https://open-aims.github.io/ereefs/" class="external-link">README page</a> for installation instructions:</p>
+<p>This guideline provides a series of practical examples on how a user
+might take advantage of the functionalities offered by
+<code>ereefs</code>. But first we need to load <code>ereefs</code> — if
+you have not done so yet, please see our <a href="https://open-aims.github.io/ereefs/" class="external-link">README page</a> for
+installation instructions:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ereefs.info" class="external-link">ereefs</a></span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -101,29 +105,39 @@
 <div class="section level3">
 <h3 id="static-maps">Static maps<a class="anchor" aria-label="anchor" href="#static-maps"></a>
 </h3>
-<p>One can create a true colour image map from optical model output of the Great Barrier Reef on a specific date (select menu option 9 for high-resolution or 11 for lower resolution):</p>
+<p>One can create a true colour image map from optical model output of
+the Great Barrier Reef on a specific date (select menu option 9 for
+high-resolution or 11 for lower resolution):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span>target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp1-1.png" alt="plot of chunk exmp1" width="80%" style="display: block; margin: auto;"></p>
-<p>It is also possible to map optical colour classes (note the default colour scheme is not great for this, so one might want to add a different colour scale after producing the figure handle):</p>
+<p>It is also possible to map optical colour classes (note the default
+colour scheme is not great for this, so one might want to add a
+different colour scale after producing the figure handle):</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span>var_name <span class="op">=</span> <span class="st">"plume"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp2-1.png" alt="plot of chunk exmp2" width="80%" style="display: block; margin: auto;"></p>
-<p>We can also map, for example, the extent of the influence of the Burdekin River (choose menu option 8 or 7):</p>
+<p>We can also map, for example, the extent of the influence of the
+Burdekin River (choose menu option 8 or 7):</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"bur"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2022</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0_rivers/gbr1_rivers_simple_2022-02-28.nc.html"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp3-1.png" alt="plot of chunk exmp3" width="80%" style="display: block; margin: auto;"></p>
-<p>The colour scale can be customised. For example, the code below changes the limits of the colour scale so that the max colour intensity is achieved when 1% of water is river water, and change the colours:</p>
+<p>The colour scale can be customised. For example, the code below
+changes the limits of the colour scale so that the max colour intensity
+is achieved when 1% of water is river water, and change the colours:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"bur"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2022</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span>, scale_lim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">0.01</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0_rivers/gbr1_rivers_simple_2022-08-28.nc.html"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp4-1.png" alt="plot of chunk exmp4" width="80%" style="display: block; margin: auto;"></p>
-<p>We can also plot different variables such as chlorophyll-a at a particular depth (e.g., 5 m below MSL; default is at the surface), add a land map to the plot, and focus on a particular region (choose menu option 9 for higher resolution):</p>
+<p>We can also plot different variables such as chlorophyll-a at a
+particular depth (e.g., 5 m below MSL; default is at the surface), add a
+land map to the plot, and focus on a particular region (choose menu
+option 9 for higher resolution):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"Chl_a_sum"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span>,</span>
@@ -134,7 +148,15 @@
 <div class="section level3">
 <h3 id="images-for-animations">Images for animations<a class="anchor" aria-label="anchor" href="#images-for-animations"></a>
 </h3>
-<p>We can also create the image files needed for a true colour animation of surface salinity in this area (then use <a href="https://cran.r-project.org/web/packages/gifski/index.html" class="external-link"><code>gifski</code></a> or similar to generate the animation). Below, <code>salt_list</code> is a list that includes the plot handle as well as the temporal mean salinity for each point in the map over the period of the animation, plus the cell centre geo-locations (choose menu option 9). By default, images are saved to the directory <code>"ToAnimate"</code>, but can be changed via the argument <code>output_dir</code> (<strong>NB: the code below is not run</strong>):</p>
+<p>We can also create the image files needed for a true colour animation
+of surface salinity in this area (then use <a href="https://cran.r-project.org/web/packages/gifski/index.html" class="external-link"><code>gifski</code></a>
+or similar to generate the animation). Below, <code>salt_list</code> is
+a list that includes the plot handle as well as the temporal mean
+salinity for each point in the map over the period of the animation,
+plus the cell centre geo-locations (choose menu option 9). By default,
+images are saved to the directory <code>"ToAnimate"</code>, but can be
+changed via the argument <code>output_dir</code> (<strong>NB: the code
+below is not run</strong>):</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># code not run</span></span>
 <span><span class="fu"><a href="../reference/map_ereefs_movie.html">map_ereefs_movie</a></span><span class="op">(</span></span>
@@ -147,7 +169,14 @@
 <div class="section level2">
 <h2 id="plotting-vertical-profiles-and-slices-through-the-data">Plotting vertical profiles and slices through the data<a class="anchor" aria-label="anchor" href="#plotting-vertical-profiles-and-slices-through-the-data"></a>
 </h2>
-<p>The code example below extracts the data from a vertical slice of temperature along a line segment at latitude 20 degrees South (choose menu option 2). Note that a slice can also be defined along a long, curvy line, for example a boat track, by adding more points to the <code>location_latlon</code> argument in function <code>get_ereefs_slice</code>. One can also get data from multiple variables by making <code>var_names</code> a vector (e.g., <code>var_names = c("temp", "salt")</code>).</p>
+<p>The code example below extracts the data from a vertical slice of
+temperature along a line segment at latitude 20 degrees South (choose
+menu option 2). Note that a slice can also be defined along a long,
+curvy line, for example a boat track, by adding more points to the
+<code>location_latlon</code> argument in function
+<code>get_ereefs_slice</code>. One can also get data from multiple
+variables by making <code>var_names</code> a vector (e.g.,
+<code>var_names = c("temp", "salt")</code>).</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">temp_slice</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_slice.html">get_ereefs_slice</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2022</span>, <span class="fl">8</span>, <span class="fl">1</span><span class="op">)</span>,</span>
@@ -157,7 +186,9 @@
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ereefs_slice.html">plot_ereefs_slice</a></span><span class="op">(</span><span class="va">temp_slice</span>, var_name <span class="op">=</span> <span class="st">"temp"</span>, scale_col <span class="op">=</span> <span class="st">"spectral"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp8-1.png" alt="plot of chunk exmp8" width="80%" style="display: block; margin: auto;"></p>
-<p>We can also extract a vertical profile (rather than a slice) of, for example, chlorophyll-a and nitrate at a single location and time (choose menu option 11):</p>
+<p>We can also extract a vertical profile (rather than a slice) of, for
+example, chlorophyll-a and nitrate at a single location and time (choose
+menu option 11):</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profile_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_profile.html">get_ereefs_profile</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Chl_a_sum"</span>, <span class="st">"NO3"</span><span class="op">)</span>, start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">3</span>, <span class="fl">10</span><span class="op">)</span>,</span>
@@ -169,8 +200,11 @@
 <span>  <span class="va">profile_data</span>, var_name <span class="op">=</span> <span class="st">"NO3"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">3</span>, <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp10-1.png" alt="plot of chunk exmp10" width="80%" style="display: block; margin: auto;"></p>
-<p>We are currently working on improving the function <code>get_ereefs_profile</code> so that it can work for multiple time profiles.</p>
-<p>We can also extract a time-series of surface data at a single or multiple specified locations (choose menu option 11):</p>
+<p>We are currently working on improving the function
+<code>get_ereefs_profile</code> so that it can work for multiple time
+profiles.</p>
+<p>We can also extract a time-series of surface data at a single or
+multiple specified locations (choose menu option 11):</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tsdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"salt"</span>, <span class="st">"DIP"</span>, <span class="st">"ZooL_N"</span><span class="op">)</span>, start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>,</span>
@@ -179,31 +213,39 @@
 <span>    latitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">23.4</span>, <span class="op">-</span><span class="fl">17</span><span class="op">)</span>, longitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">150.9</span>, <span class="fl">147.0</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The locations could even be at all the Marine Monitoring Program routine water quality sampling locations:</p>
+<p>The locations could even be at all the Marine Monitoring Program
+routine water quality sampling locations:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mmpdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"salt"</span>, <span class="st">"TN"</span><span class="op">)</span>, location_latlon <span class="op">=</span> <span class="st">"mmp"</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The time-series can also be extract at a specified depth of 5 m below MSL:</p>
+<p>The time-series can also be extract at a specified depth of 5 m below
+MSL:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">deeperdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"Chl_a_sum"</span>, location_latlon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">23.4</span>, <span class="fl">150.9</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span>, layer <span class="op">=</span> <span class="op">-</span><span class="fl">5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>One could also have set the argument <code>layer = "bottom"</code> to extract a time-series of data at the bottom of the water column. However, to extract a time-series of data averaged over the depth of the water column, the user woul use the function <code>get_ereefs_depth_integrated_ts</code>:</p>
+<p>One could also have set the argument <code>layer = "bottom"</code> to
+extract a time-series of data at the bottom of the water column.
+However, to extract a time-series of data averaged over the depth of the
+water column, the user woul use the function
+<code>get_ereefs_depth_integrated_ts</code>:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_integrated_ts.html">get_ereefs_depth_integrated_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"Chl_a_sum"</span>, location_latlon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">23.4</span>, <span class="fl">150.9</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Other options include extracting a time-series of the mass per square metre of a variable, integrated over the depth of the water column:</p>
+<p>Other options include extracting a time-series of the mass per square
+metre of a variable, integrated over the depth of the water column:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intdatapermass</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_integrated_ts.html">get_ereefs_depth_integrated_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"Chl_a_sum"</span>, location_latlon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">23.4</span>, <span class="fl">150.9</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span>, mass <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>or extracting a time-series of data at a specified depth below the tidal free surface (rather than below MSL):</p>
+<p>or extracting a time-series of data at a specified depth below the
+tidal free surface (rather than below MSL):</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tidalintdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_specified_ts.html">get_ereefs_depth_specified_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"Chl_a_sum"</span>, location_latlon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">23.4</span>, <span class="fl">150.9</span><span class="op">)</span>,</span>
@@ -229,7 +271,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

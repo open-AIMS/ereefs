@@ -110,6 +110,7 @@
 <div class="page-header"><h1 id="ereefs-">ereefs <img src="reference/figures/logo.png" width="180" alt="eReefs Logo" align="right"><a class="anchor" aria-label="anchor" href="#ereefs-"></a>
 </h1></div>
 <!-- badges: start -->
+
 <div class="section level2">
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
@@ -117,7 +118,7 @@
 <p><a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> is a project that combines government commitment to reef protection, world-class science innovation and contributions from leading Australian businesses. It is a collaborative information system created (the <a href="https://www.barrierreef.org/" class="external-link">Great Barrier Reef Foundation</a>, <a href="https://www.csiro.au/" class="external-link">CSIRO</a>, the <a href="https://www.aims.gov.au/" class="external-link">Australian Institute of Marine Science</a>, <a href="https://www.bom.gov.au/" class="external-link">Bureau of Meteorology</a>, and <a href="https://www.qld.gov.au/" class="external-link">Queensland Government</a>) that provides a picture of what is currently happening on the reef, and what will likely happen in the future.</p>
 <p>Focused on the protection and preservation of the iconic Great Barrier Reef, it forms the first step in building comprehensive coastal information systems for Australia. Using the latest technologies to collate data, and new and integrated modelling, eReefs will produce powerful visualisation, communication and reporting tools. It will provide for the Reef information akin to that provided by the Bureau of Meteorology for weather. This information will benefit government agencies, Reef managers, policy makers, researchers, industry and local communities.</p>
 <p><strong>What does the <code>ereefs</code> R package do?</strong></p>
-<p>The <code>ereefs</code> R package provides easy access to <a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> and other <a href="https://research.csiro.au/cem/software/ems/" class="external-link">CSIRO-EMS</a> output files. <strong><code>ereefs</code> focuses on accessing eReefs data model in its original format, including eReefs data from the National Computational Infrastructure (NCI) <a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">eReefs data services</a>, not the gridded AIMS eReefs model data <a href="https://thredds.ereefs.aims.gov.au/" class="external-link">eReefs data service</a>.</strong> It can also be used to explore and visualise other CSIRO-EMS model output data, including output from RECOM model runs. CSIRO-EMS is the hydrodynamic-biogeochemical modelling software that underpins the eReefs models for the Great Barrier Reef. RECOM is an online interface that helps registered users to set up higher-resolution instances of CSIRO-EMS for small areas such as individual reefs that are nested within the eReefs models.</p>
+<p>The <code>ereefs</code> R package provides easy access to <a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> and other <a href="https://research.csiro.au/cem/software/ems/" class="external-link">CSIRO-EMS</a> output files. <strong><code>ereefs</code> focuses on accessing eReefs data model in its original format, including eReefs data from the National Computational Infrastructure (NCI) <a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">eReefs data services</a>, not the gridded AIMS eReefs model data provided via the <a href="https://thredds.ereefs.aims.gov.au/" class="external-link">eReefs data service</a>.</strong> It can also be used to explore and visualise other CSIRO-EMS model output data, including output from RECOM model runs. CSIRO-EMS is the hydrodynamic-biogeochemical modelling software that underpins the eReefs models for the Great Barrier Reef. RECOM is an online interface that helps registered users to set up higher-resolution instances of CSIRO-EMS for small areas such as individual reefs that are nested within the eReefs models.</p>
 <p><code>ereefs</code> is designed to assist R users who need more customised access to eReefs data. This includes things like:</p>
 <ul>
 <li><p>Accessing data from versions of the eReefs model that are not available through the web-based data service;</p></li>
@@ -146,20 +147,20 @@
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>To install the latest release from GitHub use</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="cf">if</span> (<span class="op">!</span><span class="kw">requireNamespace</span>(<span class="st">"remotes"</span>)) {</span>
-<span id="cb1-2"><a href="#cb1-2"></a>  <span class="kw">install.packages</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb1-3"><a href="#cb1-3"></a>}</span>
-<span id="cb1-4"><a href="#cb1-4"></a>remotes<span class="op">::</span><span class="kw">install_github</span>(<span class="st">"open-aims/ereefs"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"remotes"</span>)) {</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">"remotes"</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"open-aims/ereefs"</span>)</span></code></pre></div>
 <p>The current development version can be downloaded from GitHub via</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="cf">if</span> (<span class="op">!</span><span class="kw">requireNamespace</span>(<span class="st">"remotes"</span>)) {</span>
-<span id="cb2-2"><a href="#cb2-2"></a>  <span class="kw">install.packages</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb2-3"><a href="#cb2-3"></a>}</span>
-<span id="cb2-4"><a href="#cb2-4"></a>remotes<span class="op">::</span><span class="kw">install_github</span>(<span class="st">"open-aims/ereefs"</span>, <span class="dt">ref =</span> <span class="st">"dev"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"remotes"</span>)) {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">"remotes"</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"open-aims/ereefs"</span>, <span class="at">ref =</span> <span class="st">"dev"</span>)</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
-<p>Usage and further information about <code>ereefs</code> can be seen on the <a href="https://open-aims.github.io/ereefs/" class="external-link">project page</a> and the <a href="https://open-aims.github.io/ereefs/articles/" class="external-link">vignettes</a>. Help files for the individual functions can be found on the <a href="https://open-aims.github.io/ereefs/reference/" class="external-link">reference page</a>.</p>
+<p>Usage and further information about <code>ereefs</code> can be seen on the <a href="https://open-aims.github.io/ereefs/articles/" class="external-link">vignettes</a>. Help files for the individual functions can be found on the <a href="https://open-aims.github.io/ereefs/reference/" class="external-link">reference page</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="further-information">Further Information<a class="anchor" aria-label="anchor" href="#further-information"></a>
@@ -214,7 +215,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>

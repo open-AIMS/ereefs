@@ -75,7 +75,7 @@
 
       
 
-      </header><script src="about_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>eReefs and the ereefs package</h1>
@@ -91,26 +91,62 @@
 <div class="section level2">
 <h2 id="what-information-and-tools-are-there-about-ereefs">What information and tools are there about eReefs?<a class="anchor" aria-label="anchor" href="#what-information-and-tools-are-there-about-ereefs"></a>
 </h2>
-<p>As mentioned on this package’s <a href="https://open-aims.github.io/ereefs/" class="external-link">README page</a>, eReefs is a collaborative information system created by the <a href="https://www.barrierreef.org/" class="external-link">Great Barrier Reef Foundation</a>, <a href="https://www.csiro.au/" class="external-link">CSIRO</a>, the <a href="https://www.aims.gov.au/" class="external-link">Australian Institute of Marine Science</a>, <a href="https://www.bom.gov.au/" class="external-link">Bureau of Meteorology</a>, and <a href="https://www.qld.gov.au/" class="external-link">Queensland Government</a>. As such, each collaborator has been working on different ways to visualise and explore what is currently happening on the reef, and what will likely happen in the future.</p>
-<p>These tools and information are hosted on multiple websites. For example, while the main <a href="https://www.ereefs.org.au/" class="external-link">website</a> combines info from all the parts:</p>
+<p>As mentioned on this package’s <a href="https://open-aims.github.io/ereefs/" class="external-link">README page</a>, eReefs is a
+collaborative information system created by the <a href="https://www.barrierreef.org/" class="external-link">Great Barrier Reef Foundation</a>,
+<a href="https://www.csiro.au/" class="external-link">CSIRO</a>, the <a href="https://www.aims.gov.au/" class="external-link">Australian Institute of Marine
+Science</a>, <a href="https://www.bom.gov.au/" class="external-link">Bureau of
+Meteorology</a>, and <a href="https://www.qld.gov.au/" class="external-link">Queensland
+Government</a>. As such, each collaborator has been working on different
+ways to visualise and explore what is currently happening on the reef,
+and what will likely happen in the future.</p>
+<p>These tools and information are hosted on multiple websites. For
+example, while the main <a href="https://www.ereefs.org.au/" class="external-link">website</a>
+combines info from all the parts:</p>
 <ul>
-<li><p>CSIRO has a <a href="https://portal.ereefs.info/" class="external-link">visualisation portal</a> and an <a href="https://research.csiro.au/ereefs/" class="external-link">information site</a>;</p></li>
-<li><p>The National Computational Infrastructure (NCI)—Australia’s leading high-performance data, storage and computing organisation—hosts <a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">two main data services</a>: the raw CSIRO model data with the highest time resolution (hourly for hydrology model, daily for biogeochemistry) and has curvilinear data;</p></li>
-<li><p>The Bureau of Meteorology provides the <a href="http://www.bom.gov.au/environment/activities/reeftemp/reeftemp.shtml" class="external-link">ReefTemp NextGen</a>—a set of high resolution mapping products that provide information on coral bleaching risk for the Great Barrier Reef region;</p></li>
-<li><p>The Australian Institute of Marine Science (AIMS) also provides a <a href="https://ereefs.aims.gov.au/ereefs-aims" class="external-link">Visualisation Portal</a>, and maintains this <a href="https://github.com/open-aims/ereefs/" class="external-link">R package</a>. In addition, the AIMS <a href="https://thredds.ereefs.aims.gov.au/" class="external-link">eReefs data service</a> contains the aggregated data services (daily, monthly, annual for hydrology model, monthly and annual for biogeochemistry) on a regular grid. <strong>Importantly, our R package focuses on accessing the data from NCI, not the AIMS eReefs data service.</strong></p></li>
+<li><p>CSIRO has a <a href="https://portal.ereefs.info/" class="external-link">visualisation
+portal</a> and an <a href="https://research.csiro.au/ereefs/" class="external-link">information site</a>;</p></li>
+<li><p>The National Computational Infrastructure (NCI)—Australia’s
+leading high-performance data, storage and computing organisation—hosts
+<a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">two
+main data services</a>: the raw CSIRO model data with the highest time
+resolution (hourly for hydrology model, daily for biogeochemistry) and
+has curvilinear data;</p></li>
+<li><p>The Bureau of Meteorology provides the <a href="http://www.bom.gov.au/environment/activities/reeftemp/reeftemp.shtml" class="external-link">ReefTemp
+NextGen</a>—a set of high resolution mapping products that provide
+information on coral bleaching risk for the Great Barrier Reef
+region;</p></li>
+<li><p>The Australian Institute of Marine Science (AIMS) also provides a
+<a href="https://ereefs.aims.gov.au/ereefs-aims" class="external-link">Visualisation
+Portal</a>, and maintains this <a href="https://github.com/open-aims/ereefs/" class="external-link">R package</a>. In addition,
+the AIMS <a href="https://thredds.ereefs.aims.gov.au/" class="external-link">eReefs data
+service</a> contains the aggregated data services (daily, monthly,
+annual for hydrology model, monthly and annual for biogeochemistry) on a
+regular grid. <strong>Importantly, our R package focuses on accessing
+the data from NCI, not the AIMS eReefs data service.</strong></p></li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="when-is-this-r-package-not-as-useful">When is this R package not as useful?<a class="anchor" aria-label="anchor" href="#when-is-this-r-package-not-as-useful"></a>
 </h2>
-<p>If you want to extract time-series of the most commonly needed physical and chemical variables from the main versions of the eReefs model outputs at a fixed set of geolocations at a fixed depth from mean sea level, the AIMS <a href="https://extraction.ereefs.aims.gov.au/" class="external-link">web-based eReefs data extraction tool</a> is usually faster and easier to use. If you want animations of the most commonly-needed variables at the surface, and do not need them to be customised, the <a href="https://ereefs.aims.gov.au/ereefs-aims" class="external-link">AIMS eReefs visualisation portal</a> offers pre-generated animations at several scales in an easy-to-navigate format.</p>
+<p>If you want to extract time-series of the most commonly needed
+physical and chemical variables from the main versions of the eReefs
+model outputs at a fixed set of geolocations at a fixed depth from mean
+sea level, the AIMS <a href="https://extraction.ereefs.aims.gov.au/" class="external-link">web-based eReefs data
+extraction tool</a> is usually faster and easier to use. If you want
+animations of the most commonly-needed variables at the surface, and do
+not need them to be customised, the <a href="https://ereefs.aims.gov.au/ereefs-aims" class="external-link">AIMS eReefs visualisation
+portal</a> offers pre-generated animations at several scales in an
+easy-to-navigate format.</p>
 </div>
 <div class="section level2">
 <h2 id="other-related-content">Other related content<a class="anchor" aria-label="anchor" href="#other-related-content"></a>
 </h2>
 <ul>
-<li><p><a href="https://ereefs.aims.gov.au/ereefs-aims/help" class="external-link">Snippets</a> of code for interactive with the eReefs data, including in <a href="https://ereefs.aims.gov.au/ereefs-aims/help/how-to-plot-aims-ereefs-data-with-python" class="external-link">python</a>.</p></li>
-<li><p>The <a href="https://www.barrierreef.org/what-we-do/projects/eReefs" class="external-link">GBRF website</a>, with videos and descriptions by comms professionals.</p></li>
+<li><p><a href="https://ereefs.aims.gov.au/ereefs-aims/help" class="external-link">Snippets</a> of code
+for interactive with the eReefs data, including in <a href="https://ereefs.aims.gov.au/ereefs-aims/help/how-to-plot-aims-ereefs-data-with-python" class="external-link">python</a>.</p></li>
+<li><p>The <a href="https://www.barrierreef.org/what-we-do/projects/eReefs" class="external-link">GBRF
+website</a>, with videos and descriptions by comms
+professionals.</p></li>
 </ul>
 </div>
   </div>
@@ -132,7 +168,7 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
