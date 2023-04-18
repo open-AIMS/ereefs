@@ -124,8 +124,7 @@ The current development version can be downloaded from GitHub via
 Usage
 -----
 
-Usage and further information about `ereefs` can be seen on the [project
-page](https://open-aims.github.io/ereefs/) and the
+Usage and further information about `ereefs` can be seen on the
 [vignettes](https://open-aims.github.io/ereefs/articles/). Help files
 for the individual functions can be found on the [reference
 page](https://open-aims.github.io/ereefs/reference/).
