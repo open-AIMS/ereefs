@@ -526,7 +526,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
   if ((layer=='bottom')&&(length(location_latlon[,1])>1)) stop('Only one location can be given if layer==bottom')
 #  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, location_latlon, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if (location_latlon[[1]]=="mmp") {
+  if (location_latlon[[1]][1]=="mmp") {
      location_latlon <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
      mmp <- TRUE
   } else {
