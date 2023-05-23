@@ -554,7 +554,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
        if (length(ilat)) {
          location_latlon <- data.frame(latitude = location_latlon[, ilat], longitude = location_latlon[, ilon])
        } else {
-         warn("Assuming that the first column of location_latlon is latitude and the second column is longitude")
+         warning("Assuming that the first column of location_latlon is latitude and the second column is longitude")
        }
        names(location_latlon)[1:2] <- c("latitude", "longitude")
        grid_index <- apply(location_latlon,1, function(ll) which.min((latitude - ll[1])^2 + (longitude - ll[2])^2)) 
@@ -651,6 +651,9 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         }
         #input_file <- paste0(input_file, '?', var_list, ',time')
         nc <- safe_nc_open(input_file)
+        ## tindyc:
+        ## nc <- tindync::tidync(input_file)
+
   #      if ((ereefs_case[2] == "1km")||(ereefs_case[2] == "4km")) {
   #          if (!is.null(nc$var[['t']])) {
   #            d <- as.Date(safe_ncvar_get(nc, "t"), origin = as.Date("1990-01-01"))[from_day:(from_day+day_count-1)]
@@ -670,14 +673,22 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                 dims <- nc$var[[var_names[j]]][['size']]
                 if (is.null(dims)) stop(paste(var_names[j], ' not found in netcdf file.')) 
                 ndims[j] <- length(dims)
+                ## tidync:
+                ## ndims[j] <- dim(nc %>% tidync::activate(var_names[j]) %>% hyper_dims())[1]
              }
              if (layer == 'surface') { 
                 dims <- nc$var[[var_names[j]]][['size']]
                 layer_actual <- dims[3] 
+                ## tidync:
+                ## layer_actual <- nc %>% tidync::hyper_dims() %>% dplyr::filter(name=="k") %>% dplyr::select("length")
              } else if (layer == 'bottom') { 
                 # find the bottom layer -- assume it is the first layer that is not NA
                 if (ndims[j] == 4) { 
                    dum1 <- safe_ncvar_get(nc, var_names[j], start=c(startv,1,from_day), count=c(countv,-1,1)) 
+                   ## tidync: [need to check whether dims of startv and countv are the right way around
+                   ## dum1 <- nc %>% tidync::activate(var_names[j]) %>% 
+                   ##                tidync::hyper_filter(i = dplyr::between(i, startv[1], startv[1]+countv[1]), j = dply::between(j, startv[2], startv[2]+countv[2]), time = time == from_day) %>% 
+                   ##                tidync::hyper_array()
                    if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
                    layer <- min(which(!is.na(dum1)))
                    layer_actual <- layer
