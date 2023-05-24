@@ -139,6 +139,8 @@ plot_ereefs_profile(
 
 We are currently working on improving the function `get_ereefs_profile` so that it can work for multiple time profiles.
 
+# Time series
+
 We can also extract a time-series of surface data at a single or multiple specified locations (choose menu option 11):
 
 
