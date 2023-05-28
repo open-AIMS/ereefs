@@ -1366,7 +1366,8 @@ safe_nc_open <- function(filename, tries=4) {
    return(nc)
 }
 
-#' A simple function to convert a date provided in any of several formats to a date-time object
+#' A simple function to convert a date provided in any of several formats to a date-time object.
+#' Assumes GMT-10.
 #' @param d The date of interest. Can be any of:
 #'              c(yr, month, day)
 #'              c(yr, month, day, hour) 
