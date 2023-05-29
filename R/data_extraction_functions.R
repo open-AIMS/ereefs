@@ -92,12 +92,12 @@ assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = 
 #'              input_file, the input filename, after transformation by substitute_filename()
 #'              ereefs_case, information about the format of the input file, as output by get)ereefs_case()
 #'              input_stem, the 'stem' of the filename in case the parent function needs to dynamically calculate filenames from an example netcdf filename.
-#'              start_date, start_date transformed to a chron date
+#'              start_date, start_date transformed to a date-time object
 #'              start_day, the day of the month in start_date
 #'              start_tod, the time of day in start_date (0.5 if not given)
 #'              start_month, the integer month of the yr in start_date
 #'              start_yr, the integer yr in start_date
-#'              end_date, end_date transformed to a chron date
+#'              end_date, end_date transformed to a date-time object
 #'              end_day, the day of the month in end_date
 #'              end_tod, the time of day in end_date (0.5 if not given)
 #'              end_month, the integer month of the yr in end_date
@@ -119,7 +119,7 @@ get_params <- function(start_date, end_date, input_file, var_names) {
   # Dates to plot
   start_date <- get_date_time(start_date)
   start_day <- lubridate::day(start_date)
-  start_tod <- as.numeric(start_date - floor_date(start_date, "day"))
+  start_tod <- as.numeric(start_date - lubridate::floor_date(start_date, "day"))
   start_month <- lubridate::month(start_date)
   start_yr <- lubridate::year(start_date)
 
@@ -786,7 +786,6 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'       incorrect. Default FALSE
 #' @param verbosity (Defailt 1) how much do you want to know about progress?
 #' @param mass (Default FALSE) Set to true if you want the mass per square metre rather than the mean concentration over depth returned
-#' @param date_format (Default "date"). Set to "chron" if you'd like the date returned in chron format.
 #' @export
 #' @examples
 #' \dontrun{
@@ -802,8 +801,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 			                  eta_stem = NA,
 			                  override_positive=FALSE,
                         verbosity = 1,
-                        mass = FALSE,
-                        date_format = "date")
+                        mass = FALSE)
 {
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_yr,
@@ -1086,8 +1084,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                                           input_file = "menu", 
                                           input_grid = NA, 
                                           eta_stem = NA, 
-                                          verbosity = 1,
-                                          date_format = "date")
+                                          verbosity = 1)
 {
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_yr,
