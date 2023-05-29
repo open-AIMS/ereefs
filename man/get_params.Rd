@@ -7,11 +7,11 @@
 get_params(start_date, end_date, input_file, var_names)
 }
 \arguments{
-\item{start_date}{The date from which to start data extraction, in any format accepted by get_chron_date(). Can be any of:
-c(year, month, day)
-c(year, month, day, hour) 
+\item{start_date}{The date from which to start data extraction, in any format accepted by get_date_time(). Can be any of:
+c(yr, month, day)
+c(yr, month, day, hour) (can also add minutes and seconds to the vector)
 POSIX date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
-chron date
+YYYYMMDD, YYYYMMDDhh, YYYYMMDDhhmm or YYYYMMDDhhmmss
 character format, e.g. '1970-01-01'}
 
 \item{end_date}{The end date of the data extraction request, as above.}
@@ -28,21 +28,20 @@ list of parameter values that includes:
              start_date, start_date transformed to a chron date
              start_day, the day of the month in start_date
              start_tod, the time of day in start_date (0.5 if not given)
-             start_month, the integer month of the year in start_date
-             start_year, the integer year in start_date
+             start_month, the integer month of the yr in start_date
+             start_yr, the integer yr in start_date
              end_date, end_date transformed to a chron date
              end_day, the day of the month in end_date
              end_tod, the time of day in end_date (0.5 if not given)
-             end_month, the integer month of the year in end_date
-             end_year, the integer year in end_date
+             end_month, the integer month of the yr in end_date
+             end_yr, the integer yr in end_date
              mths, a vector of months for which to extract data
-             years, a vector of years for which to extract data
+             yrs, a vector of yrs for which to extract data
              var_list, a list of variable names in var_names
              ereefs_origin, the origin date specified for Julian dates in the netcdf file (assumed to be 1990-01-01 if not specified)
-             blank_length, for use in initiatisng variables to be populated with extracted data
              ds, a date-time vector for extracted data
-             latitude, an array of latitudes matching the format of the input file
-             longitude, an array of longitudes
+             julian_date, the time vector in the raw format provided in the netcdf file
+             spatial_grid, a tibble containing the grid latitudes and longitudes
 }
 \description{
 Set up various parameters needed by many of the data extraction and plotting functions

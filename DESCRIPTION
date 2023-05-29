@@ -43,11 +43,11 @@ URL: https://ereefs.info
 Date: 2021-08-18
 License: MIT + file LICENSE
 LazyData: true
-Imports: ncdf4 (== 1.19),
+Imports: ncdf4 (>= 1.16),
          plyr (>= 1.8.4),
-         dplyr (>= 0.7.6),
+         dplyr (>= 1.0.1),
          magrittr,
-	       ggplot2 (>= 3.3.5),
+         ggplot2 (>= 3.3.6),
          raster (>= 2.6),
          cowplot(>= 1.1.1),
          utils (>= 4.0.3),
@@ -57,4 +57,4 @@ Imports: ncdf4 (== 1.19),
          devtools (>= 2.4.2),
          thredds (>= 0.0.1)
 Suggests: sp (>= 1.2)
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.1

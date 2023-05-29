@@ -4,7 +4,7 @@
 \alias{get_origin_and_times}
 \title{Opens the netcdf file, input_file, and extracts the origin (reference date/time) and time dimension.}
 \usage{
-get_origin_and_times(input_file, as_chron = "TRUE")
+get_origin_and_times(input_file)
 }
 \arguments{
 \item{input_file}{The name of the netcdf file (in standard or simple EMS netcdf format) from which

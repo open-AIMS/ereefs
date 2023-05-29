@@ -24,5 +24,5 @@ safe_ncvar_get(
 variable extracted using ncvar_get()
 }
 \description{
-Parameters before 'tries' are passed unlist(month.day.year(start_date))
+Parameters before 'tries' are passed unlist(month.day.yr(start_date))
 }

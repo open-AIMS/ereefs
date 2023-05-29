@@ -6,9 +6,10 @@
 \usage{
 get_ereefs_bottom_ts(
   var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852),
+  geocoordinates = c(-23.39189, 150.88852),
+  layer = "bottom",
   start_date = c(2010, 12, 31),
-  end_date = c(2016, 12, 31),
+  end_date = c(2016, 10, 31),
   input_file = "menu",
   input_grid = NA,
   eta_stem = NA,
@@ -20,12 +21,12 @@ get_ereefs_bottom_ts(
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{location_latlon}{is a vector containing the decimal latitude and longitude of the desired location. If 
+\item{geocoordinates}{is a vector containing the decimal latitude and longitude of the desired location. If 
 you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
+is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 
 \item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
+c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
 \item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
@@ -51,18 +52,18 @@ only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc file
 incorrect. Default FALSE}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
+c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2016,12,31).}
 }
 \value{
 a data frame containing the dates and values of extracted variables
 }
 \description{
-See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value.
+Now just a wrapper to get_ereefs_ts().
 By Barbara Robson (AIMS).
 }
 \examples{
 \dontrun{
-get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), location_latlon=data.frame(latitide=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
 }
 }

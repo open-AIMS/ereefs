@@ -6,7 +6,7 @@
 \usage{
 get_ereefs_ts(
   var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852),
+  geocoordinates = c(-23.39189, 150.88852),
   layer = "surface",
   start_date = c(2010, 12, 31),
   end_date = c(2016, 10, 31),
@@ -14,19 +14,16 @@ get_ereefs_ts(
   input_grid = NA,
   eta_stem = NA,
   override_positive = FALSE,
-  verbosity = 1,
-  return_list = FALSE,
-  date_format = "date"
+  verbosity = 1
 )
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{location_latlon}{is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
-a single latitude and longitude location. If you want to specify an x-y grid coordinate instead of a latitude and longitude, you 
-can: to do this, is.integer(location_latlon) must be TRUE. location_latlon can also be set to "mmp" to extract time-series at all 
-Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852).}
+\item{geocoordinates}{is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
+a single latitude and longitude location. geocoordinates can also be set to "mmp" to extract time-series at all 
+Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852). Can also include other variables, e.g. for the name of each site.}
 
 \item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
 value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
@@ -35,7 +32,7 @@ Use get_ereefs_depth_specified_ts() instead if you want to specify a depth
 below the free surface instead of a layer number. Defaults to 'surface'.}
 
 \item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
+c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
 \item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
@@ -62,18 +59,12 @@ incorrect. Default FALSE. Not normally needed.}
 
 \item{verbosity}{How much information to display along the way (0 to 2. Default is 1).}
 
-\item{return_list}{Default FALSE. Set to true if you want a list of dataframes returned (one df per geolocation). Included for
-backward compatibility.}
-
-\item{date_format}{Default "date". Set to "chron" to have the date returned in chron format.}
-
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
+c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
 formatted for input to as.Date(). Defaults to c(2016,10,31).}
 }
 \value{
-a data frame containing the dates and values of extracted variables and location(s) or a
-       list of such data frames (one list item per location) if return_list=TRUE (for backward compatibility).
+a data tibble containing extracted variables, including dates and locations
 }
 \description{
 Create a time-series of values of one or more selected model output variables in a specified layer of the
@@ -83,13 +74,15 @@ extract depth-integrated values and get_ereefs_depth_specified_ts() to extract v
 below the free (tidally moving) surface. Barbara Robson (AIMS).
 }
 \details{
+All variables to be extracted must have the same number of dimensions (e.g., either all 2D or all 3D variables).
+
 If you run into memory constraints, consider grouping points to be extracted within regions, and calling this once
 for each region.
 }
 \examples{
 \dontrun{
-get_ereefs_ts('Chl_a_sum', location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
-get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), location_latlon=data.frame(latitide=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
+get_ereefs_ts('Chl_a_sum', geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
+get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
 }
 }

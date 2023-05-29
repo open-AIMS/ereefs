@@ -3,11 +3,12 @@
 \name{get_ereefs_depth_specified_ts}
 \alias{get_ereefs_depth_specified_ts}
 \title{Extracts time-series of selected variables from eReefs output files at a specified location and depth below the
-surface.}
+tidal free surface. Use get_ereefs_ts() instead for a specified depth below MSL: this is faster and given the 
+thickness of the layers, usually almost the same.}
 \usage{
 get_ereefs_depth_specified_ts(
   var_names = c("Chl_a_sum", "TN"),
-  location_latlon = c(-23.39189, 150.88852),
+  geocoordinates = c(-23.39189, 150.88852),
   depth = 1,
   start_date = c(2010, 12, 31),
   end_date = c(2016, 12, 31),
@@ -22,15 +23,15 @@ get_ereefs_depth_specified_ts(
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{location_latlon}{A vector containing the decimal latitude and longitude of the desired location. If 
+\item{geocoordinates}{A vector containing the decimal latitude and longitude of the desired location. If 
 you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-is.integer(location_latlon) must be TRUE. Defaults to c(-23.39189, 150.88852).}
+is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 
 \item{depth}{Depth in metres below the surface. Default 1.0. If the bottom of the water is shallower than the specified depth,
 return values from the bottom of the water column.}
 
 \item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
+c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2010,12,31).}
 
 \item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
@@ -52,7 +53,7 @@ date components of the filename in the case of GBR1 or GBR4 files, and ommitting
 only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).}
 
 \item{end}{date for animation. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
+c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
      formatted for input to as.Date(). Defaults to c(2016,12,31).}
 }
 \value{
@@ -64,6 +65,9 @@ get_ereefs_depth_integrated_ts() to calculate depth-integrated values. Barbara R
 }
 \examples{
 \dontrun{
-get_ereefs_depth_specified_ts(c('Chl_a_sum', 'NH4'), depth=5.0, location_latlon=data.frame(latitide=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_depth_specified_ts(c('Chl_a_sum', 'NH4'), depth=5.0, geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), 
+  start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_depth_specified_ts('salt', depth=1.0, geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), 
+  start_date=c(2010,12,31),end_date=c(2011,1,5))
 }
 }
