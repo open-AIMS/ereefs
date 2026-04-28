@@ -4,27 +4,35 @@ on:
 
 name: render readme
 
+permissions:
+  contents: write
+
 jobs:
   render:
-    # The type of runner that the job will run on
-    runs-on: macOS-latest
+    runs-on: ubuntu-latest
 
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
-    - uses: r-lib/actions/setup-r@v1
-    - uses: r-lib/actions/setup-pandoc@v1
+    - uses: actions/checkout@v4
 
-    # install packages needed
+    - uses: r-lib/actions/setup-pandoc@v2
+
+    - uses: r-lib/actions/setup-r@v2
+      with:
+        use-public-rspm: true
+
     - name: install required packages
       run: Rscript -e 'install.packages(c("rmarkdown"))'
 
-    # Render READEME.md using rmarkdown
     - name: render README
-      run: Rscript -e 'rmarkdown::render("README.Rmd", output_format = "md_document")'
+      run: Rscript -e 'rmarkdown::render("README.Rmd")'
 
     - name: commit rendered README
       run: |
         git add README.md man/figures/*
         git commit -m "Re-build README.md" || echo "No changes to commit"
         git push origin master || echo "No changes to commit"
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:35
+# - date: 2026-04-28
+# - prompt_used: "Diagnose the failed GitHub README render action and update the workflow to use supported GitHub Actions and R setup steps."
