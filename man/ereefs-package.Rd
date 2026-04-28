@@ -4,17 +4,13 @@
 \name{ereefs-package}
 \alias{ereefs-package}
 \alias{ereefs}
-\title{The 'ereefs' package.}
+\title{ereefs package}
 \description{
-An R package to easily access eReefs and other CSIRO-EMS
-output files. Functions encompass multiple tasks such as i) extracting
-time-series from \href{https://research.csiro.au/ereefs/}{eReefs}
-Network Common Data Form
-(\href{https://docs.unidata.ucar.edu/netcdf-c/current/faq.html#ncFAQGeneral}{netCDF})
-files; ii) producing maps or animations of eReefs model outputs; iii)
-calculating optical plume class from modelled surface reflectances; iv)
-extracting profiles and vertical slices; v) plotting profiles; and vi)
-converting outputs to GIS formats.
+A package for accessing, extracting, and visualising eReefs and
+  other CSIRO-EMS model output. The current development workflow is designed
+  around local NetCDF files, live OPeNDAP datasets, and THREDDS catalog
+  services, with support for both curvilinear EMS grids and centre-only
+  regular grids.
 }
 \references{
 https://www.ereefs.org.au/about/
@@ -22,3 +18,21 @@ https://research.csiro.au/ereefs/welcome-to-ereefs/about-ereefs/
 https://ereefs.aims.gov.au/ereefs-aims
 https://www.barrierreef.org/what-we-do/projects/eReefs
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://ereefs.info}
+}
+
+}
+\author{
+\strong{Maintainer}: Barbara Robson \email{B.Robson@aims.gov.au}
+
+Other contributors:
+\itemize{
+  \item Mark Baird \email{Mark.Baird@csiro.au} [contributor]
+  \item Diego Barneche \email{d.barneche@aims.gov.au} [contributor]
+}
+
+}
+\keyword{internal}

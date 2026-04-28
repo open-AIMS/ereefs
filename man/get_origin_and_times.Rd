@@ -5,14 +5,21 @@
 \title{Opens the netcdf file, input_file, and extracts the origin (reference date/time) and time dimension.}
 \usage{
 get_origin_and_times(input_file)
+
+get_origin_and_times(input_file)
 }
 \arguments{
 \item{input_file}{The name of the netcdf file (in standard or simple EMS netcdf format) from which
-to extract the data}
+to extract the data.}
 }
 \value{
 A list containing ereefs_origin (the reference data/time used in the netcdf file) and the time series, ds
+
+A list containing ereefs_origin (the reference date/time used in the netcdf file),
+  the POSIXct time series, and the raw numeric time coordinate.
 }
 \description{
 Opens the netcdf file, input_file, and extracts the origin (reference date/time) and time dimension.
+
+Opens the netcdf file and extracts the time origin and time dimension using tidync/ncmeta.
 }

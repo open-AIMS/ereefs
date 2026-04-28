@@ -444,11 +444,10 @@ substitute_filename <- function(input_file = "catalog") {
 
 #' Extracts time series at specified locations from eReefs model output files
 #'
-#' Create a time-series of values of one or more selected model output variables in a specified layer of the
-#' water column or sediment store (by default, the surface layer), at a specified geographic location or 
-#' supplied tibble of geocoordinates within the model domain.  See also get_ereefs_depth_integrated_ts() to 
-#' extract depth-integrated values and get_ereefs_depth_specified_ts() to extract values at a specified depth 
-#' below the free (tidally moving) surface. Barbara Robson (AIMS).
+#' Create a time-series of values of one or more selected model output
+#' variables in a specified layer of the water column or sediment store at one
+#' or more geographic locations. The active extraction path supports local
+#' NetCDF files, live OPeNDAP URLs, and THREDDS catalog-backed workflows.
 #'
 #' All variables to be extracted must have the same number of dimensions (e.g., either all 2D or all 3D variables).
 #'
@@ -458,40 +457,36 @@ substitute_filename <- function(input_file = "catalog") {
 #' @return a data tibble containing extracted variables, including dates and locations
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
-#' @param geocoordinates is a tibble containing the decimal latitude and longitude of a single desired location, or a vector containing
-#'        a single latitude and longitude location. geocoordinates can also be set to "mmp" to extract time-series at all 
-#'        Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852). Can also include other variables, e.g. for the name of each site.
-#' @param layer is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
-#'        value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
-#'        Specify a negative value to indicate a specified depth (in metres) below MSL.
-#'        Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
-#'        below the free surface instead of a layer number. Defaults to 'surface'.
-#' @param start_date date  for animation. Can either be a) a vector of integers in the format 
-#'	       c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'        formatted for input to as.Date(). Defaults to c(2010,12,31).
-#' @param end date for animation. Can either be a) a vector of integers in the format 
-#'	       c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'        formatted for input to as.Date(). Defaults to c(2016,10,31).
-#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-#'        Numeric values are interpreted as references to selections available from the old menu.
-#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
-#' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
-#'      coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
-#'      but not specified, the function will first look for z_grid in the first INPUT_STEM file, and if not found, 
-#'      will check whether the size of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and 
-#'      load an appropriate z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-#'      (not simple-format) ereefs netcdf output file such as 
-#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
-#'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and you are asking for a depth-integrated
-#'       time-series or a depth-specified (relative to the surface) time-series
+#' @param geocoordinates A tibble of decimal latitude and longitude pairs, or a
+#'        length-two vector containing a single location. `geocoordinates` can
+#'        also be set to `"mmp"` to extract time-series at all Marine
+#'        Monitoring Program sites. Additional columns are preserved, for
+#'        example site names.
+#' @param layer Layer selector. Use a positive layer index, `"surface"`,
+#'        `"bottom"`, or a negative value to indicate depth below mean sea
+#'        level in metres. Use [get_ereefs_depth_specified_ts()] instead if you
+#'        need depth below the free surface.
+#' @param start_date Start of the extraction period. Can be a vector such as
+#'        `c(year, month, day)`, a `Date`/`POSIXct`, or a character string
+#'        accepted by [get_date_time()].
+#' @param end_date End of the extraction period, specified as for
+#'        `start_date`.
+#' @param input_file NetCDF file path, OPeNDAP URL, or THREDDS catalog URI.
+#'        THREDDS catalogs are preferred for live multi-file requests. Legacy
+#'        shortcuts such as `"nci"`, `"menu"`, `"catalog"`, `"old_menu"`, and
+#'        old numeric menu selections are still accepted for backward
+#'        compatibility.
+#' @param input_grid Optional alternative source for vertical grid metadata
+#'      (`z_grid`). This can be a local or remote NetCDF file that carries the
+#'      required layer-interface information.
+#' @param eta_stem Legacy fallback for locating surface elevation (`eta`) when
+#'       it is not in the main file. Usually unnecessary for catalog-driven
+#'       workflows.
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE. Not normally needed.
 #' @param verbosity How much information to display along the way (0 to 2. Default is 1).
-#' @param default_to_bottom Whether to get data from the bottom layer if the specified layer contains NAs. Defaults TRUE
+#' @param default_to_bottom Whether to fall back to the bottom wet layer if the
+#'      requested layer contains `NA` values. Defaults to `TRUE`.
 #' @export
 #' @examples
 #' \dontrun{
@@ -861,12 +856,10 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
 #' @param geocoordinates is a vector containing the decimal latitude and longitude of the desired location. If 
 #'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
 #'        is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).
-#' @param start_date date  for animation. Can either be a) a vector of integers in the format 
-#'	c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2010,12,31).
-#' @param end date for animation. Can either be a) a vector of integers in the format 
-#'	c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2016,12,31).
+#' @param start_date Start of the extraction period. Can be a `Date`,
+#'      `POSIXct`, character string, or a vector such as `c(year, month, day)`.
+#'      Date-only inputs default to midday in `Etc/GMT-10`.
+#' @param end_date End of the extraction period, specified as for `start_date`.
 #' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
 #'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
 #'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
@@ -919,12 +912,10 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param geocoordinates is a vector containing the decimal latitude and longitude of the desired location. If 
 #'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
 #'        is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).
-#' @param start_date date  for animation. Can either be a) a vector of integers in the format 
-#'	c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2010,12,31).
-#' @param end date for animation. Can either be a) a vector of integers in the format 
-#'	c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2016,12,31).
+#' @param start_date Start of the extraction period. Can be a `Date`,
+#'      `POSIXct`, character string, or a vector such as `c(year, month, day)`.
+#'      Date-only inputs default to midday in `Etc/GMT-10`.
+#' @param end_date End of the extraction period, specified as for `start_date`.
 #' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
 #'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
 #'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
@@ -1252,12 +1243,10 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'        is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).
 #' @param depth  Depth in metres below the surface. Default 1.0. If the bottom of the water is shallower than the specified depth,
 #'               return values from the bottom of the water column.
-#' @param start_date date  for animation. Can either be a) a vector of integers in the format 
-#'	c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2010,12,31).
-#' @param end date for animation. Can either be a) a vector of integers in the format 
-#'	c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-#'      formatted for input to as.Date(). Defaults to c(2016,12,31).
+#' @param start_date Start of the extraction period. Can be a `Date`,
+#'      `POSIXct`, character string, or a vector such as `c(year, month, day)`.
+#'      Date-only inputs default to midday in `Etc/GMT-10`.
+#' @param end_date End of the extraction period, specified as for `start_date`.
 #' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
 #'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
 #'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
@@ -1553,14 +1542,19 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   return(results)
 }
 
-#" A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
-#" if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.
-#"
-#" Parameters before "tries" are passed unlist(month.day.yr(start_date))
-#"
-#" @param tries number of times to retry (increasing pause length by one second each time. Default 4 
-#" @return variable extracted using ncvar_get()
-#" @export
+#' Retry wrapper around `ncdf4::ncvar_get()`
+#'
+#' This legacy helper retries `ncdf4::ncvar_get()` when reading from remote
+#' HTTPS/OPeNDAP-served NetCDF files. It is retained for backward compatibility
+#' with older workflows that still rely on the `ncdf4` stack.
+#'
+#' @param nc Open `ncdf4` handle.
+#' @param varid,start,count,verbose,signedbyte,collapse_degen,raw_datavals
+#'   Passed through to [ncdf4::ncvar_get()].
+#' @param tries Maximum number of retry iterations for remote files.
+#'
+#' @return The value returned by [ncdf4::ncvar_get()].
+#' @export
 safe_ncvar_get <- function(nc, varid = NA, start = NA, count = NA, verbose = FALSE,
                            signedbyte = TRUE, collapse_degen = TRUE, raw_datavals = FALSE, tries = 20) {
   if (substr(nc$filename, 1, 4) != "https") {
@@ -1579,14 +1573,17 @@ safe_ncvar_get <- function(nc, varid = NA, start = NA, count = NA, verbose = FAL
   return(myvar)
 }
 
-#" A wrapper to ncdf4::nc_open() that will pause and try again up to 119 times
-#" if at first it fails, to overcome temporary net access errors or DAP errors.
-#"
-#" Parameters before "tries" are passed through to ncvar_get
-#"
-#" @param tries number of times to retry (increasing pause length by one second each time. Default 4 
-#" @return variable extracted using ncvar_get()
-#" @export
+#' Retry wrapper around `ncdf4::nc_open()`
+#'
+#' This legacy helper retries `ncdf4::nc_open()` when opening remote
+#' HTTPS/OPeNDAP-served NetCDF files. It is retained for backward compatibility
+#' with older workflows that still rely on the `ncdf4` stack.
+#'
+#' @param filename Filename or URL to open.
+#' @param tries Maximum number of retry iterations for remote files.
+#'
+#' @return An open `ncdf4` handle.
+#' @export
 safe_nc_open <- function(filename, tries = 4) {
   if (substr(filename, 1, 4) != "https") {
     nc <- ncdf4::nc_open(filename)
@@ -1607,19 +1604,24 @@ safe_nc_open <- function(filename, tries = 4) {
   return(nc)
 }
 
-#' A simple function to convert a date provided in any of several formats to a date-time object.
-#' Assumes GMT-10.
-#' @param d The date of interest. Can be any of:
-#'              c(yr, month, day)
-#'              c(yr, month, day, hour) 
-#'              c(yr, month, day, hour, minute)
-#'              c(yr, month, day, hour, minute, second) 
-#'              YYYYMMDD
-#'              YYYYMMDDHHMM
-#'              YYYYMMDDHHMMSS
-#'              Date format date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
-#'              character format, e.g. '1970-01-01', '1970-01-01 12' or '1970-01-01 1200'
-#' @return date in date-time format (for lubridate)
+#' Convert supported date formats to a `POSIXct` date-time
+#'
+#' Unless a `POSIXct` value is supplied directly, parsed dates are interpreted
+#' in the package's default timezone, `Etc/GMT-10`. Date-only inputs default to
+#' midday to reduce accidental snapping to the previous or next model output.
+#'
+#' @param d The date of interest. Supported formats include:
+#'              `c(year, month, day)`
+#'              `c(year, month, day, hour)`
+#'              `c(year, month, day, hour, minute)`
+#'              `c(year, month, day, hour, minute, second)`
+#'              `YYYYMMDD`
+#'              `YYYYMMDDHHMM`
+#'              `YYYYMMDDHHMMSS`
+#'              `Date`
+#'              `POSIXct`
+#'              character format, e.g. `"1970-01-01"` or `"1970-01-01 12:00:00"`
+#' @return A `POSIXct` date-time value.
 #' @export
 get_date_time <- function(d) {
   if (is.vector(d)) {
@@ -2438,3 +2440,18 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
 # - time: 13:43
 # - date: 2026-04-28
 # - prompt_used: "Extend grid caching across dated files in the same catalog family so z_grid and spatial grids are reused across daily/monthly siblings as well as exact file repeats."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:33
+# - date: 2026-04-28
+# - prompt_used: "Make sure the roxygen comments and generated help pages are up to date and match the active refactored code."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:06
+# - date: 2026-04-28
+# - prompt_used: "Check that date and time formats are documented correctly, update NEWS.md if the behaviour has changed, and keep roxygen/man pages in sync."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:18
+# - date: 2026-04-28
+# - prompt_used: "Do a final documentation polish pass so the help text reads consistently with the current tidy-dev workflow."

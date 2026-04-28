@@ -34,6 +34,17 @@ daysIn <- function(d) {
 #" plume_class(rsr)
 #" }
 
+#' Classify optical plume type from modelled reflectances
+#'
+#' Calculates plume optical classes from eReefs/EMS reflectance outputs using
+#' the Devlin et al. (2012) class definitions as adapted for this package.
+#'
+#' @param rsr List of 2D reflectance arrays in wavelength order:
+#'   `R_412`, `R_443`, `R_488`, `R_531`, `R_547`, `R_667`, `R_678`.
+#'
+#' @return An integer matrix of the same horizontal shape as the reflectance
+#'   inputs, with plume class values between 1 and 7.
+#' @export
 plume_class <- function(rsr) {
   xdim <- nrow(rsr[[1]])
   ydim <- ncol(rsr[[1]])
@@ -1601,6 +1612,44 @@ ereefs_plot_datapoly <- function(datapoly,
     ggplot2::ylab("latitude")
 }
 
+#' Create a map of eReefs or other EMS model output
+#'
+#' Extracts a single time slice from a local NetCDF file, OPeNDAP dataset, or
+#' THREDDS catalog-backed workflow and returns a `ggplot2` map. The function
+#' supports both curvilinear EMS grids with cell corners and regular regridded
+#' products that provide cell centres only.
+#'
+#' @param var_name Variable to plot. Special values `"true_colour"` and
+#'   `"plume"` are also supported.
+#' @param target_date Date or date-time to plot. If an exact match is not
+#'   available, the nearest model output time is used.
+#' @param layer Layer selector. Use a positive layer index, a negative depth
+#'   below mean sea level, or `"surface"`/`"bottom"`.
+#' @param Land_map Logical; add a simple land underlay where available.
+#' @param input_file NetCDF file path, OPeNDAP URL, or THREDDS catalog URL.
+#' @param input_grid Optional alternative source for grid metadata.
+#' @param scale_col Colour scale specification. Defaults to `"viridis"` for
+#'   scalar maps.
+#' @param scale_lim Numeric colour limits. If left as `NA`, limits are inferred
+#'   from the extracted data.
+#' @param plot_style Either `"polygon"` or `"smooth"`.
+#' @param smooth_pixels Resolution used for `"smooth"` display maps.
+#' @param zoom Deprecated legacy argument retained for backward compatibility.
+#' @param box_bounds Optional bounds in the form
+#'   `c(longitude_min, longitude_max, latitude_min, latitude_max)`.
+#' @param p Optional existing plot object to add to.
+#' @param suppress_print Logical; if `TRUE`, suppresses automatic printing.
+#' @param return_poly Logical; if `TRUE`, return a list containing the plot and
+#'   plotting polygons instead of only the plot object.
+#' @param label_towns Logical; add town labels where available.
+#' @param strict_bounds Deprecated legacy argument retained for backward
+#'   compatibility.
+#' @param mark_points Optional locations to mark on the map.
+#' @param gbr_poly Logical; add GBR polygon overlay when available.
+#'
+#' @return A `ggplot2` object, or if `return_poly = TRUE`, a list containing the
+#'   plot, plotting polygons, cell values, and associated metadata.
+#' @export
 map_ereefs <- function(var_name = "true_colour",
                        target_date = c(2018, 1, 30),
                        layer = "surface",
@@ -1701,6 +1750,37 @@ map_ereefs <- function(var_name = "true_colour",
   p
 }
 
+#' Create a sequence of eReefs maps and optionally assemble an animation
+#'
+#' Repeatedly calls [map_ereefs()] over a date range, saving frame images when
+#' requested and optionally assembling them into a GIF or MP4 animation.
+#'
+#' @inheritParams map_ereefs
+#' @param start_date Start of the animation period.
+#' @param end_date End of the animation period.
+#' @param output_dir Directory in which to save frame images and animation
+#'   outputs.
+#' @param save_frames Logical; save individual frame PNG files.
+#' @param animation_format One of `"none"`, `"gif"`, `"mp4"`, or legacy
+#'   `"mp3"` (which is treated as `"mp4"` with a warning).
+#' @param animation_file Optional output filename for the assembled animation.
+#' @param fps Frames per second for assembled animations.
+#' @param stride Temporal stride used to choose frames.
+#' @param verbosity Verbosity level for progress messages.
+#' @param add_arrows Deprecated legacy argument retained for backward
+#'   compatibility.
+#' @param max_u Deprecated legacy argument retained for backward compatibility.
+#' @param scale_arrows Deprecated legacy argument retained for backward
+#'   compatibility.
+#' @param show_bathy Deprecated legacy argument retained for backward
+#'   compatibility.
+#' @param contour_breaks Deprecated legacy argument retained for backward
+#'   compatibility.
+#'
+#' @return A list containing the final plot, averaged plotting polygons, saved
+#'   frame filenames, animation filename, and the colour scale limits used
+#'   across frames.
+#' @export
 map_ereefs_movie <- function(var_name = "true_colour",
                              start_date = c(2015, 12, 1),
                              end_date = c(2016, 3, 31),
@@ -1890,6 +1970,32 @@ map_ereefs_movie <- function(var_name = "true_colour",
   )
 }
 
+#' Plot an already extracted eReefs polygon map object
+#'
+#' A lower-level plotting helper that turns a polygon/value table, or the list
+#' returned by `map_ereefs(..., return_poly = TRUE)`, into a `ggplot2` map.
+#'
+#' @param datapoly Polygon/value table in the format used internally by the
+#'   package, or a list returned by `map_ereefs(..., return_poly = TRUE)`.
+#' @param var_longname Optional long name for the plot title.
+#' @param var_units Optional units label.
+#' @param Land_map Logical; add a simple land underlay where available.
+#' @param scale_col Colour scale specification. Defaults to `"viridis"` for
+#'   scalar maps.
+#' @param scale_lim Numeric colour limits. If left as `NA`, limits are inferred
+#'   from the data.
+#' @param plot_style Either `"polygon"` or `"smooth"`.
+#' @param smooth_pixels Resolution used for `"smooth"` display maps.
+#' @param box_bounds Optional bounds in the form
+#'   `c(longitude_min, longitude_max, latitude_min, latitude_max)`.
+#' @param label_towns Logical; add town labels where available.
+#' @param zoom Deprecated legacy argument retained for backward compatibility.
+#' @param p Optional existing plot object to add to.
+#' @param suppress_print Logical; if `TRUE`, suppresses automatic printing.
+#' @param gbr_poly Logical; add GBR polygon overlay when available.
+#'
+#' @return A `ggplot2` object.
+#' @export
 plot_map <- function(datapoly,
                      var_longname = "",
                      var_units = "",
@@ -1943,6 +2049,11 @@ plot_map <- function(datapoly,
 # - time: 16:21
 # - date: 2026-04-26
 # - prompt_used: "Refactor the eReefs R toolkit away from ncdf4 toward tidync, add regular-grid support alongside curvilinear grids, archive existing R files, and refresh docs/examples."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:33
+# - date: 2026-04-28
+# - prompt_used: "Make sure the roxygen comments and generated help pages are up to date and match the active refactored code."
 # metadata:
 # - gpt_version: GPT-5 Codex
 # - time: 19:10

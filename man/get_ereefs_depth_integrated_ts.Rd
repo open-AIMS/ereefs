@@ -7,15 +7,14 @@
 get_ereefs_depth_integrated_ts(
   var_names = c("Chl_a_sum", "TN"),
   geocoordinates = c(-23.39189, 150.88852),
-  start_date = c(2010, 12, 31),
-  end_date = c(2016, 12, 31),
-  input_file = "menu",
+  start_date = c(2016, 2, 4),
+  end_date = c(2016, 3, 2),
+  input_file = "catalog",
   input_grid = NA,
   eta_stem = NA,
   override_positive = FALSE,
   verbosity = 1,
-  mass = FALSE,
-  date_format = "date"
+  mass = FALSE
 )
 }
 \arguments{
@@ -26,9 +25,11 @@ want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
 is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).}
 
-\item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
-c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2010,12,31).}
+\item{start_date}{Start of the extraction period. Can be a `Date`,
+`POSIXct`, character string, or a vector such as `c(year, month, day)`.
+Date-only inputs default to midday in `Etc/GMT-10`.}
+
+\item{end_date}{End of the extraction period, specified as for `start_date`.}
 
 \item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
 Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
@@ -42,8 +43,8 @@ z_grid can be found in the first INPUT_STEM file, and if not found, will check w
 of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
 z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 (not simple-format) ereefs netcdf output file such as 
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
+"https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+"https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
 
 \item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
 date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
@@ -55,15 +56,9 @@ incorrect. Default FALSE}
 \item{verbosity}{(Defailt 1) how much do you want to know about progress?}
 
 \item{mass}{(Default FALSE) Set to true if you want the mass per square metre rather than the mean concentration over depth returned}
-
-\item{date_format}{(Default "date"). Set to "chron" if you'd like the date returned in chron format.}
-
-\item{end}{date for animation. Can either be a) a vector of integers in the format 
-c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2016,12,31).}
 }
 \value{
-a data frame containing the dates and values of extracted variables
+a tibble containing the dates and values of extracted variables
 }
 \description{
 See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value.
@@ -71,7 +66,7 @@ By Barbara Robson (AIMS).
 }
 \examples{
 \dontrun{
-get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-get_ereefs_depth_integrated_ts(c('salt', 'temp'), geocoordinates=data.frame(latitude=c(-23.39189, -23.3), longitude=c(150.88852, 150.8)), start_date=c(2011,1,2),end_date=c(2011,1,5))
+get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_depth_integrated_ts(c('salt', 'temp'), geocoordinates=tibble(latitude=c(-23.39189, -23.3), longitude=c(150.88852, 150.8)), start_date=c(2011,1,2),end_date=c(2011,1,5))
 }
 }

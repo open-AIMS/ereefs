@@ -2,16 +2,16 @@
 % Please edit documentation in R/poly2spatialpoly.R
 \name{poly2sp}
 \alias{poly2sp}
-\title{Convert a polygon dataframe in the format used by ggplot2::geom_polygon to a spatialPolygonDataFrame}
+\title{Backward-compatible wrapper for older function name.}
 \usage{
 poly2sp(polydf)
 }
 \arguments{
-\item{polydf}{A polygon in the format required by geom_polygon: a data.frame with values, x and y positions and id labels}
+\item{polydf}{Polygon data frame in the format used by `geom_polygon()`.}
 }
 \value{
-A spatialPolygonsDataFrame object, as used in the package 'sp'
+A `terra::SpatVector`.
 }
 \description{
-Assumes that the dataframe only contains rombuses.
+Backward-compatible wrapper for older function name.
 }

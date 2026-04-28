@@ -18,7 +18,8 @@ plot_ereefs_profile(
 \item{var_name}{The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
 If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.}
 
-\item{target_date}{The target date (plot the profile closest in time to this).}
+\item{target_date}{The target date or date-time to plot. Can be a `Date`,
+`POSIXct`, character string, or a vector such as `c(year, month, day)`.}
 
 \item{p}{The handle of an existing figure, if you don't want to create a new figure}
 }

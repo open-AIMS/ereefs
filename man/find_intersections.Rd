@@ -5,7 +5,7 @@
 \title{An internal utility function to find the grid line intersections of a line segment}
 \usage{
 find_intersections(
-  location_latlon,
+  geolocation,
   x_grid,
   y_grid,
   latitude,

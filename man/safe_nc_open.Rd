@@ -2,17 +2,20 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{safe_nc_open}
 \alias{safe_nc_open}
-\title{A wrapper to ncdf4::nc_open() that will pause and try again up to 119 times
-if at first it fails, to overcome temporary net access errors or DAP errors.}
+\title{Retry wrapper around `ncdf4::nc_open()`}
 \usage{
 safe_nc_open(filename, tries = 4)
 }
 \arguments{
-\item{tries}{number of times to retry (increasing pause length by one second each time. Default 4}
+\item{filename}{Filename or URL to open.}
+
+\item{tries}{Maximum number of retry iterations for remote files.}
 }
 \value{
-variable extracted using ncvar_get()
+An open `ncdf4` handle.
 }
 \description{
-Parameters before 'tries' are passed through to ncvar_get
+This legacy helper retries `ncdf4::nc_open()` when opening remote
+HTTPS/OPeNDAP-served NetCDF files. It is retained for backward compatibility
+with older workflows that still rely on the `ncdf4` stack.
 }

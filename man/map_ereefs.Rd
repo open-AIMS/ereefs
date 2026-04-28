@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting_functions.R
 \name{map_ereefs}
 \alias{map_ereefs}
-\title{Create a surface map of eReefs model output.}
+\title{Create a map of eReefs or other EMS model output}
 \usage{
 map_ereefs(
   var_name = "true_colour",
@@ -11,8 +11,10 @@ map_ereefs(
   Land_map = FALSE,
   input_file = "catalog",
   input_grid = NA,
-  scale_col = c("ivory", "coral4"),
+  scale_col = "viridis",
   scale_lim = c(NA, NA),
+  plot_style = c("polygon", "smooth"),
+  smooth_pixels = 600,
   zoom = 6,
   box_bounds = c(NA, NA, NA, NA),
   p = NA,
@@ -25,104 +27,59 @@ map_ereefs(
 )
 }
 \arguments{
-\item{var_name}{Short name of the variable to plot. This can be any variable in the
-eReefs netcdf file that you are accessing (refer to eReefs model
-documentation or extract variable names from the netcdf file for a full 
-list). In addition, two special var_name values are supported: 'true_colour'
-and 'plume'. 'true_colour' provides a simulated MODIS true colour
-image (refer to Baird et al., 2016 for en explanation).'plume'
-provides a map of calculated plume colour class as per Devlin et al. (2012)
-and Baird et al. (2017). Defaults to true_colour.}
+\item{var_name}{Variable to plot. Special values `"true_colour"` and
+`"plume"` are also supported.}
 
-\item{target_date}{Date to map. Can either be a) a vector of integers in the format 
-c(year, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-     formatted for input to as.Date(). Defaults to c(2018,1,30). Be careful to choose the right
-     input file, as the function will plot the closest date in the file to the target date without
-     complaint, however far fron the target that may be. Assumes that dates in the netcdf files are
-     relative to 1990-01-01 (this is not checked).}
+\item{target_date}{Date or date-time to plot. If an exact match is not
+available, the nearest model output time is used.}
 
-\item{layer}{Either a (positive) integer layer number, a negative number indicating depth below MSL (not depth below the free surface) 
-or 'surface' to choose the surface layer. Defaults to 'surface'.}
+\item{layer}{Layer selector. Use a positive layer index, a negative depth
+below mean sea level, or `"surface"`/`"bottom"`.}
 
-\item{Land_map}{Set to TRUE to show a map of Queensland as an underlay for the model output plot. No longer requires the fgmap library 
-and an activated Google API key but also doesn't show maps for other locations
-Default now FALSE.}
+\item{Land_map}{Logical; add a simple land underlay where available.}
 
-\item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-Numeric values are interpreted as references to selections available from the old menu.
-Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
+\item{input_file}{NetCDF file path, OPeNDAP URL, or THREDDS catalog URL.}
 
-\item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
-coordinates for the cell corners (x_grid and y_grid). If not specified, the function will first look for
-x_grid and y_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load appropriate 
-x and y grids from data files stored in this package. Alternatively, you can provide the location of a full 
-(not simple-format) ereefs netcdf output file such as 
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+\item{input_grid}{Optional alternative source for grid metadata.}
 
-\item{scale_col}{Vector of colours to use for low and high values in the colour scale. This can be a colour 
-from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
-If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
-If three values are given, uses scale_fill_gradient2 (spectrum from low to high through middle value).
-Defaults to c('ivory', 'coral4').}
+\item{scale_col}{Colour scale specification. Defaults to `"viridis"` for
+scalar maps.}
 
-\item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.
-Ignored for true_colour plots.}
+\item{scale_lim}{Numeric colour limits. If left as `NA`, limits are inferred
+from the extracted data.}
 
-\item{box_bounds}{Minimum and maximum latitude and longitude coordinates to map. Defaults to the
-entire extent of the model output (though modified by the value of zoom). 
-Format: c(longitude_min, longitude_max, latitude_min, latitude_max).}
+\item{plot_style}{Either `"polygon"` or `"smooth"`.}
 
-\item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
-If p is provided, Land_map is over-ridden and set to FALSE.}
+\item{smooth_pixels}{Resolution used for `"smooth"` display maps.}
 
-\item{suppress_print}{Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.}
+\item{zoom}{Deprecated legacy argument retained for backward compatibility.}
 
-\item{return_poly}{Instead of only the figure handle, return a list containing the figure handle and the dataframe used by geom_plot(). Default FALSE.}
+\item{box_bounds}{Optional bounds in the form
+`c(longitude_min, longitude_max, latitude_min, latitude_max)`.}
 
-\item{label_towns}{Add labels for town locations to the figure. Default TRUE}
+\item{p}{Optional existing plot object to add to.}
 
-\item{strict_bounds}{Obsolescent: ignored}
+\item{suppress_print}{Logical; if `TRUE`, suppresses automatic printing.}
 
-\item{mark_points}{Data frame containing longitude and latitude of geolocations to mark with crosses (or a vector containing one location). Default NULL.}
+\item{return_poly}{Logical; if `TRUE`, return a list containing the plot and
+plotting polygons instead of only the plot object.}
+
+\item{label_towns}{Logical; add town labels where available.}
+
+\item{strict_bounds}{Deprecated legacy argument retained for backward
+compatibility.}
+
+\item{mark_points}{Optional locations to mark on the map.}
+
+\item{gbr_poly}{Logical; add GBR polygon overlay when available.}
 }
 \value{
-a ggplot object
+A `ggplot2` object, or if `return_poly = TRUE`, a list containing the
+  plot, plotting polygons, cell values, and associated metadata.
 }
 \description{
-Creates a colour map showing concentrations of a specified eReefs model output variable at a specified
-model layer (by default, the surface layer). The map is optionally (and by default) overlain on a map
-of Queensland (if off the Queensland coast).
-By Barbara Robson (AIMS).
-}
-\details{
-References:
-
-Baird, M.E., Cherukuru, N., Jones, E., Margvelashvili, N., Mongin, M., Oubelkheir, K., 
-  Ralph, P.J., Rizwi, F., Robson, B.J., Schroeder, T. and Skerratt, J., 2016. Remote-sensing 
-  reflectance and true colour produced by a coupled hydrodynamic, optical, sediment, 
-  biogeochemical model of the Great Barrier Reef, Australia: comparison with satellite data. 
-  Environmental Modelling & Software, 78, pp.79-96.
-
-Baird, M.E., Andrewartha, J., Herzfeld, M., Jones, E.M., Margvelashvili, N., Mongin, M., Rizwi, 
-  F.,  Skerratt, J., Soja-Wozniak, M., Wild-Allen, K., Schroe der, T., Robson, B.J., da Silva, E. 
-  and Devlin, M., 2017. River plumes of the Great Barrier Reef: freshwater , sediment and optical 
-  footprints quantified by the eReefs modelling system  In Syme, G., Hatton MacDonald, D., Fulton, 
-  B. and Piantadosi, J. (eds) MODSIM2017, 22nd International Congress on Modelling and Simulation. 
-  Modelling and Simulation Society of Australia and New Zealand, December 2017, pp. 894–900
-
-Devlin, M.J., McKinna, L.W., Álvarez-Romero, J.G., Petus, C., Abott, B., Harkness, P. and 
-  Brodie, J., 2012. Mapping the pollutants in surface riverine flood plume waters in the Great 
-  Barrier Reef, Australia. Marine pollution bulletin, 65(4-9), pp.224-235.
-}
-\examples{
-\dontrun{
-map_ereefs()
-map_ereefs('TN')
-map_ereefs('plume', target_date=c(2011, 1, 30))
-map_ereefs('Chl_a_sum', target_date='2016-07-15', scale_col=c('ivory', 'green4'))
-map_ereefs('salt', box_bounds=c(145,150,-20,-15), zoom=7, scale_lim=c(32,35))
-}
+Extracts a single time slice from a local NetCDF file, OPeNDAP dataset, or
+THREDDS catalog-backed workflow and returns a `ggplot2` map. The function
+supports both curvilinear EMS grids with cell corners and regular regridded
+products that provide cell centres only.
 }

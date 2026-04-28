@@ -147,6 +147,10 @@ Usage and further information about `ereefs` can be seen on the
 for the individual functions can be found on the [reference
 page](https://open-aims.github.io/ereefs/reference/).
 
+If you are upgrading from the older `master` workflow, please also read
+[NEWS.md](NEWS.md), which summarises the major behavioural and interface
+changes in the refactored development version.
+
 ## Further Information
 
 `ereefs` is provided by the [Australian Institute of Marine
@@ -191,6 +195,13 @@ metadata:
 - time: 14:09
 - date: 2026-04-27
 - prompt_used: "After comparing the reconstructed simple-file z_grid to the standard-file z_grid, reset the top interface to 1e20 for macrotidal safety."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:38
+- date: 2026-04-28
+- prompt_used: "Document major upgrade-impacting changes in a GitHub-appropriate NEWS file and link the README to it."
 -->
 
 <!--

@@ -2,27 +2,28 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{get_date_time}
 \alias{get_date_time}
-\title{A simple function to convert a date provided in any of several formats to a date-time object.
-Assumes GMT-10.}
+\title{Convert supported date formats to a `POSIXct` date-time}
 \usage{
 get_date_time(d)
 }
 \arguments{
-\item{d}{The date of interest. Can be any of:
-c(yr, month, day)
-c(yr, month, day, hour) 
-c(yr, month, day, hour, minute)
-c(yr, month, day, hour, minute, second) 
-YYYYMMDD
-YYYYMMDDHHMM
-YYYYMMDDHHMMSS
-Date format date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
-character format, e.g. '1970-01-01'}
+\item{d}{The date of interest. Supported formats include:
+`c(year, month, day)`
+`c(year, month, day, hour)`
+`c(year, month, day, hour, minute)`
+`c(year, month, day, hour, minute, second)`
+`YYYYMMDD`
+`YYYYMMDDHHMM`
+`YYYYMMDDHHMMSS`
+`Date`
+`POSIXct`
+character format, e.g. `"1970-01-01"` or `"1970-01-01 12:00:00"`}
 }
 \value{
-date in date-time format (for lubridate)
+A `POSIXct` date-time value.
 }
 \description{
-A simple function to convert a date provided in any of several formats to a date-time object.
-Assumes GMT-10.
+Unless a `POSIXct` value is supplied directly, parsed dates are interpreted
+in the package's default timezone, `Etc/GMT-10`. Date-only inputs default to
+midday to reduce accidental snapping to the previous or next model output.
 }

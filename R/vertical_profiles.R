@@ -1,39 +1,33 @@
 #' Extract a vertical slice or depth-resolved transect from an eReefs or other EMS netcdf output file.
 #'
-#' Extracts either a series of vertical profiles at points corresponding to a dataFrame of specified latitudes and longitudes (e.g. a cruise
-#' transect) or a vertical slice along a line between two specified points, at a specified point in time.
-#' Instead of interpolating, this function takes the values of cells intersected by the line segment, which can cause some striping when lines
-#' transect the grid diagonally.
+#' Extracts either a series of vertical profiles along a path or a vertical
+#' slice through the model field at a specified time. The active implementation
+#' follows the cells intersected by the path rather than interpolating between
+#' cell centres.
 #'
-#' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
-#' @param geolocation A data frame of latitudes and longitudes.  Defaults to data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)).
-#'                        If length(location_lat_lon)==2, extract every grid cell along a straight line between the two points specified.
-#'                        Otherwise, extract only the locations corresponding to the cells nearest the specified points.
-#' @param target_date Target date to extract profile. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
-#'                   Defaults to c(2016, 02, 04). If target_date is a vector, 0.499 is added to the calculated date to bring it as
-#'                   close to midday as possible.
-#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-#'        Numeric values are interpreted as references to selections available from the old menu.
-#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
-#' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
-#'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
-#'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-#'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
-#'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-#'      (not simple-format) ereefs netcdf output file such as 
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), or the stem of
-#'       that filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the file indicated by input_file (e.g. some GBR1 bgc files).
-#' @param robust If TRUE, extract one profile at a time to avoid running out of memory. Relatively robust but slow. Default FALSE.
+#' @param var_names A vector of EMS variable names. Defaults to
+#'   `c("Chl_a_sum", "TN")`.
+#' @param geolocation Data frame of latitude and longitude vertices defining the
+#'                        requested path. Two points define a straight transect;
+#'                        three or more points define a curved or zig-zag path.
+#' @param target_date Target date or date-time to extract. Can be a `Date`,
+#'                   `POSIXct`, character string, or a vector such as
+#'                   `c(year, month, day)`. Date-only inputs default to midday
+#'                   in `Etc/GMT-10`.
+#' @param input_file NetCDF file path, OPeNDAP URL, or THREDDS catalog URI.
+#'        THREDDS catalogs are preferred for live multi-file requests. Legacy
+#'        menu-style shortcuts remain available for backward compatibility.
+#' @param input_grid Optional alternative source for vertical grid metadata
+#'      (`z_grid`).
+#' @param eta_stem Legacy fallback for locating surface elevation (`eta`) when
+#'       it is not in the main file.
+#' @param robust If `TRUE`, extract one profile at a time. This is slower but
+#'       can be useful for difficult remote datasets.
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE
-#' @return a list containing an array of surface elevations (eta), bottom depths (botz), the locations of the cell centres of the intersected cells
-#'       (cell_centres), the locations of the cell edge points where the line intersects the grid edges (cell_intersections), and the vertical grid 
-#'       (z_grid) and a data frame of tracer values from the model (values) and 'crossref', which indicates the starting cell in the returned values
-#'       array associated with each input location.
+#' @return A list containing surface elevation (`eta`), bottom depth (`botz`),
+#'   intersected cell centres and intersections, the vertical grid (`z_grid`),
+#'   extracted values, and cross-reference information for the input transect.
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 geolocation=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -285,38 +279,30 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'
 #' See also plot_ereefs_profile(), which relies on output from this function.
 #'
-#' Note that this function assumes consistent frequency of model output, even if the time-series extends across multiple output files (e.g.
-#' multiple months of eReefs output). If the data in eta_stem is output on a different interval from the data in input_file, the function
-#' will do its best, but surface elevation estimates may not exactly match the time-stamps in the main input file.
+#' Extracts one or more vertical profiles over a requested time period. For
+#' live catalog-backed workflows, the function resolves the required files and
+#' aligns times as closely as possible to the requested period.
 #'
-#' Known bugs: currently only works for one time-step at a time for 4km hydrodynamic model output. As a work-around, either call
-#' once for each time-step or exctract hydrodynamic variables from the bgc model output.
-#'
-#' @return a list containing a vector of dates, an array of surface elevations (eta), the vertical grid (z_grid) and a data frame of values.
-#' @param var_name A vector of EMS variable names. Defailts to c('Chl_a_sum', 'TN'))
-#' @param geolocation Latitude and longitude of location to extract.  Defaults to c(-23.39189, 150.88852)
-#' @param start_date Date from which to start extraction. Can be a date, or text formatted for as.Date(), or a (year, month, day) vector.
-#'                   Defaults to c(2016, 02, 04). If start_date is a vector, 0.499 is added to the calculated date to bring the start 
-#'                   as close to midday as possible.
-#' @param end_date Date on which to end extraction, specified as for start_date. Defaults to c(2016, 03, 02).
-#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-#'        Numeric values are interpreted as references to selections available from the old menu.
-#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
-#' @param input_grid Either a list containing the coordinates of the cell corners (x_grid, y_grid and z_grid) or the name of the                                                        
-#'      locally-stored or opendap-served netcdf file that contains these. If not specified, the function will first look for                                                            
-#'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size                                                                                 
-#'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate                                                                   
-#'      z grid from data files stored in this package. Alternatively, you can provide the location of a full                                                                            
-#'      (not simple-format) ereefs netcdf output file such as                                                                                                                           
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc". 
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), or the stem of that
-#'       filename minus the date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". 
-#'       Needed only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
-#'       Assumes that the eta files contain data on the same time-step as the input files.
-#' @param squeeze Whether to reduce the number of dimensions in the output profiles array if there is only one variable and/or 
-#'       only one time-step. Default TRUE.
+#' @return A list containing the time vector, surface elevation (`eta`),
+#'   vertical grid (`z_grid`), bottom depth (`botz`), and extracted profile
+#'   values.
+#' @param var_names A vector of EMS variable names. Defaults to
+#'   `c("Chl_a_sum", "TN")`.
+#' @param geolocation Latitude and longitude of the location to extract.
+#' @param start_date Start of the extraction period. Can be a `Date`,
+#'                   `POSIXct`, character string, or a vector such as
+#'                   `c(year, month, day)`. Date-only inputs default to midday
+#'                   in `Etc/GMT-10`.
+#' @param end_date End of the extraction period, specified as for `start_date`.
+#' @param input_file NetCDF file path, OPeNDAP URL, or THREDDS catalog URI.
+#'        THREDDS catalogs are preferred for live multi-file requests. Legacy
+#'        menu-style shortcuts remain available for backward compatibility.
+#' @param input_grid Optional alternative source for vertical grid metadata, or
+#'      a precomputed grid list.
+#' @param eta_stem Legacy fallback for locating surface elevation (`eta`) when
+#'       it is not in the main file.
+#' @param squeeze Whether to reduce the dimensionality of the returned profile
+#'       array when there is only one variable and/or one time step.
 #' @export
 get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 geolocation=c(-23.39189, 150.88852),
@@ -524,7 +510,8 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param profileObj A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles
 #' @param var_name The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
 #'        If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.
-#' @param target_date The target date (plot the profile closest in time to this).
+#' @param target_date The target date or date-time to plot. Can be a `Date`,
+#'   `POSIXct`, character string, or a vector such as `c(year, month, day)`.
 #' @param p The handle of an existing figure, if you don't want to create a new figure
 #' @return the handle of a figure containing the vertical profile plot
 #' @examples 
@@ -580,15 +567,11 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #'
 #' Relies on output from get_ereefs_slice().
 #'
-#' @param slice A list object as output by get_ereefs_slice(), containing dates, eta, z_grid, botz,
-#'              a data frame of values and a data frame of latitudes and longitudes
-#' @param scale_col Vector of colours to use for low and high values in the colour scale. This can be a colour 
-#'      from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
-#'      Example: c('ivory', 'coral4').
-#'      If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
-#'      If three values are given, uses scale_fill_gradient2 (spectrum from low to high through middle value).
-#'      Defaults to "spectral"
-#' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
+#' @param slice A list object as returned by [get_ereefs_slice()].
+#' @param scale_col Colour scale specification. `"viridis"` is the default for
+#'      scalar slices.
+#' @param scale_lim values for low and high limits of colourscale. Defaults to
+#'                  the full range of the plotted data.
 #' @return p handle for the generated figure
 #' @export
 plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral", scale_lim=NA, var_units="") {
@@ -1583,3 +1566,13 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - time: 17:01
 # - date: 2026-04-28
 # - prompt_used: "Add a curved-transect vignette example and harden live slice extraction so dry columns along multi-point paths do not break get_ereefs_slice()."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:06
+# - date: 2026-04-28
+# - prompt_used: "Check that date and time formats are documented correctly, update NEWS.md if the behaviour has changed, and keep roxygen/man pages in sync."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:18
+# - date: 2026-04-28
+# - prompt_used: "Do a final documentation polish pass so the help text reads consistently with the current tidy-dev workflow."

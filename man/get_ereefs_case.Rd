@@ -11,7 +11,8 @@ get_ereefs_case(filename)
 \item{filename}{Name of the file to examine}
 }
 \value{
-a vector of strings. 1st value is either "nc" (for an individual netcdf file), "mnc" for a meta-netcdf file (list of .nc files), "xlm" or "ncml" (for catalogs). 
+a vector of strings. 1st value is either "nc" (for an individual netcdf file), 
+"mnc" for a meta-netcdf file (list of .nc files), "xlm" or "ncml" (for catalogs). 
 If the first value is "nc", the second value is "1km" for GBR1, "4km" for GBR4 or "recom" (anything else). Otherwise, second value is "unknown".
 }
 \description{

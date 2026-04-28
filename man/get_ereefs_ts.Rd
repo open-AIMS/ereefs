@@ -8,70 +8,68 @@ get_ereefs_ts(
   var_names = c("Chl_a_sum", "TN"),
   geocoordinates = c(-23.39189, 150.88852),
   layer = "surface",
-  start_date = c(2010, 12, 31),
-  end_date = c(2016, 10, 31),
-  input_file = "menu",
+  start_date = c(2016, 2, 4),
+  end_date = c(2016, 3, 2),
+  input_file = "catalog",
   input_grid = NA,
   eta_stem = NA,
   override_positive = FALSE,
-  verbosity = 1
+  verbosity = 0,
+  default_to_bottom = TRUE
 )
 }
 \arguments{
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{geocoordinates}{is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
-a single latitude and longitude location. geocoordinates can also be set to "mmp" to extract time-series at all 
-Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852). Can also include other variables, e.g. for the name of each site.}
+\item{geocoordinates}{A tibble of decimal latitude and longitude pairs, or a
+length-two vector containing a single location. `geocoordinates` can
+also be set to `"mmp"` to extract time-series at all Marine
+Monitoring Program sites. Additional columns are preserved, for
+example site names.}
 
-\item{layer}{is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
-value in the cell at the bottom of the water column, or 'integrated' to get a depth-integrated (mean) value.
-Specify a negative value to indicate a specified depth (in metres) below MSL.
-Use get_ereefs_depth_specified_ts() instead if you want to specify a depth 
-below the free surface instead of a layer number. Defaults to 'surface'.}
+\item{layer}{Layer selector. Use a positive layer index, `"surface"`,
+`"bottom"`, or a negative value to indicate depth below mean sea
+level in metres. Use [get_ereefs_depth_specified_ts()] instead if you
+need depth below the free surface.}
 
-\item{start_date}{date  for animation. Can either be a) a vector of integers in the format 
-c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-formatted for input to as.Date(). Defaults to c(2010,12,31).}
+\item{start_date}{Start of the extraction period. Can be a vector such as
+`c(year, month, day)`, a `Date`/`POSIXct`, or a character string
+accepted by [get_date_time()].}
 
-\item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-Numeric values are interpreted as references to selections available from the old menu.
-Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
+\item{end_date}{End of the extraction period, specified as for
+`start_date`.}
 
-\item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
-coordinates for the top and bottom of each layer (z_grid). If needed (i.e. for a depth-integrated value or bottom layer)
-but not specified, the function will first look for z_grid in the first INPUT_STEM file, and if not found, 
-will check whether the size of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and 
-load an appropriate z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-(not simple-format) ereefs netcdf output file such as 
-"http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"}
+\item{input_file}{NetCDF file path, OPeNDAP URL, or THREDDS catalog URI.
+THREDDS catalogs are preferred for live multi-file requests. Legacy
+shortcuts such as `"nci"`, `"menu"`, `"catalog"`, `"old_menu"`, and
+old numeric menu selections are still accepted for backward
+compatibility.}
 
-\item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
-date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and you are asking for a depth-integrated
-time-series or a depth-specified (relative to the surface) time-series}
+\item{input_grid}{Optional alternative source for vertical grid metadata
+(`z_grid`). This can be a local or remote NetCDF file that carries the
+required layer-interface information.}
+
+\item{eta_stem}{Legacy fallback for locating surface elevation (`eta`) when
+it is not in the main file. Usually unnecessary for catalog-driven
+workflows.}
 
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 incorrect. Default FALSE. Not normally needed.}
 
 \item{verbosity}{How much information to display along the way (0 to 2. Default is 1).}
 
-\item{end}{date for animation. Can either be a) a vector of integers in the format 
-c(yr, month, day); b) a date obtained e.g. from as.Date(); or c) a character string 
-formatted for input to as.Date(). Defaults to c(2016,10,31).}
+\item{default_to_bottom}{Whether to fall back to the bottom wet layer if the
+requested layer contains `NA` values. Defaults to `TRUE`.}
 }
 \value{
 a data tibble containing extracted variables, including dates and locations
 }
 \description{
-Create a time-series of values of one or more selected model output variables in a specified layer of the
-water column or sediment store (by default, the surface layer), at a specified geographic location or 
-supplied data frame of geocoordinates within the model domain.  See also get_ereefs_depth_integrated_ts() to 
-extract depth-integrated values and get_ereefs_depth_specified_ts() to extract values at a specified depth 
-below the free (tidally moving) surface. Barbara Robson (AIMS).
+Create a time-series of values of one or more selected model output
+variables in a specified layer of the water column or sediment store at one
+or more geographic locations. The active extraction path supports local
+NetCDF files, live OPeNDAP URLs, and THREDDS catalog-backed workflows.
 }
 \details{
 All variables to be extracted must have the same number of dimensions (e.g., either all 2D or all 3D variables).
@@ -81,8 +79,8 @@ for each region.
 }
 \examples{
 \dontrun{
-get_ereefs_ts('Chl_a_sum', geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
-get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
+get_ereefs_ts('Chl_a_sum', geocoordinates=tibble(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), geocoordinates=tibble(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
+get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), geocoordinates=tibble(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
 }
 }

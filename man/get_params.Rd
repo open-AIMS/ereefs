@@ -5,18 +5,15 @@
 \title{Set up various parameters needed by many of the data extraction and plotting functions}
 \usage{
 get_params(start_date, end_date, input_file, var_names)
+
+get_params(start_date, end_date, input_file, var_names)
 }
 \arguments{
-\item{start_date}{The date from which to start data extraction, in any format accepted by get_date_time(). Can be any of:
-c(yr, month, day)
-c(yr, month, day, hour) (can also add minutes and seconds to the vector)
-POSIX date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
-YYYYMMDD, YYYYMMDDhh, YYYYMMDDhhmm or YYYYMMDDhhmmss
-character format, e.g. '1970-01-01'}
+\item{start_date}{The date from which to start data extraction.}
 
-\item{end_date}{The end date of the data extraction request, as above.}
+\item{end_date}{The end date of the data extraction request.}
 
-\item{input_file}{The URI or filename from which to extract data, in any format accepted by substitute_filename(), or "menu" or "catalog".}
+\item{input_file}{The URI or filename from which to extract data.}
 
 \item{var_names}{A list of eReefs variable names for which to extract data.}
 }
@@ -25,12 +22,12 @@ list of parameter values that includes:
              input_file, the input filename, after transformation by substitute_filename()
              ereefs_case, information about the format of the input file, as output by get)ereefs_case()
              input_stem, the 'stem' of the filename in case the parent function needs to dynamically calculate filenames from an example netcdf filename.
-             start_date, start_date transformed to a chron date
+             start_date, start_date transformed to a date-time object
              start_day, the day of the month in start_date
              start_tod, the time of day in start_date (0.5 if not given)
              start_month, the integer month of the yr in start_date
              start_yr, the integer yr in start_date
-             end_date, end_date transformed to a chron date
+             end_date, end_date transformed to a date-time object
              end_day, the day of the month in end_date
              end_tod, the time of day in end_date (0.5 if not given)
              end_month, the integer month of the yr in end_date
@@ -42,7 +39,11 @@ list of parameter values that includes:
              ds, a date-time vector for extracted data
              julian_date, the time vector in the raw format provided in the netcdf file
              spatial_grid, a tibble containing the grid latitudes and longitudes
+
+A named list of parameters used by higher-level package functions.
 }
 \description{
 Set up various parameters needed by many of the data extraction and plotting functions
+
+Set up shared parameters for extraction and plotting functions.
 }

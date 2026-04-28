@@ -2,8 +2,7 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{safe_ncvar_get}
 \alias{safe_ncvar_get}
-\title{A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
-if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.}
+\title{Retry wrapper around `ncdf4::ncvar_get()`}
 \usage{
 safe_ncvar_get(
   nc,
@@ -18,11 +17,17 @@ safe_ncvar_get(
 )
 }
 \arguments{
-\item{tries}{number of times to retry (increasing pause length by one second each time. Default 4}
+\item{nc}{Open `ncdf4` handle.}
+
+\item{varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals}{Passed through to [ncdf4::ncvar_get()].}
+
+\item{tries}{Maximum number of retry iterations for remote files.}
 }
 \value{
-variable extracted using ncvar_get()
+The value returned by [ncdf4::ncvar_get()].
 }
 \description{
-Parameters before 'tries' are passed unlist(month.day.yr(start_date))
+This legacy helper retries `ncdf4::ncvar_get()` when reading from remote
+HTTPS/OPeNDAP-served NetCDF files. It is retained for backward compatibility
+with older workflows that still rely on the `ncdf4` stack.
 }

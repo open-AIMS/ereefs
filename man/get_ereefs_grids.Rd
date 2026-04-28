@@ -5,15 +5,21 @@
 \title{Returns an appropriate x_grid, y_grid and z_grid}
 \usage{
 get_ereefs_grids(filename, input_grid = NA)
+
+get_ereefs_grids(filename, input_grid = NA)
 }
 \arguments{
-\item{filename}{Name of the file to examine}
+\item{filename}{Name of the file to examine.}
 
-\item{input_grid}{Optional alternative file from which to load x_grid, y_grid and z_grid}
+\item{input_grid}{Optional alternative file from which to load x_grid, y_grid and z_grid.}
 }
 \value{
 a list containing x_grid, y_grid and z_grid
+
+A list containing x_grid, y_grid and z_grid, plus spatial_grid and grid_type.
 }
 \description{
 Returns an appropriate x_grid, y_grid and z_grid
+
+Returns grid metadata for a dataset, synthesising corner grids when only regular-grid centres are provided.
 }

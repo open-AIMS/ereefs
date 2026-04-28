@@ -2,15 +2,17 @@
 % Please edit documentation in R/plotting_functions.R
 \name{plot_map}
 \alias{plot_map}
-\title{Create a map using a dataframe in the format required by ggplot2::geom_plot, for instance from map_ereefs() or map_ereefs_movie()}
+\title{Plot an already extracted eReefs polygon map object}
 \usage{
 plot_map(
   datapoly,
   var_longname = "",
   var_units = "",
   Land_map = FALSE,
-  scale_col = c("ivory", "coral4"),
+  scale_col = "viridis",
   scale_lim = c(NA, NA),
+  plot_style = c("polygon", "smooth"),
+  smooth_pixels = 600,
   box_bounds = c(NA, NA, NA, NA),
   label_towns = TRUE,
   zoom = 6,
@@ -20,40 +22,42 @@ plot_map(
 )
 }
 \arguments{
-\item{datapoly}{A dataframe in the format required by geom_plot(), as provided by map_ereefs() or map_ereefs_movie().}
+\item{datapoly}{Polygon/value table in the format used internally by the
+package, or a list returned by `map_ereefs(..., return_poly = TRUE)`.}
 
-\item{var_longname}{Character vector to use for the figure title.}
+\item{var_longname}{Optional long name for the plot title.}
 
-\item{var_units}{Units to include in the figure labelling.}
+\item{var_units}{Optional units label.}
 
-\item{Land_map}{Set to TRUE to show a land mapof Queensland.  Default now FALSE.}
+\item{Land_map}{Logical; add a simple land underlay where available.}
 
-\item{scale_col}{Vector of colours to use for the colour scale. This can be colours 
-from the ggplot colour palette or a RGB hash code, or "spectral". Ignored for true_colour plots. 
-If set to "spectral", uses a colour spectrum from bluish to red (similar to jet but less vivid). Otherwise:
-If one value is given (other than "spectral"), low colour is set to ivory and high colour to the value given.
-If two values are given, these are used as low and high limit colours.
-If three values are given, the middle value is used to set the mid-point of the scale.
-Defaults to c('ivory', 'coral4').}
+\item{scale_col}{Colour scale specification. Defaults to `"viridis"` for
+scalar maps.}
 
-\item{scale_lim}{Upper and lower bounds for colour scale. Defaults to full range of data.
-Ignored for true_colour plots.}
+\item{scale_lim}{Numeric colour limits. If left as `NA`, limits are inferred
+from the data.}
 
-\item{p}{Handle for an existing figure if you want to add a layer instead of creating a new figure.
-If p is provided, Land_map is over-ridden and set to FALSE.}
+\item{plot_style}{Either `"polygon"` or `"smooth"`.}
 
-\item{suppress_print}{Set to TRUE if you don't want the plots generated and saved. Defaults to TRUE.}
+\item{smooth_pixels}{Resolution used for `"smooth"` display maps.}
+
+\item{box_bounds}{Optional bounds in the form
+`c(longitude_min, longitude_max, latitude_min, latitude_max)`.}
+
+\item{label_towns}{Logical; add town labels where available.}
+
+\item{zoom}{Deprecated legacy argument retained for backward compatibility.}
+
+\item{p}{Optional existing plot object to add to.}
+
+\item{suppress_print}{Logical; if `TRUE`, suppresses automatic printing.}
+
+\item{gbr_poly}{Logical; add GBR polygon overlay when available.}
 }
 \value{
-p Handle for the figure generated.
+A `ggplot2` object.
 }
 \description{
-Plots a map figure in the same format as would be given by map_ereefs(), but using a pre-generated dataframe, instead of
-processing data directly from ereefs netcdf files. Doesn't work for true_color maps.
-}
-\examples{
-\dontrun{
-a <- plot_map(p)
-plot_map(a[[2]])
-}
+A lower-level plotting helper that turns a polygon/value table, or the list
+returned by `map_ereefs(..., return_poly = TRUE)`, into a `ggplot2` map.
 }

@@ -66,8 +66,8 @@ Imports: ncdf4 (>= 1.16),
          terra,
          xml2
 Suggests: magick
-RoxygenNote: 7.2.1
-# metadata:
+RoxygenNote: 7.3.2
+# metadata: 
 # - gpt_version: GPT-5 Codex
 # - time: 16:58
 # - date: 2026-04-27
