@@ -1,8 +1,7 @@
-pandoc: 2.19.2
-pkgdown: 2.0.7
+pandoc: 3.1.11
+pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   about: about.html
   howto: howto.html
-last_built: 2023-04-18T00:24Z
-
+last_built: 2026-04-28T06:05Z

@@ -6,48 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Useful Functions to Handle eReefs and EMS model Output • ereefs</title>
-<!-- favicons --><link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
-<link rel="apple-touch-icon" type="image/png" sizes="120x120" href="apple-touch-icon-120x120.png">
-<link rel="apple-touch-icon" type="image/png" sizes="76x76" href="apple-touch-icon-76x76.png">
-<link rel="apple-touch-icon" type="image/png" sizes="60x60" href="apple-touch-icon-60x60.png">
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="bootstrap-toc.css">
 <script src="bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Useful Functions to Handle eReefs and EMS model Output">
-<meta property="og:description" content="A few useful functions to make accessing eReefs and other 
-    CSIRO-EMS output files easier. The functions provided here
-    should work under Windows for locally-stored files, but will also work for
-    OPeNDAP-served netcdf files
-    Functions to extract time-series from eReefs netcdf files:
-      get_ereefs_ts()
-      get_ereefs_depth_integrated_ts()
-      get_ereefs_bottom_ts()
-      get_ereefs_depth_specified_ts()
-    Functions to produce maps or animations of eReefs model outputs:
-      map_ereefs()
-      map_ereefs_movie()
-      plot_map()
-    Function to calculate optical plume class from modelled surface reflectances:
-      plume_class()
-    Functions to extract profiles and vertical slices:
-      get_ereefs_profile()
-      get_ereefs_slice()
-    Functions to plot profiles:
-      plot_ereefs_profile()
-      plot_ereefs_zvt()
-    Functions to convert outputs to GIS formats:
-      poly2sp()
-      sp2raster()
-    Wrapper to ncvar_get with failsafe in case of DAP errors:
-      safe_ncvar_get()
-    Function to download discharge data from Qld. Govt servers:
-      download_discharge()
-    Utility:
-      get_chron_date()">
+<meta property="og:description" content="A few useful functions to make accessing eReefs and other CSIRO-EMS output files easier. The functions provided here should work under Windows for locally-stored files, but will also work for OPeNDAP-served netcdf files. Recent versions use tidync/ncmeta for data access so the package remains usable with updated THREDDS/OPeNDAP services, and now support both curvilinear EMS grids with cell-corner geometry and regular regridded products that only provide cell centres. Functions to extract time-series from eReefs netcdf files: get_ereefs_ts() get_ereefs_depth_integrated_ts() get_ereefs_bottom_ts() get_ereefs_depth_specified_ts() Functions to produce maps or animations of eReefs model outputs: map_ereefs() map_ereefs_movie() plot_map() Function to calculate optical plume class from modelled surface reflectances: plume_class() Functions to extract profiles and vertical slices: get_ereefs_profile() get_ereefs_slice() Functions to plot profiles: plot_ereefs_profile() plot_ereefs_zvt() Functions to convert outputs to GIS formats: poly2sv() sv2raster() Wrapper to ncvar_get with failsafe in case of DAP errors: safe_ncvar_get() Function to download discharge data from Qld. Govt servers: download_discharge() Utility: earth.dist()">
 <meta property="og:image" content="/logo.png">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -55,7 +20,7 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
-    
+
 
     <div class="container template-home">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -69,7 +34,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">ereefs</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">3.2.4</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">3.3.0</span>
       </span>
     </div>
 
@@ -81,7 +46,7 @@
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
-     
+
     <span class="caret"></span>
   </a>
   <ul class="dropdown-menu" role="menu">
@@ -93,6 +58,9 @@
     </li>
   </ul>
 </li>
+<li>
+  <a href="news/index.html">Changelog</a>
+</li>
       </ul>
 <ul class="nav navbar-nav navbar-right"></ul>
 </div>
@@ -102,7 +70,7 @@
 </div>
 <!--/.navbar -->
 
-      
+
 
       </header><div class="row">
   <div class="contents col-md-9">
@@ -118,12 +86,21 @@
 <p><a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> is a project that combines government commitment to reef protection, world-class science innovation and contributions from leading Australian businesses. It is a collaborative information system created (the <a href="https://www.barrierreef.org/" class="external-link">Great Barrier Reef Foundation</a>, <a href="https://www.csiro.au/" class="external-link">CSIRO</a>, the <a href="https://www.aims.gov.au/" class="external-link">Australian Institute of Marine Science</a>, <a href="https://www.bom.gov.au/" class="external-link">Bureau of Meteorology</a>, and <a href="https://www.qld.gov.au/" class="external-link">Queensland Government</a>) that provides a picture of what is currently happening on the reef, and what will likely happen in the future.</p>
 <p>Focused on the protection and preservation of the iconic Great Barrier Reef, it forms the first step in building comprehensive coastal information systems for Australia. Using the latest technologies to collate data, and new and integrated modelling, eReefs will produce powerful visualisation, communication and reporting tools. It will provide for the Reef information akin to that provided by the Bureau of Meteorology for weather. This information will benefit government agencies, Reef managers, policy makers, researchers, industry and local communities.</p>
 <p><strong>What does the <code>ereefs</code> R package do?</strong></p>
-<p>The <code>ereefs</code> R package provides easy access to <a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> and other <a href="https://research.csiro.au/cem/software/ems/" class="external-link">CSIRO-EMS</a> output files. <strong><code>ereefs</code> focuses on accessing eReefs data model in its original format, including eReefs data from the National Computational Infrastructure (NCI) <a href="https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html" class="external-link">eReefs data services</a>, not the gridded AIMS eReefs model data provided via the <a href="https://thredds.ereefs.aims.gov.au/" class="external-link">eReefs data service</a>.</strong> It can also be used to explore and visualise other CSIRO-EMS model output data, including output from RECOM model runs. CSIRO-EMS is the hydrodynamic-biogeochemical modelling software that underpins the eReefs models for the Great Barrier Reef. RECOM is an online interface that helps registered users to set up higher-resolution instances of CSIRO-EMS for small areas such as individual reefs that are nested within the eReefs models.</p>
+<p>The <code>ereefs</code> R package provides easy access to <a href="https://www.ereefs.org.au/about/" class="external-link">eReefs</a> and other <a href="https://research.csiro.au/cem/software/ems/" class="external-link">CSIRO-EMS</a> output files. It can work with both the original curvilinear eReefs/EMS outputs hosted through the National Computational Infrastructure (NCI) <a href="https://thredds.nci.org.au/thredds/catalog/catalogs/fx3/catalog.html" class="external-link">eReefs data services</a> and regularly regridded products that only provide cell centres, including the AIMS <a href="https://thredds.ereefs.aims.gov.au/" class="external-link">eReefs data service</a>. Recent updates switch the package to a <code>tidync</code>/<code>ncmeta</code>-based access path so it remains usable against modern THREDDS/OPeNDAP servers. It can also be used to explore and visualise other CSIRO-EMS model output data, including output from RECOM model runs. CSIRO-EMS is the hydrodynamic-biogeochemical modelling software that underpins the eReefs models for the Great Barrier Reef. RECOM is an online interface that helps registered users to set up higher-resolution instances of CSIRO-EMS for small areas such as individual reefs that are nested within the eReefs models.</p>
+<p>For depth-resolved variables, the package now treats <code>layer = "surface"</code> as the shallowest wet layer and <code>layer = "bottom"</code> as the deepest wet layer at each time-step. When <code>eta</code> is absent from a simple-format dataset, depth-below-free-surface helpers warn and assume <code>eta = 0</code>. When <code>z_grid</code> is absent but <code>zc</code> is available, the package reconstructs layer interfaces from <code>zc</code> using midpoint assumptions and resets the top interface to <code>1e20</code> to match the standard EMS convention. For scalar plotting workflows, <code>viridis</code> is now the default colour palette.</p>
 <p><code>ereefs</code> is designed to assist R users who need more customised access to eReefs data. This includes things like:</p>
 <ul>
 <li><p>Accessing data from versions of the eReefs model that are not available through the web-based data service;</p></li>
 <li><p>Accessing data for less commonly-used variables that are not included in the web-based data service or visualisation portal;</p></li>
 <li><p>Generating customised maps or animations for a specified region at a specified depth over a specified period of time, including (for example) true colour maps and animations from modelled optical data, maps that combine two or more eReefs variables (e.g., to get total zooplankton concentrations), maps with labelled points of interest such as Marine Monitoring Program (<a href="https://www2.gbrmpa.gov.au/our-work/programs-and-projects/marine-monitoring-program" class="external-link">MMP</a>) sampling locations, and maps with outlines of reef areas shown. Maps are created as <a href="https://ggplot2.tidyverse.org/" class="external-link"><code>ggplot2</code></a> figures and can be further adjusted as required by R users familiar with that package.</p></li>
+<li>
+<p>Working across both grid styles now common in eReefs workflows:</p>
+<ul>
+<li>curvilinear model grids where cell-corner coordinates are available and polygon geometry is needed for plotting;<br>
+</li>
+<li>regular regridded products where only cell centres are supplied and the package reconstructs plotting geometry from the centre coordinates.</li>
+</ul>
+</li>
 <li>
 <p>Extracting and visualising data in different ways, for example:</p>
 <ul>
@@ -147,25 +124,77 @@
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>To install the latest release from GitHub use</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"remotes"</span>)) {</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"open-aims/ereefs"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"open-aims/ereefs"</span><span class="op">)</span></span></code></pre></div>
 <p>The current development version can be downloaded from GitHub via</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">requireNamespace</span>(<span class="st">"remotes"</span>)) {</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"open-aims/ereefs"</span>, <span class="at">ref =</span> <span class="st">"dev"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"open-aims/ereefs"</span>, ref <span class="op">=</span> <span class="st">"dev"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="usage">Usage<a class="anchor" aria-label="anchor" href="#usage"></a>
 </h2>
 <p>Usage and further information about <code>ereefs</code> can be seen on the <a href="https://open-aims.github.io/ereefs/articles/" class="external-link">vignettes</a>. Help files for the individual functions can be found on the <a href="https://open-aims.github.io/ereefs/reference/" class="external-link">reference page</a>.</p>
+<p>If you are upgrading from the older <code>master</code> workflow, please also read <a href="NEWS.html">NEWS.md</a>, which summarises the major behavioural and interface changes in the refactored development version.</p>
 </div>
 <div class="section level2">
 <h2 id="further-information">Further Information<a class="anchor" aria-label="anchor" href="#further-information"></a>
 </h2>
 <p><code>ereefs</code> is provided by the <a href="https://www.aims.gov.au" class="external-link">Australian Institute of Marine Science</a> under the MIT License (<a href="https://opensource.org/licenses/MIT" class="external-link">MIT</a>).</p>
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 16:18
+- date: 2026-04-26
+- prompt_used: "Refactor the eReefs R toolkit away from ncdf4 toward tidync, add regular-grid support alongside curvilinear grids, archive existing R files, and refresh docs/examples."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 19:48
+- date: 2026-04-26
+- prompt_used: "Install dependencies, verify the refactored toolkit, improve efficiency for large THREDDS-served files, and build a working Jupyter demo notebook."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 00:01
+- date: 2026-04-27
+- prompt_used: "Finish the tidy tidync-first refactor, keep it efficient for large live OPeNDAP datasets, validate depth/free-surface logic, audit dependencies, and review plotting palettes."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 01:41
+- date: 2026-04-27
+- prompt_used: "Add a zc-based z_grid reconstruction fallback for simple EMS files, with an explicit warning about the assumptions."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 14:09
+- date: 2026-04-27
+- prompt_used: "After comparing the reconstructed simple-file z_grid to the standard-file z_grid, reset the top interface to 1e20 for macrotidal safety."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:38
+- date: 2026-04-28
+- prompt_used: "Document major upgrade-impacting changes in a GitHub-appropriate NEWS file and link the README to it."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 08:41
+- date: 2026-04-28
+- prompt_used: "Update vignette PNGs to match the current code and make viridis the default colour palette."
+-->
 </div>
 </div>
   </div>
@@ -190,7 +219,7 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Barbara Robson <br><small class="roles"> Author, maintainer </small>  </li>
+<li>Barbara Robson <br><small class="roles"> Author, maintainer </small>   </li>
 <li><a href="authors.html">More about authors...</a></li>
 </ul>
 </div>
@@ -215,16 +244,16 @@
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer>
 </div>
 
-  
 
 
-  
+
+
 
   </body>
 </html>
