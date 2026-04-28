@@ -32,11 +32,13 @@ These tools and information are hosted on multiple websites. For example, while 
 
 - CSIRO has a [visualisation portal](https://portal.ereefs.info/) and an [information site](https://research.csiro.au/ereefs/);
 
-- The National Computational Infrastructure (NCI)---Australia's leading high-performance data, storage and computing organisation---hosts [two main data services](https://dapds00.nci.org.au/thredds/catalog/fx3/gbr4_v2/catalog.html): the raw CSIRO model data with the highest time resolution (hourly for hydrology model, daily for biogeochemistry) and has curvilinear data;
+- The National Computational Infrastructure (NCI)---Australia's leading high-performance data, storage and computing organisation---hosts [the main eReefs THREDDS catalog](https://thredds.nci.org.au/thredds/catalog/catalogs/fx3/catalog.html): the raw CSIRO model data with the highest time resolution (hourly for hydrology model, daily for biogeochemistry) and curvilinear grid geometry;
 
 - The Bureau of Meteorology provides the [ReefTemp NextGen](http://www.bom.gov.au/environment/activities/reeftemp/reeftemp.shtml)---a set of high resolution mapping products that provide information on coral bleaching risk for the Great Barrier Reef region;
 
-- The Australian Institute of Marine Science (AIMS) also provides a [Visualisation Portal](https://ereefs.aims.gov.au/ereefs-aims), and maintains this [R package](https://github.com/open-aims/ereefs/). In addition, the AIMS [eReefs data service](https://thredds.ereefs.aims.gov.au/) contains the aggregated data services (daily, monthly, annual for hydrology model, monthly and annual for biogeochemistry) on a regular grid. **Importantly, our R package focuses on accessing the data from NCI, not the AIMS eReefs data service.**
+- The Australian Institute of Marine Science (AIMS) also provides a [Visualisation Portal](https://ereefs.aims.gov.au/ereefs-aims), and maintains this [R package](https://github.com/open-aims/ereefs/). In addition, the AIMS [eReefs data service](https://thredds.ereefs.aims.gov.au/) contains aggregated data services (daily, monthly, annual for hydrology model, monthly and annual for biogeochemistry) on a regular grid. The current package now supports both the original curvilinear NCI products and these regular-grid products by reconstructing plotting geometry from cell centres when corner coordinates are not supplied.
+
+The package now resolves multi-file time windows from THREDDS catalogs directly rather than reconstructing filenames from legacy monthly stems, which makes the live OPeNDAP workflow more robust against current server layouts.
 
 ## When is this R package not as useful?
 
@@ -47,3 +49,25 @@ If you want to extract time-series of the most commonly needed physical and chem
 - [Snippets](https://ereefs.aims.gov.au/ereefs-aims/help) of code for interactive with the eReefs data, including in [python](https://ereefs.aims.gov.au/ereefs-aims/help/how-to-plot-aims-ereefs-data-with-python).
 
 - The [GBRF website](https://www.barrierreef.org/what-we-do/projects/eReefs), with videos and descriptions by comms professionals.
+
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 16:18
+- date: 2026-04-26
+- prompt_used: "Refactor the eReefs R toolkit away from ncdf4 toward tidync, add regular-grid support alongside curvilinear grids, archive existing R files, and refresh docs/examples."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 19:48
+- date: 2026-04-26
+- prompt_used: "Install dependencies, verify the refactored toolkit, improve efficiency for large THREDDS-served files, and build a working Jupyter demo notebook."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 18:18
+- date: 2026-04-27
+- prompt_used: "Get pandoc working, test the vignettes, and update stale vignette text to match the current animation and live-catalog behavior."
+-->

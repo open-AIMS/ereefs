@@ -47,26 +47,3 @@ sv2raster <- function(sv, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=NA
    r <- terra::rasterize(sv, r, field='value')
 }
 
-#' Backward-compatible wrapper for older function name.
-#'
-#' @param polydf Polygon data frame in the format used by `geom_polygon()`.
-#' @return A `terra::SpatVector`.
-#' @export
-poly2sp <- function(polydf) {
-  poly2sv(polydf)
-}
-
-#' Backward-compatible wrapper for older function name.
-#'
-#' @inheritParams sv2raster
-#' @return A `terra` raster.
-#' @export
-sp2raster <- function(sv, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=NA, r=NULL) {
-  sv2raster(sv = sv, xmn = xmn, ymn = ymn, resolution = resolution, xmx = xmx, ymx = ymx, r = r)
-}
-
-# metadata:
-# - gpt_version: GPT-5 Codex
-# - time: 17:05
-# - date: 2026-04-26
-# - prompt_used: "Install the required packages, test the refactored eReefs package against THREDDS-served data, and set up a working Jupyter demo notebook."

@@ -1,20 +1,19 @@
 #' Calculate rough distance in kilometers between two points
 #'
 #' Not exported. This is very approximate - a package is available if a more accurate distance is needed.
-earth.dist <- function (long1, lat1, long2, lat2)
-{
-rad <- pi/180
-a1 <- lat1 * rad
-a2 <- long1 * rad
-b1 <- lat2 * rad
-b2 <- long2 * rad
-dlon <- b2 - a2
-dlat <- b1 - a1
-a <- (sin(dlat/2))^2 + cos(a1) * cos(b1) * (sin(dlon/2))^2
-c <- 2 * atan2(sqrt(a), sqrt(1 - a))
-R <- 6378.145
-d <- R * c
-return(d)
+earth.dist <- function(long1, lat1, long2, lat2) {
+  rad <- pi / 180
+  a1 <- lat1 * rad
+  a2 <- long1 * rad
+  b1 <- lat2 * rad
+  b2 <- long2 * rad
+  dlon <- b2 - a2
+  dlat <- b1 - a1
+  a <- (sin(dlat / 2))^2 + cos(a1) * cos(b1) * (sin(dlon / 2))^2
+  c <- 2 * atan2(sqrt(a), sqrt(1 - a))
+  earth_rad <- 6378.145
+  d <- earth_rad * c
+  return(d)
 }
 
 #' Determines whether the file provided looks like a THREDDS catalog, or an example of daily (e.g. GBR1), 
@@ -28,14 +27,15 @@ return(d)
 #' a THREDDS catalog URI.
 #'
 #' @param filename Name of the file to examine
-#' @return a vector of strings. 1st value is either "nc" (for an individual netcdf file), "mnc" for a meta-netcdf file (list of .nc files), "xlm" or "ncml" (for catalogs). 
+#' @return a vector of strings. 1st value is either "nc" (for an individual netcdf file), 
+#' "mnc" for a meta-netcdf file (list of .nc files), "xlm" or "ncml" (for catalogs). 
 #' If the first value is "nc", the second value is "1km" for GBR1, "4km" for GBR4 or "recom" (anything else). Otherwise, second value is "unknown".
 #' @export
 get_ereefs_case <- function(filename) {
   # If the filename ends in ".nc.html", truncate to remove the ".html" part. These two lines should have already been taken care of
   # by substitute_filename():
   if (stringr::str_ends(filename, stringr::fixed(".nc.html"))) filename <- stringr::str_sub(filename, 1, -6)
-  if (stringr::str_ends(filename, stringr::fixed("catalog.html"))) filename <- paste0(stringr::str_sub(filename, 1, -5), 'xml')
+  if (stringr::str_ends(filename, stringr::fixed("catalog.html"))) filename <- paste0(stringr::str_sub(filename, 1, -5), "xml")
 
   if (stringr::str_ends(filename, stringr::fixed(".nc"))) {
     ereefs_case <- c("nc")
@@ -52,14 +52,14 @@ get_ereefs_case <- function(filename) {
   }
 
   if (ereefs_case[1] == "nc") {
-    lastfew <- stringr::str_sub(filename, start=-13, end=-3)
-    dashcount <- stringi::stri_count_fixed(lastfew, '-')
-    if (dashcount==2) {
-	    ereefs_case <- c(ereefs_case, '1km')
-    } else if (dashcount==1) {
-	    ereefs_case <- c(ereefs_case, '4km')
+    lastfew <- stringr::str_sub(filename, start = -13, end = -3)
+    dashcount <- stringi::stri_count_fixed(lastfew, "-")
+    if (dashcount == 2) {
+      ereefs_case <- c(ereefs_case, "1km")
+    } else if (dashcount == 1) {
+      ereefs_case <- c(ereefs_case, "4km")
     } else {
-	    ereefs_case <- c(ereefs_case, "recom")
+      ereefs_case <- c(ereefs_case, "recom")
     }
   }
   return(ereefs_case)
@@ -68,7 +68,7 @@ get_ereefs_case <- function(filename) {
 #' Utility function copied directly from the package 'tis' by Jeff Hallman (https://github.com/cran/tis/blob/master/R/assignList.R)
 #' Assigns the values in a list to variables in an environment. The variable names are taken from the names of the list, so all of the elements of the list must have non-blank names.
 
-assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = FALSE){
+assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = FALSE) {
   if(is.null(nms <- names(aList))) stop("names(aList) is NULL")
   if(any(nms == "")) stop("blank name")
   if(missing(envir) && pos < 0)
@@ -110,7 +110,6 @@ assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = 
 #'              julian_date, the time vector in the raw format provided in the netcdf file
 #'              spatial_grid, a tibble containing the grid latitudes and longitudes
 get_params <- function(start_date, end_date, input_file, var_names) {
-
   input_file <- substitute_filename(input_file)
   # Check whether netcdf output files are daily (case 1), monthly (case 4) or something else (case 0)
   ereefs_case <- get_ereefs_case(input_file)
@@ -127,59 +126,70 @@ get_params <- function(start_date, end_date, input_file, var_names) {
   end_day <- lubridate::day(end_date)
   end_month <- lubridate::month(end_date)
   end_yr <- lubridate::year(end_date)
-
   
   if (start_date > end_date) {
-    stop('start_date must preceed end_date')
+    stop("start_date must preceed end_date")
   }
 
-  if (start_yr==end_yr) {
-      mths <- start_month:end_month
-      yrs <- rep(start_yr, length(mths))
+  if (start_yr == end_yr) {
+    mths <- start_month:end_month
+    yrs <- rep(start_yr, length(mths))
   } else if ((start_yr + 1) == end_yr) {
-      mths <- c(start_month:12, 1:end_month)
-      yrs <- c(rep(start_yr, 12 - start_month + 1), rep(end_yr, end_month))
+    mths <- c(start_month:12, 1:end_month)
+    yrs <- c(rep(start_yr, 12 - start_month + 1), rep(end_yr, end_month))
   } else {
-      mths <- c(start_month:12, rep(1:12, end_yr - start_yr - 1), 1:end_month)
-      yrs <- c(rep(start_yr, 12 - start_month + 1), 
-                 rep((start_yr + 1) : (end_yr - 1), each=12),
-                 rep(end_yr, end_month))
+    mths <- c(start_month:12, rep(1:12, end_yr - start_yr - 1), 1:end_month)
+    yrs <- c(rep(start_yr, 12 - start_month + 1), 
+             rep((start_yr + 1) : (end_yr - 1), each = 12),
+             rep(end_yr, end_month))
   }
 
-  var_list <- paste(var_names, collapse=",")
+  var_list <- paste(var_names, collapse = ",")
 
-  if (ereefs_case[2] == '4km') {
-      input_file <- paste0(input_stem, format(as.Date(paste(start_yr, start_month, 1, sep='-')), '%Y-%m'), 
-			  '.nc')
+  if (ereefs_case[2] == "4km") {
+    input_file <- paste0(input_stem, format(as.Date(paste(start_yr, start_month, 1, sep = "-")), "%Y-%m"), ".nc")
     dum1 <- get_origin_and_times(input_file)
     ereefs_origin <- dum1[[1]]
     ds <- dum1[[2]]
     julian_date <- dum1[[3]]
-  } else if (ereefs_case[2] == '1km') {
-    input_file <- paste0(input_stem, format(as.Date(paste(start_yr, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-		  '.nc')
-     dum1 <- get_origin_and_times(input_file)
-     ereefs_origin <- dum1[[1]]
-     ds <- NULL
-     julian_date <- dum1[[3]]
-     # We don't need ds in this case because we are taking just one output per day
+  } else if (ereefs_case[2] == "1km") {
+    input_file <- paste0(input_stem, format(as.Date(paste(start_yr, start_month, start_day, sep = "-")), "%Y-%m-%d"), ".nc")
+    dum1 <- get_origin_and_times(input_file)
+    ereefs_origin <- dum1[[1]]
+    ds <- NULL
+    julian_date <- dum1[[3]]
+    # We don't need ds in this case because we are taking just one output per day
   } else {
-     # We are looking at a single netcdf file such as a RECOM output file or a ncml file
-     input_file <- input_file
-     dum1 <- get_origin_and_times(input_file)
-     ereefs_origin <- dum1[[1]]
-     ds <- dum1[[2]]
-     julian_date <- dum1[[3]]
+    # We are looking at a single netcdf file such as a RECOM output file or a ncml file
+    input_file <- input_file
+    dum1 <- get_origin_and_times(input_file)
+    ereefs_origin <- dum1[[1]]
+    ds <- dum1[[2]]
+    julian_date <- dum1[[3]]
   }
 
-  # Activate the grid that has two dimensions and extract the latitude and longitude variables:
+  # Activate the relevant grid and extract the latitude and longitude variables:
   nc <- tidync::tidync(input_file) 
-  nc <- nc %>% tidync::activate(as.character(dplyr::inner_join(tidync::hyper_grids(nc), data.frame('ndims' = 2), by = 'ndims') %>% dplyr::select('grid')))
-  if ('latitude' %in% (tidync::hyper_vars(nc)$name)) {
-    spatial_grid <- nc %>% tidync::hyper_tibble(c('latitude', 'longitude'))
+  nc <- try(nc %>% tidync::activate("longitude"), silent = TRUE)
+  if (class(nc) == "try-error") {
+    # standard format
+    nc <- tidync::tidync(input_file) %>% tidync::activate("x_centre") 
+    nc <- nc %>% tidync::activate(tidync::active(nc))
+    spatial_grid <- nc %>% 
+      tidync::hyper_tibble(c("x_centre", "y_centre")) %>% 
+       dplyr::rename(longitude = x_centre, latitude = y_centre)
+    spatial_grid <- spatial_grid %>% dplyr::rename(i = i_centre, j = j_centre)
+    if (min(spatial_grid$latitude, na.rm = TRUE) > 0) {
+      warning("Assuming Southern Hemisphere, so assuming x grid is latitude.")
+      spatial_grid <- spatial_grid %>% dplyr::rename(fred = latitude, latitude = longitude) %>%
+        dplyr::rename(longitude = fred)
+    }
+    simple_format <- FALSE
   } else {
-    spatial_grid <- nc %>% tidync::hyper_tibble(c('x_centre', 'y_centre')) %>% 
-                           dplyr::rename(latitude = x_centre, longitude = y_centre)
+    # simple format
+    nc <- nc %>% tidync::activate("longitude") %>% tidync::activate(tidync::active(nc))
+    spatial_grid <- nc %>% tidync::hyper_tibble(c("latitude", "longitude"))
+    simple_format <- TRUE
   }
 
   params <- list(input_file = input_file,
@@ -201,7 +211,8 @@ get_params <- function(start_date, end_date, input_file, var_names) {
                  ereefs_origin = ereefs_origin,
                  ds = ds, 
                  julian_date = julian_date,
-                 spatial_grid = spatial_grid)
+                 spatial_grid = spatial_grid,
+                 simple_format = simple_format)
 }
 
 #' Opens the netcdf file, input_file, and extracts the origin (reference date/time) and time dimension.
@@ -210,19 +221,25 @@ get_params <- function(start_date, end_date, input_file, var_names) {
 #' to extract the data
 #' @return A list containing ereefs_origin (the reference data/time used in the netcdf file) and the time series, ds
 get_origin_and_times <- function(input_file) {
-    nc <- tidync::tidync(input_file) %>% tidync::activate('time')
-    if ('t' %in% (tidync::hyper_vars(nc)$name)) {
-      posix_origin <- stringi::stri_datetime_parse(ncmeta::nc_att(input_file ,'t', 'units')$value, "'days since 'yyyy-MM-dd HH:mm:ss", tz = "Etc/GMT-10")[1]
-      ds <- (nc %>% tidync::hyper_array('t'))[[1]]
-    } else { 
-      posix_origin <- stringi::stri_datetime_parse(ncmeta::nc_att(input_file ,'time', 'units')$value, "'days since 'yyyy-MM-dd HH:mm:ss", tz = "Etc/GMT-10")[1]
-      ds <- (nc %>% tidync::hyper_array('time'))[[1]]
-    }
-    julian_date <- ds
-    ereefs_origin <- posix_origin
+  nc <- tidync::tidync(input_file)
+  nc <- try(nc %>% tidync::activate("time"), silent = TRUE)
+  if (class(nc) == "try-error") {
+    # standard format nc file
+    nc <- tidync::tidync(input_file) %>% tidync::activate("t")
+    posix_origin <- stringi::stri_datetime_parse(ncmeta::nc_att(input_file, "t", "units")$value, "'days since 'yyyy-MM-dd HH:mm:ss", tz = "Etc/GMT-10")[1]
+    ds <- (nc %>% tidync::hyper_array("t"))[[1]]
+    posix_origin <- stringi::stri_datetime_parse(ncmeta::nc_att(input_file, "t", "units")$value, "'days since 'yyyy-MM-dd HH:mm:ss", tz = "Etc/GMT-10")[1]
+  } else { 
+    # simple format nc file
+    nc <- nc %>% tidync::activate("time")
+    posix_origin <- stringi::stri_datetime_parse(ncmeta::nc_att(input_file, "time", "units")$value, "'days since 'yyyy-MM-dd HH:mm:ss", tz = "Etc/GMT-10")[1]
+    ds <- (nc %>% tidync::hyper_array("time"))[[1]]
+  }
+  julian_date <- ds
+  ereefs_origin <- posix_origin
 
-    ds <- ereefs_origin + seconds(ds*86400)
-    return(list(ereefs_origin, ds, julian_date))
+  ds <- ereefs_origin + lubridate::seconds(ds * 86400)
+  return(list(ereefs_origin, ds, julian_date))
 }
 
 #' Returns an appropriate x_grid, y_grid and z_grid
@@ -231,30 +248,30 @@ get_origin_and_times <- function(input_file) {
 #' @param input_grid Optional alternative file from which to load x_grid, y_grid and z_grid
 #' @return a list containing x_grid, y_grid and z_grid
 #' @export
-get_ereefs_grids <- function(filename, input_grid=NA) {
+get_ereefs_grids <- function(filename, input_grid = NA) {
 	if (!is.na(input_grid)) {
     # The user has provided the name of a netcdf file from which to read the grids
-    nc <- tidync::tidync(input_grid) 
-    nc <- nc %>% tidync::activate(as.character(dplyr::inner_join(tidync::hyper_grids(nc), data.frame('ndims' = 2), by = 'ndims') %>% dplyr::select('grid')))
+    nc <- tidync::tidync(input_grid) %>% tidync::activate('x_grid') 
+    nc <- nc %>% tidync::activate(tidync::active(nc))
     x_grid <- (nc %>% tidync::hyper_array('x_grid'))[[1]]
     y_grid <- (nc %>% tidync::hyper_array('y_grid'))[[1]]
-    z_grid <- (nc %>% tidync::hyper_array('z_grid'))[[1]]
+    z_grid <- (nc %>% tidync::activate("z_grid") %>% tidync::hyper_array('z_grid'))[[1]]
 	} else {
-    nc <- tidync::tidync(filename) 
-    nc <- nc %>% tidync::activate(as.character(dplyr::inner_join(tidync::hyper_grids(nc), data.frame('ndims' = 2), by = 'ndims') %>% dplyr::select('grid')))
+    nc <- tidync::tidync(filename) %>% tidync::activate('x_grid') 
+    nc <- nc %>% tidync::activate(tidync::active(nc))
     if ('x_grid' %in% (tidync::hyper_vars(nc)$name)) {
       # filename is in standard EMS netcdf output format. x_grid, y_grid and z_grid are provided.
       x_grid <- (nc %>% tidync::hyper_array('x_grid'))[[1]]
       y_grid <- (nc %>% tidync::hyper_array('y_grid'))[[1]]
-      z_grid <- (nc %>% tidync::hyper_array('z_grid'))[[1]]
+      z_grid <- (nc %>% tidync::activate("z_grid") %>% tidync::hyper_array('z_grid'))[[1]]
     } else {
       # Simple format netcdf file. grids are not provided. Check the dimensions to work out 
       # whether it looks like GBR4 or GBR1 and if so, load x-grid and y_grid from saved data. 
       # Otherwise, the user must provide another filename (input_grid) that contains x_grid, 
       # y_grid and z_grid. 
       dims <- nc %>% tidync::hyper_dims()
-      ilen <- dims %>% dplyr::inner_join(data.frame(name=c('i', 'i_grid')), by = 'name') %>% dplyr::select('length') # Find either 'i' or 'i_grid' in the dimension names and return the length of that dimension
-      jlen <- dims %>% dplyr::inner_join(data.frame(name=c('j', 'j_grid')), by = 'name') %>% dplyr::select('length')
+      ilen <- dims %>% dplyr::inner_join(tibble(name=c('i', 'i_grid')), by = 'name') %>% dplyr::select('length') # Find either 'i' or 'i_grid' in the dimension names and return the length of that dimension
+      jlen <- dims %>% dplyr::inner_join(tibble(name=c('j', 'j_grid')), by = 'name') %>% dplyr::select('length')
 		  if ((ilen==510)&(jlen==2389)) {
 		    x_grid <- gbr1_x_grid
 		    y_grid <- gbr1_y_grid
@@ -264,13 +281,15 @@ get_ereefs_grids <- function(filename, input_grid=NA) {
 		    y_grid <- gbr4_y_grid
 		    z_grid <- gbr4_z_grid
 		  } else {
-		    stop(paste('x_grid, y_grid and z_grid not found and grid size not recognised as GBR1 or GBR4.',
-                   'Plotting using cell centres (latitude and longitude) has not yet been implemented.',
-                   'Please specify input_grid (a standard format EMS file or other netcdf file that ',
-                   'contains x_grid, y_grid and z_grid).'))
-
+        x_grid <- NULL
+        y_grid <- NULL
+        z_grid <- NULL
+#		    stop(paste('x_grid, y_grid and z_grid not found and grid size not recognised as GBR1 or GBR4.',
+#                   'Plotting using cell centres (latitude and longitude) has not yet been implemented.',
+#                   'Please specify input_grid (a standard format EMS file or other netcdf file that ',
+#                   'contains x_grid, y_grid and z_grid).'))
 		  }
-                }
+    }
 	} 
 	return(list(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid))
 }
@@ -289,12 +308,12 @@ get_file_stem <- function(filename) {
   }
   if (is.na(case[2]) | case[2] == "recom" | case[2] == "unknown") {
      # A netcdf filename, but not obviously 1km or 4km eReefs. Might be RECOM or another application
-	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-1)
+	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex=".nc")[1]-1)
   } else if (case[2]=='1km') {
-	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-11)
+	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex=".nc")[1]-11)
   } else {
      # must be 4km
-	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex='.nc')[1]-8)
+	  file_stem <- substr(filename, start=1, stop=stringi::stri_locate_last(filename, regex=".nc")[1]-8)
   }
  return(file_stem)
 }
@@ -310,9 +329,10 @@ get_file_stem <- function(filename) {
 #' @return input_file
 #' @export
 substitute_filename <- function(input_file = "catalog") {
+  input_file <- ereefs_canonicalise_url(input_file)
   # Try to work out what the user wants if it looks a bit like a THREDDS catalog but isn't clear
   if (stringr::str_ends(input_file, stringr::fixed("catalog.html"))) input_file <- paste0(stringr::str_sub(input_file, 1, -5), 'xml')
-  if (((stringr::str_starts(input_file, "http")&(stringr::str_ends(input_file, "/"))))) input_file <- paste0(input_file, "catalog.xml")
+  if (((stringr::str_starts(input_file, "https")&(stringr::str_ends(input_file, "/"))))) input_file <- paste0(input_file, "catalog.xml")
 
   choices <- NULL
   if ((input_file == "old_menu")|(input_file == "choices") | is.numeric(input_file)) {
@@ -345,7 +365,7 @@ substitute_filename <- function(input_file = "catalog") {
     } 
   } else if ((input_file == "catalog") | (input_file == "nci") | (input_file == "menu")) { 
     # Get the list of eReefs data sevices from the NCI server:
-    catalog <- thredds::get_catalog("https://dapds00.nci.org.au/thredds/catalogs/fx3/catalog.xml")
+    catalog <- thredds::get_catalog(ereefs_catalog_url())
     choices <- catalog$get_dataset_names()
     print("Refer to https://research.csiro.au/ereefs/models/models-about/biogeochemical-simulation-naming-protocol/ for naming conventions.")
   } else if (stringr::str_ends(input_file, "xml")) {
@@ -384,39 +404,40 @@ substitute_filename <- function(input_file = "catalog") {
   }
   # Perhaps the user has manually specified (or selected from old_menu) one of the (obsolescent) official run labels from ereefs.info
   input_file <- dplyr::case_when(
-      input_file == "GBR4-v2.0" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
-      input_file == "GBR4_BGC-v2.0 Chyb Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
-      input_file == "GBR4_BGC-v2.0 Chyb Dnrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
-      input_file == "GBR4_BGC-v2.0 Cpre Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc",
-      input_file == "GBR4 rivers_2.0  Dnrt   GBR4 passive" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
-      input_file == "GBR1-v2.0" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
-      input_file == "GBR1 rivers_2.0  Dnrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0_rivers/gbr1_rivers_simple_2018-03.nc",
-      input_file == "GBR4-v1.85" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4/gbr4_simple_2016-03.nc.html",
-      input_file == "GBR4_BGC-v926" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_926/gbr4_bgc_simple_2014-11.nc",
-      input_file == "GBR4_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_924/gbr4_bgc_simple_2016-09.nc",
-      input_file == "GBR1-v1.71" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1/gbr1_simple_2016-03-25.nc",
-      input_file == "GBR1_BGC-v924" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
-      input_file == "GBR4_BGC-v3.0 Dcrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B3p0_Chyd_Dcrt/gbr4_bgc_all_simple_2018-10.nc",
+      input_file == "GBR4-v2.0" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
+      input_file == "GBR4_BGC-v2.0 Chyb Dcrt" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
+      input_file == "GBR4_BGC-v2.0 Chyb Dnrt" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
+      input_file == "GBR4_BGC-v2.0 Cpre Dcrt" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc",
+      input_file == "GBR4 rivers_2.0  Dnrt   GBR4 passive" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
+      input_file == "GBR1-v2.0" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
+      input_file == "GBR1 rivers_2.0  Dnrt" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0_rivers/gbr1_rivers_simple_2018-03.nc",
+      input_file == "GBR4-v1.85" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4/gbr4_simple_2016-03.nc.html",
+      input_file == "GBR4_BGC-v926" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_926/gbr4_bgc_simple_2014-11.nc",
+      input_file == "GBR4_BGC-v924" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_924/gbr4_bgc_simple_2016-09.nc",
+      input_file == "GBR1-v1.71" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1/gbr1_simple_2016-03-25.nc",
+      input_file == "GBR1_BGC-v924" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
+      input_file == "GBR4_BGC-v3.0 Dcrt" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B3p0_Chyd_Dcrt/gbr4_bgc_all_simple_2018-10.nc",
       input_file == "GBR4_BGC-v3.1" ~ "https://regional-models.ereefs.info/thredds/dodsC/GBR4_H2p0_B3p1_Cq3b_Dhnd/all/gbr4_bgc_all_simple_2012-10.nc",
-      input_file == "GBR4_BGC-v3.0" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/3.0/all/gbr1_bgc_all_2018-09-02.nc",
-      input_file == "GBR1_BGC-v3p2surf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/surf/gbr1_bgc_surf_2019-10-16.nc",
-      input_file == "GBR1_BGC-v3p2" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/all/gbr1_bgc_all_2019-10-16.nc",
-      input_file == "GBR4_BGC-v3p2nrtsurf" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_surf_2019-10.nc",
-      input_file == "GBR4_BGC-v3p2nrt" ~ "http://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_all_2019-10.nc",
+      input_file == "GBR4_BGC-v3.0" ~ "https://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/3.0/all/gbr1_bgc_all_2018-09-02.nc",
+      input_file == "GBR1_BGC-v3p2surf" ~ "https://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/surf/gbr1_bgc_surf_2019-10-16.nc",
+      input_file == "GBR1_BGC-v3p2" ~ "https://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr1/bgc/nrt/all/gbr1_bgc_all_2019-10-16.nc",
+      input_file == "GBR4_BGC-v3p2nrtsurf" ~ "https://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_surf_2019-10.nc",
+      input_file == "GBR4_BGC-v3p2nrt" ~ "https://oa-62-cdc.it.csiro.au:8087/opendap/cache/gbr4/bgc/nrt/gbr4_bgc_all_2019-10.nc",
       # additional shortcuts
-      input_file == "GBR4HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
-      input_file == "hd" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
-      input_file == "GBR4BGC" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
-      input_file == "bgc" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
-      input_file == "GBR4NRT" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
-      input_file == "nrt" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
-      input_file == "rivers" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
-      input_file == "GBR1HD" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
-      input_file == "GBR1BGC" ~ "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
+      input_file == "GBR4HD" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
+      input_file == "hd" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_v2/gbr4_simple_2018-10.nc",
+      input_file == "GBR4BGC" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
+      input_file == "bgc" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2016-07.nc",
+      input_file == "GBR4NRT" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
+      input_file == "nrt" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dnrt/gbr4_bgc_simple_2017-11.nc",
+      input_file == "rivers" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_2.0_rivers/gbr4_rivers_simple_2018-07.nc",
+      input_file == "GBR1HD" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_2.0/gbr1_simple_2018-09-23.nc",
+      input_file == "GBR1BGC" ~ "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr1_bgc_924/gbr1_bgc_simple_2018-08-21.nc",
       TRUE ~ input_file)
 
   # If necessary, remove trailing ".html" from an input file name that is not a catalog.
   if (stringr::str_ends(input_file, ".nc.html")) input_file <- stringr::str_sub(input_file, 1, -6)
+  input_file <- ereefs_canonicalise_url(input_file)
     
   return (input_file)
 }
@@ -425,7 +446,7 @@ substitute_filename <- function(input_file = "catalog") {
 #'
 #' Create a time-series of values of one or more selected model output variables in a specified layer of the
 #' water column or sediment store (by default, the surface layer), at a specified geographic location or 
-#' supplied data frame of geocoordinates within the model domain.  See also get_ereefs_depth_integrated_ts() to 
+#' supplied tibble of geocoordinates within the model domain.  See also get_ereefs_depth_integrated_ts() to 
 #' extract depth-integrated values and get_ereefs_depth_specified_ts() to extract values at a specified depth 
 #' below the free (tidally moving) surface. Barbara Robson (AIMS).
 #'
@@ -437,7 +458,7 @@ substitute_filename <- function(input_file = "catalog") {
 #' @return a data tibble containing extracted variables, including dates and locations
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
-#' @param geocoordinates is a data frame containing the decimal latitude and longitude of a single desired location, or a vector containing
+#' @param geocoordinates is a tibble containing the decimal latitude and longitude of a single desired location, or a vector containing
 #'        a single latitude and longitude location. geocoordinates can also be set to "mmp" to extract time-series at all 
 #'        Marine Monitoring Program sites. Defaults to c(-23.39189, 150.88852). Can also include other variables, e.g. for the name of each site.
 #' @param layer is the vertical grid layer to extract, or 'surface' to get the surface value, 'bottom' to get the
@@ -462,7 +483,7 @@ substitute_filename <- function(input_file = "catalog") {
 #'      will check whether the size of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and 
 #'      load an appropriate z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files) and you are asking for a depth-integrated
@@ -470,63 +491,70 @@ substitute_filename <- function(input_file = "catalog") {
 #' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
 #'       incorrect. Default FALSE. Not normally needed.
 #' @param verbosity How much information to display along the way (0 to 2. Default is 1).
+#' @param default_to_bottom Whether to get data from the bottom layer if the specified layer contains NAs. Defaults TRUE
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_ts('Chl_a_sum', geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-#' get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
-#' get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), geocoordinates=data.frame(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
+#' get_ereefs_ts('Chl_a_sum', geocoordinates=tibble(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+#' get_ereefs_ts(var_names=c('Tricho_N', 'DIP', 'TP'), geocoordinates=tibble(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer='bottom', start_date="2012-07-03",end_date="2012-07-05", input_file='GBR4_BGC-v2.0 Chyb Dcrt')
+#' get_ereefs_ts(var_names=c('ZooL_N', 'ZooS_N'), geocoordinates=tibble(latitude=c(-23.39189,-18), longitude=c(150.88852, 147.5)), layer=45, start_date=c(2010,12,31),end_date=c(2011,1,5), input_file="https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Cpre_Dcrt/gbr4_bgc_simple_2016-06.nc")
 #' }
 
-get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
-                          geocoordinates=c(-23.39189, 150.88852), 
-                          layer='surface', 
-		                      start_date = c(2010,12,31), 
-		                      end_date = c(2016,10,31), 
+get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"), 
+                          geocoordinates = c(-23.39189, 150.88852), 
+                          layer = "surface", 
+                          start_date = c(2010, 12, 31), 
+                          end_date = c(2016, 10, 31), 
                           input_file = "menu",
-                          #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                           input_grid = NA,
                           eta_stem = NA,
-                          override_positive=FALSE,
-                          verbosity = 1)
-{
+                          override_positive = FALSE, 
+                          verbosity = 1,
+                          default_to_bottom = TRUE) {
   library(dplyr)
   if (is.null(dim(geocoordinates))) {
-     geocoordinates <- array(geocoordinates, c(1,2))
+    geocoordinates <- array(geocoordinates, c(1, 2))
   }
 
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_yr,
   # end_date, end_day, end_month, end_yr, mths, yrs, var_list, ereefs_origin, ds, and spatial_grid
   assignList(get_params(start_date, end_date, input_file, var_names))
-  if (end_date==start_date) end_date <- end_date + 1
+  if (end_date == start_date) end_date <- end_date + 1
 
-  if (layer=='integrated') return(get_ereefs_depth_integrated_ts(var_names, geocoordinates, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if ((layer=='bottom')&&(length(geocoordinates[,1])>1)) stop('Only one location can be given if layer==bottom')
-#  if (layer=='bottom') return(get_ereefs_bottom_ts(var_names, geocoordinates, start_date, end_date, input_file, input_grid, eta_stem, override_positive))
-  if (geocoordinates[[1]][1]=="mmp") {
-     geocoordinates <- data.frame(latitude=mmp_sites$latitude, longitude=mmp_sites$longitude)
-     mmp <- TRUE
+  if (layer == "integrated") {
+    return(get_ereefs_depth_integrated_ts(var_names, geocoordinates, start_date, end_date, 
+                                          input_file, input_grid, eta_stem, override_positive))
+  }
+  if ((layer == "bottom") && (length(geocoordinates[, 1]) > 1)) {
+    return(get_ereefs_bottom_ts(var_names, geocoordinates, start_date, end_date, 
+                                input_file, input_grid, eta_stem, override_positive))
+  }
+  if (is.character(geocoordinates[[1]][1]) && (geocoordinates[[1]][1] == "mmp")) {
+    geocoordinates <- tibble(latitude = mmp_sites$latitude, longitude = mmp_sites$longitude)
+    mmp <- TRUE
   } else {
-     mmp <- FALSE
+    mmp <- FALSE
   }
 
-  # Make sure the geocoordinates are in the desired data.frame format. Warn if column names are absent or unclear.
+  # Make sure the geocoordinates are in the desired tibble format. Warn if column names are absent or unclear.
   if (!("data.frame" %in% class(geocoordinates))) {
-    # geocoordinates has been provided as an array/matrix. Coerce it into a data frame for consistency.
-    geocoordinates <- data.frame(latitude = geocoordinates[,1], longitude = geocoordinates[,2])
+    # geocoordinates has been provided as an array/matrix. Coerce it into a tibble for consistency.
+    geocoordinates <- tibble(latitude = geocoordinates[, 1], longitude = geocoordinates[, 2])
   }
-  ilat <- which((names(geocoordinates) == "latitude")|(names(geocoordinates) == "lat"))
-  ilon <- which((names(geocoordinates) == "longitude")|(names(geocoordinates) == "lon"))
+  ilat <- which((names(geocoordinates) == "latitude") | (names(geocoordinates) == "lat"))
+  ilon <- which((names(geocoordinates) == "longitude") | (names(geocoordinates) == "lon"))
   if (length(ilat)) {
-    geocoordinates <- data.frame(latitude = geocoordinates[, ilat], longitude = geocoordinates[, ilon])
+    names(geocoordinates)[c(ilat, ilon)] <- c("latitude", "longitude")
   } else {
     warning("Assuming that the first column of geocoordinates is latitude and the second column is longitude")
+    names(geocoordinates)[1:2] <- c("latitude", "longitude")
   }
-  names(geocoordinates)[1:2] <- c("latitude", "longitude")
 
-  geocoordinates <- geocoordinates %>% dplyr::rowwise() %>% 
-                                       dplyr::mutate(grid_index = which.min(earth.dist(latitude, longitude, spatial_grid$latitude, spatial_grid$longitude)))
+  geocoordinates <- geocoordinates %>% 
+    dplyr::relocate(latitude, longitude) %>% 
+    dplyr::rowwise() %>% 
+    dplyr::mutate(grid_index = which.min(earth.dist(latitude, longitude, spatial_grid$latitude, spatial_grid$longitude)))
   geocoordinates[, c("i", "j", "cell_latitude", "cell_longitude")] = spatial_grid[geocoordinates$grid_index, c("i", "j", "latitude", "longitude")]
 
   # Initialise
@@ -535,31 +563,31 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Loop through relevant daily or monthly eReefs files to extract the data
   ndims <- NA
   layer_actual <- rep(NA, length(var_names))
-  if ((ereefs_case[2] == "1km")|(ereefs_case[2] == "4km")) {
+  if ((ereefs_case[2] == "1km") || (ereefs_case[2] == "4km")) {
     i <- 0
     mcount <- 0
-    if (verbosity>0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
+    if (verbosity > 0) pb <- txtProgressBar(min = 0, max = length(mths), style = 3)
     for (month in mths) {
       mcount <- mcount + 1
       yr <- yrs[mcount]
       if (mcount == 1) {
-         from_day <- start_day
+        from_day <- start_day
       } else {
-         from_day <- 1
-         start_tod <- 0
+        from_day <- 1
+        start_tod <- 0
       }
       if ((start_yr==end_yr)&&(start_month==end_month)) {
-         day_count <- end_day - start_day + 1
+        day_count <- end_day - start_day + 1
       } else if (mcount == 1) {
-         day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
+        day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
       } else if (mcount == (length(mths))) {
-         day_count <- end_day
+        day_count <- end_day
       } else {
-         day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-')))
+        day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-')))
       }
       if (ereefs_case[2] == '4km') { 
         fileslist <- 1
-        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, 1, sep="-")), '%Y-%m'), '.nc')
+        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, 1, sep="-")), '%Y-%m'), ".nc")
 	      day_count <- day_count / as.numeric(ds[2]-ds[1])
         if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
         if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
@@ -575,53 +603,135 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       } else stop("Shouldn't happen: ereefs_case not recognised")
 
       for (dcount in 1:length(fileslist)) {
-        if (ereefs_case[2] == '1km') {
-	        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
+        if (ereefs_case[2] == "1km") {
+	        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, fileslist[dcount], sep="-")), "%Y-%m-%d"), ".nc")
+          d <- get_origin_and_times(input_file)[[2]]
+          ind <- which((d >= start_date) & (d <= end_date))
+          if (length(ind) == 0) {
+            from_day <- length(d) 
+            day_count <- 1
+          } else {
+            from_day <- ind[1]
+            day_count <- ind[length(ind)] - from_day + 1
+          }
+          d <- d[ind]
+        } else {
+          d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
         }
         # This is a bit roundabout but we first need to activate by variable name, then check which grid is active and activate the whole grid
-        nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) %>% tidync::activate(tidync::active(nc), select_var = var_names)
-        d <- get_origin_and_times(input_file)[[2]][from_day:(from_day+day_count-1)]
+        nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) 
+        nc <- nc %>% tidync::activate(tidync::active(nc), select_var = var_names)
         im1 = i+1
         i <- i + length(d)
 
         if (is.na(ndims)) {
            # We don't yet know the dimensions of the variable, so let's get them
-           ndims <- dim(nc %>% hyper_dims())[1]
-         }
-         if (layer == 'surface') { 
-            layer_actual <- as.integer(nc %>% tidync::hyper_dims() %>% dplyr::filter(name=="k") %>% dplyr::select("length"))
-         } else if (layer == 'bottom') { 
-            # find the bottom layer -- assume it is the first layer that is not NA
-            if (ndims == 4) { 
-               dum1 <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                                   j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                                   time = index == from_day) %>% 
-                              tidync::hyper_array(select_var = var_names)
-               if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
-               layer <- min(which(!is.na(dum1)))
-               layer_actual <- layer
-               if (verbosity>0) print(paste('bottom layer = ', layer))
-            } 
-         } else if (layer < 0) { 
-           z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
-           layer <- max(which(z_grid<layer)) 
-           layer_actual <- layer 
-         } else {
-           layer_actual <- layer 
+           ndims <- dim(nc %>% tidync::hyper_dims())[1]
          }
 
-        if (ndims == 4) {
-           wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                             j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                             k = k==layer_actual, 
-                                             time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
-                        tidync::hyper_tibble(select_var = var_names)
+        # Work out which vertical layer we need
+        if (layer == 'surface') { 
+           layer_actual <- as.integer(nc %>% tidync::hyper_dims() %>% dplyr::filter(name=="k") %>% dplyr::select("length"))
+        } else if (is.numeric(layer)) {
+          if (layer < 0) { 
+            z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
+            layer <- max(which(z_grid < layer)) 
+            layer_actual <- layer 
+            if (verbosity >1) print(paste("layer selected =", layer_actual))
+          } else {
+            layer_actual <- layer 
+          }
+          if ((default_to_bottom) && (ndims == 4)) {
+          # find the bottom layer -- assume it is the first layer that is not NA
+            if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+              dum1 <- nc %>% 
+                tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                     j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                     k_centre = k_centre == layer_actual,
+                                     time = index == from_day) %>% 
+                tidync::hyper_array(select_var = var_names)
+            } else {
+              dum1 <- nc %>% 
+                tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                     j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                     k_centre = k_centre == layer_actual,
+                                     record = index == from_day) %>% 
+                tidync::hyper_array(select_var = var_names) %>%
+                dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+                dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+            }
+            warning(paste0("Specified depth (", layer, ") is either a land cell or delow the bottom. Defaulting to bottom layer."))
+            if (is.na(dum1)) layer <- "bottom"
+          }
+        } 
+        if (is.character(layer) && (layer == "bottom")) { 
+          # find the bottom layer -- assume it is the first layer that is not NA
+          if (ndims == 4) { 
+            if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+              dum1 <- nc %>% 
+                tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                     j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                     time = index == from_day) %>% 
+                tidync::hyper_array(select_var = var_names)
+            } else {
+              dum1 <- nc %>% 
+                tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                     j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                     record = index == from_day) %>% 
+                tidync::hyper_array(select_var = var_names) %>%
+                dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+                dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+            }
+          } else {
+             warning('Probably should not be here. You asked for bottom layer but this is not a 4D variable?')
+          }
+          if (length(which(!is.na(dum1)))==0) stop('Location given is a dry cell at start time. It is probably on land.')
+          layer <- min(which(!is.na(dum1)))
+          layer_actual <- layer
+          if (verbosity>0) print(paste('bottom layer = ', layer))
+        }
 
-        } else {
-           wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                             j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                             time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
-                        tidync::hyper_tibble(select_var = var_names)
+        if (ndims == 4) { # 3D variable
+          if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+            wc <- nc %>% 
+              tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)), 
+                                   j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                   k = k==layer_actual, 
+                                   time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+              tidync::hyper_tibble(select_var = var_names)
+          } else {
+            wc <- nc %>% 
+              tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                   j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                   k_centre = k_centre == layer_actual, 
+                                   record = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+              tidync::hyper_tibble(select_var = var_names) 
+            wc <- wc %>% dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+              dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+          }
+        } else { # 2D variable
+          if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+             wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                               j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                               time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+                          tidync::hyper_tibble(select_var = var_names)
+          } else {
+             wc <- nc %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                               j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                               record = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+                          tidync::hyper_tibble(select_var = var_names) %>%
+              dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+              dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+          }
+        }
+        if (!("i" %in% names(wc)) && dplyr::n_distinct(geocoordinates$i) == 1) {
+          wc$i <- geocoordinates$i[[1]]
+        }
+        if (!("j" %in% names(wc)) && dplyr::n_distinct(geocoordinates$j) == 1) {
+          wc$j <- geocoordinates$j[[1]]
+        }
+        if (!("time" %in% names(wc)) && nrow(wc) == length(d)) {
+          wc$time <- as.numeric(d - ereefs_origin) / 86400
         }
         results <- rbind(results, dplyr::left_join(geocoordinates, wc, by = c("i", "j")))
         if (verbosity>0) setTxtProgressBar(pb,mcount)
@@ -634,60 +744,109 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                   'If you have asked for a long time-series from a THREDDS server,',
                   'you might encounter transfer errors, but it should self-correct.',
                   'If not, consider breaking it up into shorter sections or pointing to an individual netcdf file.'))
-    if (end_date > max(ds, na.rm=TRUE)) {
-      warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds, na.rm=TRUE)))
-      end_date <- max(ds, na.rm=TRUE)
+    if (end_date > max(ds, na.rm = TRUE)) {
+      warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds, na.rm = TRUE)))
+      end_date <- max(ds, na.rm = TRUE)
     }
-    if (start_date < min(ds, na.rm=TRUE)) {
-      warning(paste('start_date', start_date, 'is beyond available data. Starting at', min(ds, na.rm=TRUE)))
-      start_date <- min(ds, na.rm=TRUE)
+    if (start_date < min(ds, na.rm = TRUE)) {
+      warning(paste('start_date', start_date, 'is beyond available data. Starting at', min(ds, na.rm = TRUE)))
+      start_date <- min(ds, na.rm = TRUE)
     }
-    nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) %>% tidync::activate(tidync::active(nc), select_var = var_names)
+    nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) 
+    nc <- nc %>% tidync::activate(tidync::active(nc), select_var = var_names)
     if (is.na(ndims)) {
       # We don't yet know the dimensions of the variables, so let's get them
-      dims <- nc %>% hyper_dims()
+      dims <- nc %>% tidync::hyper_dims()
+      if ("k_centre" %in% dims$name) dims$name[dims$name == "k_centre"] <- "k"
+      if ("i_centre" %in% dims$name) dims$name[dims$name == "i_centre"] <- "i"
+      if ("j_centre" %in% dims$name) dims$name[dims$name == "j_centre"] <- "j"
       ndims <- dim(dims)[1]
     }
     if (layer == 'surface') { 
-        layer_actual <- as.integer(dims %>% inner_join(data.frame(name = c('k', 'k_grid')), by="name") %>% select('length'))
+      layer_actual <- as.integer(dims %>% inner_join(tibble(name = c('k', 'k_grid')), by="name") %>% select('length'))
     } else if (layer == 'bottom') { 
-        # find the bottom layer -- assume it is the first layer that is not NA
-        if (ndims == 4) { 
+      # find the bottom layer -- assume it is the first layer that is not NA
+      if (ndims == 4) { 
+        if ("time" %in% (tidync::hyper_dims(nc)$name)) {
           dum1 <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
                                               j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
                                               time = index == 1) %>%
                          tidync::hyper_array(select_var = var_names[1])
-          if (length(which(!is.na(dum1[[1]])))==0) stop('Location given is a dry cell at first time step. It is probably on land.')
-          layer <- min(which(!is.na(dum1[[1]])))
-          layer_actual <- layer
-          if (verbosity>0) print(paste('bottom layer = ', layer))
-        } 
-      } else if (layer < 0) { 
-        z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
-        layer <- max(which(z_grid<layer)) 
-        layer_actual <- layer 
-      } else {
-        layer_actual <- layer 
+        } else {
+          dum1 <- nc %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                              j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                              record = index == 1) %>%
+                         tidync::hyper_array(select_var = var_names[1]) %>%
+                         dplyr::rename(time = record, i = i_centre, j = j_centre) %>% 
+                         dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+        }
       }
-
-      if (ndims == 4) {
-         wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                           j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                           k = k==layer_actual, 
-                                           time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
-                      tidync::hyper_tibble(select_var = var_names)
-      } else {
-         wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                           j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                           time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
-                      tidync::hyper_tibble(select_var = var_names)
-      }
-      results <- dplyr::left_join(geocoordinates, wc, by = c("i", "j"))
+      if (length(which(!is.na(dum1[[1]])))==0) stop('Location given is a dry cell at first time step. It is probably on land.')
+      layer <- min(which(!is.na(dum1[[1]])))
+      layer_actual <- layer
+      if (verbosity>0) print(paste('bottom layer = ', layer))
+    } else if (layer < 0) { 
+      z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']] 
+      layer <- max(which(z_grid<layer)) 
+      layer_actual <- layer 
+    } else {
+      layer_actual <- layer 
     }
-    results <- results %>% mutate(time = ereefs_origin + seconds(time*86400))
-    results <- results %>% select(-grid_index)
 
-  if (mmp) results <- left_join(results, mmp_sites, by = c('latitude', 'longitude'))
+    if (ndims == 4) {
+      if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+        wc <- nc %>% 
+          tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                               j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                               k_centre = k_centre == layer_actual, 
+                               time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+          tidync::hyper_tibble(select_var = var_names)
+      } else {
+        ind <- dplyr::between(ds, start_date, end_date)
+        #browser()
+        wc <- nc %>% 
+          tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)), 
+                               j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                               k_centre = k_centre == layer_actual, 
+                               record = ind) %>%
+          tidync::hyper_tibble(select_var = var_names) %>%
+          dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+         dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+      }
+    } else {
+      if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+        wc <- nc %>% 
+          tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                               j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                               time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+          tidync::hyper_tibble(select_var = var_names) %>%select(time)
+      } else {
+        wc <- nc %>% 
+          tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                               j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                               record = dplyr::between(record, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+          tidync::hyper_tibble(select_var = var_names) %>%
+          dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+          dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+      }
+    }
+    if (!("i" %in% names(wc)) && dplyr::n_distinct(geocoordinates$i) == 1) {
+      wc$i <- geocoordinates$i[[1]]
+    }
+    if (!("j" %in% names(wc)) && dplyr::n_distinct(geocoordinates$j) == 1) {
+      wc$j <- geocoordinates$j[[1]]
+    }
+    selected_times <- ds[dplyr::between(ds, start_date, end_date)]
+    if (!("time" %in% names(wc)) && nrow(wc) == length(selected_times)) {
+      wc$time <- as.numeric(selected_times - ereefs_origin) / 86400
+    }
+    results <- wc %>% dplyr::left_join(geocoordinates, by = c("i", "j"))
+  }
+  if (mmp) results <- left_join(results, mmp_sites, by = c("latitude", "longitude"))
+  # For some reason, the following gave incorrect results when I tried to do it via dplyr::mutate, but this works
+  if (dim(results)[1]) results$time <- lubridate::seconds(results$time * 86400) + ereefs_origin
+  results <- results %>% select(-grid_index)
+
   return(results)
 }
 
@@ -696,7 +855,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' Now just a wrapper to get_ereefs_ts().
 #' By Barbara Robson (AIMS).
 #'
-#' @return a data frame containing the dates and values of extracted variables
+#' @return a tibble containing the dates and values of extracted variables
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param geocoordinates is a vector containing the decimal latitude and longitude of the desired location. If 
@@ -719,8 +878,8 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
 #'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
+#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
@@ -729,7 +888,7 @@ get_ereefs_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+#' get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
 #'}
 get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                           geocoordinates=c(-23.39189, 150.88852), 
@@ -737,10 +896,10 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 		                      start_date = c(2010,12,31), 
 		                      end_date = c(2016,10,31), 
                           input_file = "menu",
-                          #input_file = "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
+                          #input_file = "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_bgc_GBR4_H2p0_B2p0_Chyd_Dcrt/gbr4_bgc_simple_2010-01.nc",
                           input_grid = NA,
                           eta_stem = NA,
-                          override_positive=FALSE,
+                          override_positive = FALSE,
                           verbosity = 1)
 {
   get_ereefs_ts(var_names=var_names, geocoordinates=geocoodinates, layer=layer, 
@@ -754,7 +913,7 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value.
 #' By Barbara Robson (AIMS).
 #'
-#' @return a data frame containing the dates and values of extracted variables
+#' @return a tibble containing the dates and values of extracted variables
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param geocoordinates is a vector containing the decimal latitude and longitude of the desired location. If 
@@ -777,8 +936,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
 #'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
+#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
@@ -789,8 +948,8 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-#' get_ereefs_depth_integrated_ts(c('salt', 'temp'), geocoordinates=data.frame(latitude=c(-23.39189, -23.3), longitude=c(150.88852, 150.8)), start_date=c(2011,1,2),end_date=c(2011,1,5))
+#' get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+#' get_ereefs_depth_integrated_ts(c('salt', 'temp'), geocoordinates=tibble(latitude=c(-23.39189, -23.3), longitude=c(150.88852, 150.8)), start_date=c(2011,1,2),end_date=c(2011,1,5))
 #'}
 get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                         geocoordinates=c(-23.39189, 150.88852), 
@@ -799,7 +958,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                         input_file = "menu",
 			                  input_grid = NA,
 			                  eta_stem = NA,
-			                  override_positive=FALSE,
+			                  override_positive = FALSE,
                         verbosity = 1,
                         mass = FALSE)
 {
@@ -811,21 +970,23 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
-  # Make sure the geocoordinates are in the desired data.frame format. Warn if column names are absent or unclear.
+  # Make sure the geocoordinates are in the desired tibble format. Warn if column names are absent or unclear.
   if (!("data.frame" %in% class(geocoordinates))) {
-    # geocoordinates has been provided as an array/matrix. Coerce it into a data frame for consistency.
-    geocoordinates <- data.frame(latitude = geocoordinates[,1], longitude = geocoordinates[,2])
+    # geocoordinates has been provided as an array/matrix. Coerce it into a tibble for consistency.
+    geocoordinates <- tibble(latitude = geocoordinates[,1], longitude = geocoordinates[,2])
   }
   ilat <- which((names(geocoordinates) == "latitude")|(names(geocoordinates) == "lat"))
   ilon <- which((names(geocoordinates) == "longitude")|(names(geocoordinates) == "lon"))
   if (length(ilat)) {
-    geocoordinates <- data.frame(latitude = geocoordinates[, ilat], longitude = geocoordinates[, ilon])
+    names(geocoordinates)[c(ilat, ilon)] <- c('latitude', 'longitude')
+    geocoordinates <- tibble(latitude = geocoordinates[, ilat], longitude = geocoordinates[, ilon])
   } else {
     warning("Assuming that the first column of geocoordinates is latitude and the second column is longitude")
+    names(geocoordinates)[1:2] <- c("latitude", "longitude")
   }
-  names(geocoordinates)[1:2] <- c("latitude", "longitude")
 
-  geocoordinates <- geocoordinates %>% dplyr::rowwise() %>% 
+  geocoordinates <- geocoordinates %>% dplyr::relocate(latitude, longitude) %>%
+                                       dplyr::rowwise() %>% 
                                        dplyr::mutate(grid_index = which.min(earth.dist(latitude, longitude, spatial_grid$latitude, spatial_grid$longitude)))
   geocoordinates[, c("i", "j", "cell_latitude", "cell_longitude")] = spatial_grid[geocoordinates$grid_index, c("i", "j", "latitude", "longitude")]
 
@@ -833,8 +994,9 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   results <- NULL
 
   nc <- tidync::tidync(input_file)
-  nc <- nc %>% tidync::activate(var_names[1]) %>% tidync::activate(tidync::active(nc), select_var = var_names)
-  ndims <- dim(nc %>% hyper_dims())[1]
+  nc <- nc %>% tidync::activate(var_names[1]) 
+  nc <- nc %>% tidync::activate(tidync::active(nc), select_var = var_names)
+  ndims <- dim(nc %>% tidync::hyper_dims())[1]
   if (ndims < 4) stop(paste(var_name[1], 'is not 3D in this file. Either this file contains only surface data\n',
                             'or this is a 2D variable. Cannot extract values at a specified depth.'))
 
@@ -844,11 +1006,19 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   } else {
 	  zsign <-1
   }
-  botz <- nc %>% tidync::activate('botz') %>% 
-                 tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                      j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j))) %>%
-                 tidync::hyper_tibble('botz') %>% 
-                 dplyr::mutate(botz = botz * zsign)
+  if (simple_format) {
+    botz <- nc %>% tidync::activate('botz') %>% 
+                   tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                        j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j))) %>%
+                   tidync::hyper_tibble('botz') %>% 
+                   dplyr::mutate(botz = botz * zsign)
+  } else {
+    botz <- nc %>% tidync::activate('botz') %>% 
+                   tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                        j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j))) %>%
+                   tidync::hyper_tibble('botz') %>% 
+                   dplyr::mutate(botz = botz * zsign)
+  }
 
   # Loop through relevant daily or monthly eReefs files to extract the data
   if ((ereefs_case[2] == "1km")|(ereefs_case[2] == "4km")) {
@@ -875,7 +1045,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
       if (ereefs_case[2] == '4km') { 
         fileslist <- 1
-        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, 1, sep="-")), '%Y-%m'), '.nc')
+        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, 1, sep="-")), '%Y-%m'), ".nc")
 	      day_count <- day_count / as.numeric(ds[2]-ds[1])
         if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
         if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
@@ -888,24 +1058,24 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 	      fileslist <- from_day:(from_day+day_count-1)
 	      from_day <- 1
 	      day_count <- 1
-      } else stop("Shouldn't happen: ereefs_case not recognised")
+    } else stop("Shouldn't happen: ereefs_case not recognised")
 
-      for (dcount in fileslist) {
-        if (ereefs_case[2] == '1km') {
-	        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
-        }
-        nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) 
-        nc <- nc %>% tidync::activate(tidync::active(nc), select_var = var_names)
+    for (dcount in fileslist) {
+      if (ereefs_case[2] == '1km') {
+        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, dcount, sep="-")), '%Y-%m-%d'), ".nc")
+      }
+      nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) 
+      nc <- nc %>% tidync::activate(tidync::active(nc), select_var = var_names)
 
-        nc_eta <- tryCatch(nc %>% tidync::activate('eta'), finally = NULL)
-        if (is.null(nc_eta)) {
-          if (!is.na(eta_stem)) {
-            if (ereefs_case[2] == '4km') {
+      nc_eta <- tryCatch(nc %>% tidync::activate("eta"), finally = NULL)
+      if (is.null(nc_eta)) {
+        if (!is.na(eta_stem)) {
+          if (ereefs_case[2] == '4km') {
               etafile  <- paste0(eta_stem, format(as.Date(paste(start_yr, start_month, 1, sep='-')), '%Y-%m'), 
-			          '.nc') 
+			          ".nc") 
             } else if (ereefs_case[2] == '1km') {
               etafile <- paste0(eta_stem, format(as.Date(paste(start_yr, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			          '.nc') 
+			          ".nc") 
             }
           } else {
             stop(paste('eta (surface elevation) does not exist in', input_file, '\n',
@@ -914,14 +1084,22 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                        'with results output on the same time step. If so, specify a value for eta_stem. Otherwise, \n',
                        'you can use get_ereefs_ts() to extract data at a depth below MSL instead.'))
           }
-          nc_eta <- tidync::tidync(etafile) %>% tidync::activate('eta')
+          nc_eta <- tidync::tidync(etafile) %>% tidync::activate("eta")
         } else {
           if (!is.na(eta_stem)) warning(paste('eta exists in', input_file, ' so eta_stem is ignored.'))
         }
-        eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                            j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                            time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
-                          tidync::hyper_tibble('eta')
+        if ("time" %in% (tidync::hyper_dims(nc_eta)$name)) {
+          eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                                 j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                                 time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+                               tidync::hyper_tibble("eta")
+        } else {
+          eta <- nc_eta %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                                 j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                                 record = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+                               tidync::hyper_tibble("eta") %>%
+              dplyr::rename(time = record, i = i_centre, j = j_centre)
+        }
         botz <- right_join(botz, eta, by=c('i','j'))
         botz$botz[is.na(botz$botz)] <- 1e22
 
@@ -952,20 +1130,28 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         dz <- dz %>% tidyr::pivot_longer(cols = starts_with("k"), names_to="k", names_prefix="k", values_to="dz") %>%
           dplyr::mutate(k = as.integer(k))
   
-        wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                          j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                          time = dplyr::between(index,from_day, from_day+day_count-1)) %>%
-                     tidync::hyper_tibble(select_var = var_names)
-        wc <- dplyr::left_join(wc, dz, by=c('i','j','time','k')) 
+        if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+          wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                            j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                            time = dplyr::between(index,from_day, from_day+day_count-1)) %>%
+                       tidync::hyper_tibble(select_var = var_names)
+        } else {
+          wc <- nc %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                            j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                            record = dplyr::between(index,from_day, from_day+day_count-1)) %>%
+                       tidync::hyper_tibble(select_var = var_names) %>%
+              dplyr::rename(time = record, i = i_centre, j = j_centre)
+        }
+        wc <- dplyr::left_join(wc, dz, by=c('i','j',"time",'k')) 
         results <- rbind(results, wc)
       }
     }
   } else {
-        nc_eta <- tryCatch(nc %>% tidync::activate('eta'), finally = NULL)
+        nc_eta <- tryCatch(nc %>% tidync::activate("eta"), finally = NULL)
         if (is.null(nc_eta)) {
           if (!is.na(eta_stem)) {
-            etafile <- paste0(eta_stem, '.nc')
-            nc_eta <- tidync::tidync(etafile) %>% tidync::activate('eta')
+            etafile <- paste0(eta_stem, ".nc")
+            nc_eta <- tidync::tidync(etafile) %>% tidync::activate("eta")
           } else {
             stop(paste('eta (surface elevation) does not exist in', input_file, '\n',
                        'eta is required to calculate depth below the free surface.\n',
@@ -976,10 +1162,18 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         } else {
           if (!is.na(eta_stem)) warning(paste('eta exists in', input_file, ' so eta_stem is ignored.'))
         }
-        eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                            j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                            time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
-                          tidync::hyper_tibble('eta')
+        if ("time" %in% (tidync::hyper_dims(nc_eta)$name)) {
+          eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                                 j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                                 time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+                            tidync::hyper_tibble("eta")
+        } else {
+          eta <- nc_eta %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                                 j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                                 record = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+                            tidync::hyper_tibble("eta") %>% 
+        dplyr::rename(time = record, i = i_centre, j = j_centre)
+        }
         botz <- right_join(botz, eta, by=c('i','j'))
         botz$botz[is.na(botz$botz)] <- 1e22
 
@@ -1010,25 +1204,36 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         dz <- dz %>% tidyr::pivot_longer(cols = starts_with("k"), names_to="k", names_prefix="k", values_to="dz") %>%
           dplyr::mutate(k = as.integer(k))
   
-        wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                          j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                          time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
-                     tidync::hyper_tibble(select_var = var_names)
-        wc <- dplyr::left_join(wc, dz, by=c('i','j','time','k')) 
+        if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+          wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                            j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                            time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+                       tidync::hyper_tibble(select_var = var_names)
+        } else {
+          wc <- nc %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                            j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                            record = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin))) %>%
+                       tidync::hyper_tibble(select_var = var_names) %>%
+                       dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+                       dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+        }
+        wc <- dplyr::left_join(wc, dz, by=c("i", "j", "time", "k")) 
         results <- rbind(results, wc)
   }
 
   var_summary <- function(data, var) {
-    data %>% dplyr::group_by(i,j,time) %>% 
-      dplyr::summarise(i =i, j=j, watercol_depth = watercol_depth, "{var}" := sum(.data[[var]] * dz / watercol_depth))
+    if ("t" %in% names(data)) data <- data %>% dplyr::rename(time = t)
+    data %>% 
+      dplyr::group_by(i,j,time) %>% 
+      dplyr::summarise(i = i, j = j, watercol_depth = watercol_depth, "{var}" := sum(.data[[var]] * dz / watercol_depth))
   }
 
   results <- results %>% var_summary(var_names[j])
   for (j in 2:length(var_names)) { 
-    results <- dplyr::left_join(wc %>% var_summary(var_names[j]), results, by=c('i','j','time','watercol_depth'))
+    results <- dplyr::left_join(wc %>% var_summary(var_names[j]), results, by = c("i", "j", "time", "watercol_depth"))
   }
-  results <- dplyr::left_join(results, geocoordinates, by=c('i','j'))
-  results <- results %>% mutate(time = ereefs_origin + seconds(time*86400)) %>% select(-grid_index)
+  results <- dplyr::left_join(results, geocoordinates, by=c("i", "j"))
+  results <- results %>%dplyr::mutate(time = ereefs_origin + lubridate::seconds(time * 86400)) %>% select(-grid_index)
   return(results)
 }
 
@@ -1039,7 +1244,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value and 
 #' get_ereefs_depth_integrated_ts() to calculate depth-integrated values. Barbara Robson (AIMS).
 #'
-#' @return a data frame containing the dates and values of extracted variables
+#' @return a tibble containing the dates and values of extracted variables
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param geocoordinates A vector containing the decimal latitude and longitude of the desired location. If 
@@ -1064,16 +1269,16 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
 #'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
 #'      (not simple-format) ereefs netcdf output file such as 
-#'      "http://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
+#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
 #' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
 #'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
 #'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_depth_specified_ts(c('Chl_a_sum', 'NH4'), depth=5.0, geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), 
+#' get_ereefs_depth_specified_ts(c('Chl_a_sum', 'NH4'), depth=5.0, geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), 
 #'   start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-#' get_ereefs_depth_specified_ts('salt', depth=1.0, geocoordinates=data.frame(latitude=-23.39189, longitude=150.88852), 
+#' get_ereefs_depth_specified_ts('salt', depth=1.0, geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), 
 #'   start_date=c(2010,12,31),end_date=c(2011,1,5))
 #'}
 get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
@@ -1094,21 +1299,22 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
 
-  # Make sure the geocoordinates are in the desired data.frame format. Warn if column names are absent or unclear.
+  # Make sure the geocoordinates are in the desired tibble format. Warn if column names are absent or unclear.
   if (!("data.frame" %in% class(geocoordinates))) {
-    # geocoordinates has been provided as an array/matrix. Coerce it into a data frame for consistency.
-    geocoordinates <- data.frame(latitude = geocoordinates[,1], longitude = geocoordinates[,2])
+    # geocoordinates has been provided as an array/matrix. Coerce it into a tibble for consistency.
+    geocoordinates <- tibble(latitude = geocoordinates[,1], longitude = geocoordinates[,2])
   }
   ilat <- which((names(geocoordinates) == "latitude")|(names(geocoordinates) == "lat"))
   ilon <- which((names(geocoordinates) == "longitude")|(names(geocoordinates) == "lon"))
   if (length(ilat)) {
-    geocoordinates <- data.frame(latitude = geocoordinates[, ilat], longitude = geocoordinates[, ilon])
+    names(geocoordinates)[c(ilat, ilon)] <- c('latitude', 'longitude')
   } else {
     warning("Assuming that the first column of geocoordinates is latitude and the second column is longitude")
+    names(geocoordinates)[1:2] <- c("latitude", "longitude")
   }
-  names(geocoordinates)[1:2] <- c("latitude", "longitude")
 
-  geocoordinates <- geocoordinates %>% dplyr::rowwise() %>% 
+  geocoordinates <- geocoordinates %>% dplyr::relocate(latitude, longitude) %>%
+                                       dplyr::rowwise() %>% 
                                        dplyr::mutate(grid_index = which.min(earth.dist(latitude, longitude, spatial_grid$latitude, spatial_grid$longitude)))
   geocoordinates[, c("i", "j", "cell_latitude", "cell_longitude")] = spatial_grid[geocoordinates$grid_index, c("i", "j", "latitude", "longitude")]
 
@@ -1117,7 +1323,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
   nc <- tidync::tidync(input_file)
   nc <- nc %>% tidync::activate(var_names[1]) %>% tidync::activate(tidync::active(nc), select_var = var_names)
-  ndims <- dim(nc %>% hyper_dims())[1]
+  ndims <- dim(nc %>% tidync::hyper_dims())[1]
   if (ndims < 4) stop(paste(var_name[1], 'is not 3D in this file. Either this file contains only surface data\n',
                             'or this is a 2D variable. Cannot extract values at a specified depth.'))
 
@@ -1158,7 +1364,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       }
       if (ereefs_case[2] == '4km') { 
         fileslist <- 1
-        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, 1, sep="-")), '%Y-%m'), '.nc')
+        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, 1, sep="-")), '%Y-%m'), ".nc")
 	      day_count <- day_count / as.numeric(ds[2]-ds[1])
         if ((ds[length(ds)] - ds[1]) > 31.5) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains more than a month of data.')
         if ((ds[length(ds)] - ds[1]) < 27) warning('Filename looks like a monthly output file (i.e. contains two dashes) but file contains less than a month of data.')
@@ -1175,22 +1381,22 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 
       for (dcount in fileslist) {
         if (ereefs_case[2] == '1km') {
-	        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, dcount, sep="-")), '%Y-%m-%d'), '.nc')
+	        input_file <- paste0(input_stem, format(as.Date(paste(yr, month, dcount, sep="-")), '%Y-%m-%d'), ".nc")
         }
         nc <- tidync::tidync(input_file) %>% tidync::activate(var_names[1]) 
         nc <- nc %>% tidync::activate(tidync::active(nc), select_var = var_names)
 
-        nc_eta <- tryCatch(nc %>% tidync::activate('eta'), finally = NULL)
+        nc_eta <- tryCatch(nc %>% tidync::activate("eta"), finally = NULL)
         if (is.null(nc_eta)) {
           if (!is.na(eta_stem)) {
             if (ereefs_case[2] == '4km') {
               etafile  <- paste0(eta_stem, format(as.Date(paste(start_yr, start_month, 1, sep='-')), '%Y-%m'), 
-			          '.nc') 
+			          ".nc") 
             } else if (ereefs_case[2] == '1km') {
               etafile <- paste0(eta_stem, format(as.Date(paste(start_yr, start_month, start_day, sep='-')), '%Y-%m-%d'), 
-			          '.nc') 
+			          ".nc") 
             } else {
-              etafile <- paste0(eta_stem, '.nc')
+              etafile <- paste0(eta_stem, ".nc")
             }
           } else {
             stop(paste('eta (surface elevation) does not exist in', input_file, '\n',
@@ -1199,14 +1405,23 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                        'with results output on the same time step. If so, specify a value for eta_stem. Otherwise, \n',
                        'you can use get_ereefs_ts() to extract data at a depth below MSL instead.'))
           }
-          nc_eta <- tidync::tidync(etafile) %>% tidync::activate('eta')
+          nc_eta <- tidync::tidync(etafile) %>% tidync::activate("eta")
         } else {
           if (!is.na(eta_stem)) warning(paste('eta exists in', input_file, ' so eta_stem is ignored.'))
         }
-        eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                            j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                            time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
-                          tidync::hyper_tibble('eta')
+          if ("time" %in% (tidync::hyper_dims(nc_eta)$name)) {
+            eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                                   j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                                   time = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+                                 tidync::hyper_tibble("eta")
+        } else {
+            eta <- nc_eta %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                                   j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                                   record = dplyr::between(index, from_day, from_day+day_count-1)) %>%
+                                 tidync::hyper_tibble("eta") %>%
+              dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+              dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+        }
 
         z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta$eta)))
         zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta$eta)))
@@ -1217,7 +1432,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         zm1r <- zm1 - eta2
         dz <- 0 * z
         wet <- (eta2 > zm1) & (z > botz$botz)        # There is water in this layer
-        bottom <- (wet & (zm1<botz$botz))            # The bottom intersects this layer
+        bottom <- (wet & (zm1 < botz$botz))            # The bottom intersects this layer
 
         shallower_top <- (-zr < depth)               # The top of this layer is above the target depth
         deeper_bottom <- (-zm1r > depth) | (bottom)  # The bottom of this layer is below the target depth or this is the bottom layer
@@ -1226,53 +1441,71 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
         count <- 0
         for (ind in from_day:(from_day + day_count - 1)) {
           count <- count + 1
-          wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                            j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                            time = index==ind,
-                                            k = target[,count]) %>%
-                     tidync::hyper_tibble(select_var = var_names)
+          if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+            wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                              j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                              time = index == ind,
+                                              k = target[, count]) %>%
+                       tidync::hyper_tibble(select_var = var_names)
+          } else {
+            wc <- nc %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                              j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                              record = index == ind,
+                                              k = target[, count]) %>%
+                       tidync::hyper_tibble(select_var = var_names) %>%
+                dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+                dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+          }
           wc <- dplyr::left_join(geocoordinates, wc, by = c("i", "j"))
           results <- rbind(results, wc)
         }
-        if (verbosity>0) setTxtProgressBar(pb,mcount)
+        if (verbosity > 0) setTxtProgressBar(pb, mcount)
       }
     }
-    if (verbosity>0) close(pb)
+    if (verbosity > 0) close(pb)
   } else {
     # Single nc or ncml file. No need to loop through months, but might need to check for monotonicity of timeseries 
-    print(paste('No waitbar shown in this case. If you have asked for a large dataset, please be patient.',
-                  'If you have asked for a long time-series from a THREDDS server,',
-                  'you might encounter transfer errors, but it should self-correct.',
-                  'If not, consider breaking it up into shorter sections or pointing to an individual netcdf file.'))
-    if (end_date > max(ds, na.rm=TRUE)) {
-      warning(paste('end_date', end_date, 'is beyond available data. Ending at', max(ds, na.rm=TRUE)))
-      end_date <- max(ds, na.rm=TRUE)
+    print(paste("No waitbar shown in this case. If you have asked for a large dataset, please be patient.",
+                  "If you have asked for a long time-series from a THREDDS server,",
+                  "you might encounter transfer errors, but it should self-correct.",
+                  "If not, consider breaking it up into shorter sections or pointing to an individual netcdf file."))
+    if (end_date > max(ds, na.rm = TRUE)) {
+      warning(paste("end_date", end_date, "is beyond available data. Ending at", max(ds, na.rm = TRUE)))
+      end_date <- max(ds, na.rm = TRUE)
     }
-    if (start_date < min(ds, na.rm=TRUE)) {
-      warning(paste('start_date', start_date, 'is beyond available data. Starting at', min(ds, na.rm=TRUE)))
-      start_date <- min(ds, na.rm=TRUE)
+    if (start_date < min(ds, na.rm = TRUE)) {
+      warning(paste("start_date", start_date, "is beyond available data. Starting at", min(ds, na.rm = TRUE)))
+      start_date <- min(ds, na.rm = TRUE)
     }
 
-    nc_eta <- tryCatch(nc %>% tidync::activate('eta'), finally = NULL)
+    nc_eta <- tryCatch(nc %>% tidync::activate("eta"), finally = NULL)
     if (is.null(nc_eta)) {
       if (!is.na(eta_stem)) {
-        etafile <- paste0(eta_stem, '.nc')
+        etafile <- paste0(eta_stem, ".nc")
       } else {
-        stop(paste('eta (surface elevation) does not exist in', input_file, '\n',
-                   'eta is required to calculate depth below the free surface.\n',
-                   'It may exist in a standard format or hydrodynamic model output that mirrors this eReefs run.\n',
-                   'with results output on the same time step. If so, specify a value for eta_stem. Otherwise, \n',
-                   'you can use get_ereefs_ts() to extract data at a depth below MSL instead.'))
+        stop(paste("eta (surface elevation) does not exist in", input_file, "\n",
+                   "eta is required to calculate depth below the free surface.\n",
+                   "It may exist in a standard format or hydrodynamic model output that mirrors this eReefs run.\n",
+                   "with results output on the same time step. If so, specify a value for eta_stem. Otherwise, \n",
+                   "you can use get_ereefs_ts() to extract data at a depth below MSL instead."))
       }
-      nc_eta <- tidync::tidync(etafile) %>% tidync::activate('eta')
+      nc_eta <- tidync::tidync(etafile) %>% tidync::activate("eta")
     } else {
-      if (!is.na(eta_stem)) warning(paste('eta exists in', input_file, ' so eta_stem is ignored.'))
+      if (!is.na(eta_stem)) warning(paste("eta exists in", input_file, " so eta_stem is ignored."))
     }
-    eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                        j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                        time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin)))  %>%
-                      tidync::hyper_tibble('eta')
-
+    if ("time" %in% (tidync::hyper_dims(nc_eta)$name)) {
+      eta <- nc_eta %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                                          j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                                          time = dplyr::between(time, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin)))  %>%
+                        tidync::hyper_tibble("eta")
+    } else {
+      eta <- nc_eta %>% tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                                          j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                                          record = dplyr::between(record, as.numeric(start_date - ereefs_origin), as.numeric(end_date - ereefs_origin)))  %>% 
+        tidync::hyper_tibble("eta") %>% 
+        dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+        dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+    }
     z <- array(z_grid[2:length(z_grid)], dim=c(length(z_grid)-1, length(eta$eta)))
     zm1 <- array(z_grid[1:(length(z_grid)-1)], dim=c(length(z_grid)-1, length(eta$eta)))
     eta2 <- t(array(eta$eta, dim=c(length(eta$eta), length(z_grid)-1)))
@@ -1294,73 +1527,84 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
     count <- 0
     for (ind in which(dplyr::between(ds, start_date, end_date))) { 
       count <- count + 1
-      wc <- nc %>% tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
-                                        j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
-                                        k = target[, count], 
-                                        time = index==ind) %>%
-                 tidync::hyper_tibble(select_var = var_names)
+      if ("time" %in% (tidync::hyper_dims(nc)$name)) {
+        wc <- nc %>% 
+          tidync::hyper_filter(i = dplyr::between(i, min(geocoordinates$i), max(geocoordinates$i)),
+                               j = dplyr::between(j, min(geocoordinates$j), max(geocoordinates$j)),
+                               k = target[, count], 
+                               time = index == ind) %>%
+          tidync::hyper_tibble(select_var = var_names)
+      } else {
+        wc <- nc %>% 
+          tidync::hyper_filter(i_centre = dplyr::between(i_centre, min(geocoordinates$i), max(geocoordinates$i)),
+                               j_centre = dplyr::between(j_centre, min(geocoordinates$j), max(geocoordinates$j)),
+                               k = target[, count], 
+                               record = index == ind) %>%
+          tidync::hyper_tibble(select_var = var_names) %>% 
+          dplyr::rename(time = record, i = i_centre, j = j_centre) %>%
+          dplyr::mutate(time = as.numeric(ds[time] - ereefs_origin))
+      }
       wc <- dplyr::left_join(geocoordinates, wc, by = c("i", "j"))
       results <- rbind(results, wc)
     }
   }
-  results <- results %>% mutate(time = ereefs_origin + seconds(time*86400))
+  results <- results %>% dplyr::mutate(time = ereefs_origin + lubridate::seconds(time * 86400))
   results <- results %>% select(-grid_index)
   return(results)
 }
 
-#' A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
-#' if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.
-#'
-#' Parameters before 'tries' are passed unlist(month.day.yr(start_date))
-#'
-#' @param tries number of times to retry (increasing pause length by one second each time. Default 4 
-#' @return variable extracted using ncvar_get()
-#' @export
-safe_ncvar_get <- function(nc,varid=NA, start=NA, count=NA, verbose=FALSE,
- signedbyte=TRUE, collapse_degen=TRUE, raw_datavals=FALSE, tries=20) {
-   if (substr(nc$filename, 1, 4)!="http") {
-     myvar <- ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals)
-   } else {
-     myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
-     trywait = 1
-     while ((class(myvar)[[1]]=='try-error')&(trywait<=(tries*2))) { 
-        print(paste('retrying in ', trywait, 'second(s)')) 
-        Sys.sleep(trywait) 
-        trywait <- trywait+1 
-        myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
-     }
-     if (trywait>(tries*2)) stop(paste('Cannot access netcdf file', nc$filename))
-   }
-   return(myvar)
+#" A wrapper to ncdf4::ncvar_get() that will pause and try again several times (defaulting to 12)
+#" if it is a web-served netcdf file and at first it fails, to overcome temporary net access errors or DAP errors.
+#"
+#" Parameters before "tries" are passed unlist(month.day.yr(start_date))
+#"
+#" @param tries number of times to retry (increasing pause length by one second each time. Default 4 
+#" @return variable extracted using ncvar_get()
+#" @export
+safe_ncvar_get <- function(nc, varid = NA, start = NA, count = NA, verbose = FALSE,
+                           signedbyte = TRUE, collapse_degen = TRUE, raw_datavals = FALSE, tries = 20) {
+  if (substr(nc$filename, 1, 4) != "https") {
+    myvar <- ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals)
+  } else {
+    myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+    trywait <- 1
+    while ((class(myvar)[[1]] == "try-error") && (trywait <= (tries * 2))) { 
+      print(paste("retrying in", trywait, "second(s)")) 
+      Sys.sleep(trywait) 
+      trywait <- trywait + 1 
+      myvar <- try(ncdf4::ncvar_get(nc, varid, start, count, verbose, signedbyte, collapse_degen, raw_datavals))
+    }
+    if (trywait > (tries * 2)) stop(paste("Cannot access netcdf file", nc$filename))
+  }
+  return(myvar)
 }
 
-#' A wrapper to ncdf4::nc_open() that will pause and try again up to 119 times
-#' if at first it fails, to overcome temporary net access errors or DAP errors.
-#'
-#' Parameters before 'tries' are passed through to ncvar_get
-#'
-#' @param tries number of times to retry (increasing pause length by one second each time. Default 4 
-#' @return variable extracted using ncvar_get()
-#' @export
-safe_nc_open <- function(filename, tries=4) {
-   
-   if (substr(filename, 1, 4)!="http") {
+#" A wrapper to ncdf4::nc_open() that will pause and try again up to 119 times
+#" if at first it fails, to overcome temporary net access errors or DAP errors.
+#"
+#" Parameters before "tries" are passed through to ncvar_get
+#"
+#" @param tries number of times to retry (increasing pause length by one second each time. Default 4 
+#" @return variable extracted using ncvar_get()
+#" @export
+safe_nc_open <- function(filename, tries = 4) {
+  if (substr(filename, 1, 4) != "https") {
     nc <- ncdf4::nc_open(filename)
-   } else {
+  } else {
     nc <- try(ncdf4::nc_open(filename))
-    trywait = 1
-    while ((class(nc)[[1]]=='try-error')&(trywait<=(tries+1))) { 
-       warning(paste('Trouble opening', filename,
-              'This probably means the netcdf file name is incorrect or target date out of range for this eReefs run,\n',
-              'but could be a network connection issue...\n', 
-              '  Retrying in ', trywait, 'second(s). This will be attempt', trywait+1, 'of', tries+1)) 
-       Sys.sleep(trywait) 
-       trywait <- trywait+1 
-       nc <- try(ncdf4::nc_open(filename))
+    trywait <- 1
+    while ((class(nc)[[1]] == "try-error") && (trywait <= (tries + 1))) { 
+      warning(paste("Trouble opening", filename,
+                    "This probably means the netcdf file name is incorrect or target date out of range for this eReefs run,\n",
+                    "but could be a network connection issue...\n", 
+                    "  Retrying in ", trywait, "second(s). This will be attempt", trywait + 1, "of", tries + 1)) 
+      Sys.sleep(trywait) 
+      trywait <- trywait + 1 
+      nc <- try(ncdf4::nc_open(filename))
     }
-    if (trywait>(tries+1)) stop(paste('Cannot open netcdf file', filename))
-   }
-   return(nc)
+    if (trywait > (tries + 1)) stop(paste("Cannot open netcdf file", filename))
+  }
+  return(nc)
 }
 
 #' A simple function to convert a date provided in any of several formats to a date-time object.
@@ -1374,16 +1618,18 @@ safe_nc_open <- function(filename, tries=4) {
 #'              YYYYMMDDHHMM
 #'              YYYYMMDDHHMMSS
 #'              Date format date (e.g., as.Date('1970-01-01', origin='1970-01-01'))
-#'              character format, e.g. '1970-01-01'
+#'              character format, e.g. '1970-01-01', '1970-01-01 12' or '1970-01-01 1200'
 #' @return date in date-time format (for lubridate)
 #' @export
 get_date_time <- function(d) {
   if (is.vector(d)) {
     if (length(d)==1) {
-      d <- switch(nchar(d)/2 - 2, 
-                  lubridate::ymd(d, tz = "Etc/GMT-10"),
+      d <- switch(which(nchar(d) == c(10, 13, 15, 16, 17, 19)),
+                  lubridate::ymd_h(paste0(d, '12'), tz = "Etc/GMT-10"),
                   lubridate::ymd_h(d, tz = "Etc/GMT-10"),
                   lubridate::ymd_hm(d, tz = "Etc/GMT-10"),
+                  lubridate::ymd_hm(d, tz = "Etc/GMT-10"),
+                  lubridate::ymd_hms(d, tz = "Etc/GMT-10"),
                   lubridate::ymd_hms(d, tz = "Etc/GMT-10"))
     } else {
       if (length(d)<4) d[4] <- 12 # midday
@@ -1395,5 +1641,800 @@ get_date_time <- function(d) {
     d <- lubridate::ymd_h(paste(d, '12'), tz="Etc/GMT-10")
   } else if (class(d)[1] == "Date") {
     d <- lubridate::ymd_h(paste(format(d, '%Y-%m-%d'), '12'), tz="Etc/GMT-10")
+  } else if (class(d)[1] == "POSIXct") {
+    d <- d
   }
 }
+
+#' Opens the netcdf file and extracts the time origin and time dimension using tidync/ncmeta.
+#'
+#' @param input_file The name of the netcdf file (in standard or simple EMS netcdf format) from which
+#'   to extract the data.
+#' @return A list containing ereefs_origin (the reference date/time used in the netcdf file),
+#'   the POSIXct time series, and the raw numeric time coordinate.
+get_origin_and_times <- function(input_file) {
+  time_var <- ereefs_time_var_name(input_file)
+  units_value <- ereefs_var_attr(input_file, time_var, "units")
+  origin_text <- sub("^days since\\s+", "", units_value)
+  if (identical(origin_text, units_value)) {
+    stop("Time units must be expressed as 'days since <timestamp>'.")
+  }
+
+  ereefs_origin <- as.POSIXct(origin_text, tz = "Etc/GMT-10")
+  if (is.na(ereefs_origin)) {
+    ereefs_origin <- stringi::stri_datetime_parse(origin_text, "yyyy-MM-dd HH:mm:ss", tz = "Etc/GMT-10")[1]
+  }
+  raw_time <- as.numeric(ereefs_read_var_array(input_file, time_var))
+  ds <- ereefs_origin + lubridate::seconds(raw_time * 86400)
+  list(ereefs_origin, ds, raw_time)
+}
+
+#' Returns grid metadata for a dataset, synthesising corner grids when only regular-grid centres are provided.
+#'
+#' @param filename Name of the file to examine.
+#' @param input_grid Optional alternative file from which to load x_grid, y_grid and z_grid.
+#' @return A list containing x_grid, y_grid and z_grid, plus spatial_grid and grid_type.
+#' @export
+get_ereefs_grids <- function(filename, input_grid = NA) {
+  source_file <- if (!is.na(input_grid)) input_grid else filename
+  cache_key <- ereefs_grid_cache_key(source_file)
+  family_cache_key <- ereefs_grid_family_cache_key(source_file)
+  if (exists(cache_key, envir = .ereefs_grid_cache, inherits = FALSE)) {
+    return(get(cache_key, envir = .ereefs_grid_cache, inherits = FALSE))
+  }
+  if (!is.na(family_cache_key) && exists(family_cache_key, envir = .ereefs_grid_cache, inherits = FALSE)) {
+    grids <- get(family_cache_key, envir = .ereefs_grid_cache, inherits = FALSE)
+    assign(cache_key, grids, envir = .ereefs_grid_cache)
+    return(grids)
+  }
+
+  var_names <- ereefs_var_names(source_file)
+
+  x_grid <- NULL
+  y_grid <- NULL
+  z_grid <- NULL
+  grid_type <- "unknown"
+
+  if (all(c("x_grid", "y_grid") %in% var_names)) {
+    x_grid <- ereefs_read_var_array(source_file, "x_grid")
+    y_grid <- ereefs_read_var_array(source_file, "y_grid")
+    grid_type <- "curvilinear"
+  }
+
+  if ("z_grid" %in% var_names) {
+    z_grid <- as.numeric(ereefs_read_var_array(source_file, "z_grid"))
+  }
+
+  if (is.null(z_grid) && "zc" %in% var_names) {
+    z_grid <- ereefs_reconstruct_z_grid_from_zc(
+      zc = ereefs_read_var_array(source_file, "zc"),
+      input_file = source_file
+    )
+  }
+
+  spatial_grid <- ereefs_spatial_grid(source_file)
+  i_len <- length(unique(spatial_grid$i))
+  j_len <- length(unique(spatial_grid$j))
+
+  if (is.null(z_grid)) {
+    if (identical(i_len, 600L) && identical(j_len, 180L)) {
+      z_grid <- gbr4_z_grid
+    } else if (identical(i_len, 510L) && identical(j_len, 2389L)) {
+      z_grid <- gbr1_z_grid
+    }
+  }
+
+  if (is.null(x_grid) || is.null(y_grid)) {
+    corner_grids <- tryCatch(
+      ereefs_build_corner_grids_from_centres(spatial_grid),
+      error = function(e) NULL
+    )
+
+    if (!is.null(corner_grids)) {
+      x_grid <- corner_grids$x_grid
+      y_grid <- corner_grids$y_grid
+      grid_type <- if (ereefs_is_regular_centre_grid(spatial_grid)) "regular" else "curvilinear"
+    } else {
+      if (identical(i_len, 510L) && identical(j_len, 2389L)) {
+        x_grid <- gbr1_x_grid
+        y_grid <- gbr1_y_grid
+        if (is.null(z_grid)) z_grid <- gbr1_z_grid
+        grid_type <- "curvilinear"
+      } else if (identical(i_len, 600L) && identical(j_len, 180L)) {
+        x_grid <- gbr4_x_grid
+        y_grid <- gbr4_y_grid
+        if (is.null(z_grid)) z_grid <- gbr4_z_grid
+        grid_type <- "curvilinear"
+      } else {
+        stop("Could not construct plotting corners from this dataset. Supply input_grid if you have a trusted corner-grid file.")
+      }
+    }
+  }
+
+  grids <- list(
+    x_grid = x_grid,
+    y_grid = y_grid,
+    z_grid = z_grid,
+    spatial_grid = spatial_grid,
+    grid_type = grid_type
+  )
+  assign(cache_key, grids, envir = .ereefs_grid_cache)
+  if (!is.na(family_cache_key) && !exists(family_cache_key, envir = .ereefs_grid_cache, inherits = FALSE)) {
+    assign(family_cache_key, grids, envir = .ereefs_grid_cache)
+  }
+  grids
+}
+
+#' Set up shared parameters for extraction and plotting functions.
+#'
+#' @param start_date The date from which to start data extraction.
+#' @param end_date The end date of the data extraction request.
+#' @param input_file The URI or filename from which to extract data.
+#' @param var_names A list of eReefs variable names for which to extract data.
+#' @return A named list of parameters used by higher-level package functions.
+get_params <- function(start_date, end_date, input_file, var_names) {
+  requested_input <- ereefs_prepare_input_reference(input_file)
+  resolved_files <- ereefs_resolve_time_files(requested_input, start_date, end_date)
+  primary_file <- resolved_files$opendap_url[[1]]
+  ereefs_case <- get_ereefs_case(primary_file)
+  input_stem <- get_file_stem(primary_file)
+
+  start_date <- get_date_time(start_date)
+  end_date <- get_date_time(end_date)
+  if (start_date > end_date) {
+    stop("start_date must preceed end_date")
+  }
+
+  start_day <- lubridate::day(start_date)
+  start_tod <- as.numeric(start_date - lubridate::floor_date(start_date, "day"))
+  start_month <- lubridate::month(start_date)
+  start_year <- lubridate::year(start_date)
+  end_day <- lubridate::day(end_date)
+  end_month <- lubridate::month(end_date)
+  end_year <- lubridate::year(end_date)
+
+  month_sequence <- seq.Date(
+    from = as.Date(format(start_date, "%Y-%m-01")),
+    to = as.Date(format(end_date, "%Y-%m-01")),
+    by = "month"
+  )
+  mths <- lubridate::month(month_sequence)
+  years <- lubridate::year(month_sequence)
+
+  timing <- get_origin_and_times(primary_file)
+  grids <- get_ereefs_grids(primary_file)
+  ds <- timing[[2]]
+  blank_length <- max(1L, sum(ds >= start_date & ds <= end_date))
+
+  list(
+    input_file = primary_file,
+    requested_input = requested_input,
+    resolved_files = resolved_files,
+    ereefs_case = ereefs_case,
+    input_stem = input_stem,
+    start_date = start_date,
+    end_date = end_date,
+    start_day = start_day,
+    start_tod = start_tod,
+    start_month = start_month,
+    start_yr = start_year,
+    start_year = start_year,
+    end_day = end_day,
+    end_month = end_month,
+    end_yr = end_year,
+    end_year = end_year,
+    mths = mths,
+    yrs = years,
+    years = years,
+    var_list = paste(var_names, collapse = ","),
+    ereefs_origin = timing[[1]],
+    ds = ds,
+    julian_date = timing[[3]],
+    spatial_grid = grids$spatial_grid,
+    simple_format = identical(grids$grid_type, "regular"),
+    blank_length = blank_length
+  )
+}
+
+ereefs_botz_table <- function(input_file, matched_points, override_positive = FALSE) {
+  dims <- ereefs_var_dims(input_file, "botz")
+  i_vals <- sort(unique(matched_points$i))
+  j_vals <- sort(unique(matched_points$j))
+  filters <- list()
+  filters[[dims$name[match("i", dims$role)]]] <- i_vals
+  filters[[dims$name[match("j", dims$role)]]] <- j_vals
+  arr <- ereefs_read_var_array(input_file, "botz", filters = filters)
+  arr <- ereefs_role_array(
+    arr,
+    dims = dims,
+    target_roles = c("i", "j"),
+    filters = filters
+  )
+  arr <- array(arr, dim = c(length(i_vals), length(j_vals)))
+
+  # Keep only the matched cells so downstream wet-layer joins stay one-to-one by row_id.
+  botz_lookup <- dplyr::as_tibble(expand.grid(i = i_vals, j = j_vals)) %>%
+    dplyr::mutate(botz = as.vector(arr)) %>%
+    dplyr::mutate(botz = ereefs_z_sign(input_file, override_positive = override_positive) * botz) %>%
+    dplyr::inner_join(
+      matched_points %>% dplyr::select(row_id, i, j),
+      by = c("i", "j"),
+      relationship = "many-to-many"
+    )
+
+  botz_lookup %>%
+    dplyr::arrange(.data$row_id) %>%
+    dplyr::distinct(.data$row_id, .keep_all = TRUE)
+}
+
+ereefs_var_time_table <- function(input_file,
+                                  var_name,
+                                  matched_points,
+                                  time_index,
+                                  ds,
+                                  raw_time,
+                                  k_values = NULL) {
+  dims <- ereefs_var_dims(input_file, var_name)
+  filters <- list()
+  role_values <- list()
+
+  for (row_id in seq_len(nrow(dims))) {
+    role <- dims$role[[row_id]]
+    dim_name <- dims$name[[row_id]]
+    if (identical(role, "i")) {
+      role_values[[role]] <- sort(unique(matched_points$i))
+      filters[[dim_name]] <- role_values[[role]]
+    } else if (identical(role, "j")) {
+      role_values[[role]] <- sort(unique(matched_points$j))
+      filters[[dim_name]] <- role_values[[role]]
+    } else if (identical(role, "time")) {
+      role_values[[role]] <- ds[time_index]
+      filters[[dim_name]] <- ereefs_time_filter_values(
+        input_file,
+        time_index,
+        raw_time,
+        time_dim_name = dim_name,
+        time_coord_dim = dims$coord_dim[[row_id]]
+      )
+    } else if (identical(role, "k")) {
+      role_values[[role]] <- sort(unique(k_values))
+      filters[[dim_name]] <- role_values[[role]]
+    } else {
+      role_values[[dim_name]] <- seq_len(dims$length[[row_id]])
+    }
+  }
+
+  arr <- ereefs_read_var_array(input_file, var_name, filters = filters)
+  arr <- ereefs_mask_array_sentinels(arr, input_file, var_name)
+
+  axis_names <- vapply(seq_len(nrow(dims)), function(row_id) {
+    role <- dims$role[[row_id]]
+    if (is.na(role)) dims$name[[row_id]] else role
+  }, character(1))
+  dim_lengths <- vapply(seq_len(nrow(dims)), function(row_id) {
+    role <- dims$role[[row_id]]
+    dim_name <- dims$name[[row_id]]
+    length(role_values[[if (is.na(role)) dim_name else role]])
+  }, integer(1))
+  arr <- ereefs_role_array(
+    arr,
+    dims = dims,
+    target_roles = axis_names,
+    filters = filters,
+    drop_singleton = FALSE
+  )
+  arr <- array(arr, dim = dim_lengths)
+
+  grid_args <- lapply(seq_len(nrow(dims)), function(row_id) {
+    role <- dims$role[[row_id]]
+    dim_name <- dims$name[[row_id]]
+    role_values[[if (is.na(role)) dim_name else role]]
+  })
+  names(grid_args) <- axis_names
+
+  dplyr::as_tibble(do.call(expand.grid, grid_args)) %>%
+    dplyr::mutate(!!var_name := as.vector(arr))
+}
+
+ereefs_resolve_layer_request <- function(layer, z_grid, default_to_bottom = TRUE) {
+  n_layers <- if (is.null(z_grid)) NA_integer_ else length(z_grid) - 1L
+
+  if (is.character(layer) && length(layer) == 1L) {
+    if (layer %in% c("surface", "bottom")) {
+      if (is.na(n_layers)) stop("A z_grid is required to interpret layer = 'surface' or 'bottom'.")
+      return(layer)
+    }
+    stop("layer must be numeric, 'surface', or 'bottom'.")
+  }
+
+  if (!is.numeric(layer) || length(layer) != 1L || is.na(layer)) {
+    stop("layer must be a single numeric value, 'surface', or 'bottom'.")
+  }
+
+  if (layer < 0) {
+    if (is.na(n_layers)) stop("A z_grid is required to interpret negative layer depths.")
+    return(ereefs_layer_index_from_depth_msl(layer, z_grid))
+  }
+
+  if (is.na(n_layers)) {
+    return(as.integer(layer))
+  }
+
+  if (layer > n_layers) {
+    if (default_to_bottom) {
+      warning("Requested layer is deeper than the model water column. Using the bottom layer.")
+      return(1L)
+    }
+    stop("Requested layer is deeper than the model water column.")
+  }
+
+  as.integer(layer)
+}
+
+get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
+                          geocoordinates = c(-23.39189, 150.88852),
+                          layer = "surface",
+                          start_date = c(2016, 2, 4),
+                          end_date = c(2016, 3, 2),
+                          input_file = "catalog",
+                          input_grid = NA,
+                          eta_stem = NA,
+                          override_positive = FALSE,
+                          verbosity = 0,
+                          default_to_bottom = TRUE) {
+  rm(verbosity)
+  assignList(get_params(start_date, end_date, input_file, var_names))
+
+  grids <- get_ereefs_grids(input_file, input_grid)
+  matched_points <- ereefs_match_geocoordinates(geocoordinates, grids$spatial_grid) %>%
+    dplyr::mutate(row_id = dplyr::row_number())
+
+  layer_request <- if (!is.null(grids$z_grid)) {
+    ereefs_resolve_layer_request(layer, grids$z_grid, default_to_bottom = default_to_bottom)
+  } else {
+    NA_integer_
+  }
+
+  extracted <- lapply(resolved_files$opendap_url, function(file_to_use) {
+    timing <- get_origin_and_times(file_to_use)
+    time_index <- ereefs_time_indices(
+      timing[[2]],
+      start_date,
+      end_date,
+      nearest_if_empty = isTRUE(all.equal(start_date, end_date))
+    )
+    if (!length(time_index)) {
+      return(NULL)
+    }
+
+    result_tbl <- matched_points %>%
+      dplyr::select(-row_id) %>%
+      dplyr::slice(rep(seq_len(dplyr::n()), each = length(time_index))) %>%
+      dplyr::mutate(time = rep(timing[[2]][time_index], times = nrow(matched_points)))
+
+    target_k_tbl <- NULL
+    wet_tbl <- NULL
+    if (!is.null(grids$z_grid) && is.character(layer_request) && any(vapply(var_names, function(x) "k" %in% ereefs_var_dims(file_to_use, x)$role, logical(1)))) {
+      botz_tbl <- ereefs_botz_table(file_to_use, matched_points, override_positive = override_positive)
+      eta_tbl <- ereefs_eta_table(
+        file_to_use,
+        matched_points = matched_points,
+        ds = timing[[2]],
+        time_index = time_index,
+        start_date = start_date,
+        end_date = end_date,
+        eta_stem = eta_stem
+      )
+      wet_tbl <- ereefs_wet_layer_table(botz_tbl, eta_tbl, grids$z_grid)
+      if (identical(layer_request, "bottom")) {
+        target_k_tbl <- ereefs_surface_bottom_k(wet_tbl, which_layer = layer_request) %>%
+          dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = "row_id") %>%
+          dplyr::select(i, j, time, k)
+      }
+    }
+
+    for (var_name in var_names) {
+      dims <- ereefs_var_dims(file_to_use, var_name)
+      if ("k" %in% dims$role) {
+        if (length(layer_request) == 1L && is.na(layer_request)) {
+          stop(paste("Variable", var_name, "is depth resolved but no z_grid was available to interpret layer selection."))
+        }
+        if (is.character(layer_request)) {
+          if (identical(layer_request, "surface")) {
+            wet_surface_tbl <- ereefs_surface_bottom_k(wet_tbl, which_layer = "surface")
+            candidate_k <- seq.int(min(wet_surface_tbl$k, na.rm = TRUE), max(wet_surface_tbl$k, na.rm = TRUE))
+            surface_var_tbl <- ereefs_var_time_table(
+              file_to_use,
+              var_name,
+              matched_points,
+              time_index = time_index,
+              ds = timing[[2]],
+              raw_time = timing[[3]],
+              k_values = candidate_k
+            ) %>%
+              dplyr::select(i, j, time, k, !!var_name := .data[[var_name]]) %>%
+              dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = c("i", "j"))
+
+            target_k_tbl <- ereefs_surface_target_k(
+              wet_tbl,
+              var_tbl = surface_var_tbl %>% dplyr::select(row_id, time, k, !!var_name := .data[[var_name]]),
+              value_name = var_name
+            ) %>%
+              dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = "row_id") %>%
+              dplyr::select(i, j, time, k)
+
+            var_tbl <- surface_var_tbl %>%
+              dplyr::inner_join(target_k_tbl, by = c("i", "j", "time", "k")) %>%
+              dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+          } else {
+            var_tbl <- ereefs_var_time_table(
+              file_to_use,
+              var_name,
+              matched_points,
+              time_index = time_index,
+              ds = timing[[2]],
+              raw_time = timing[[3]],
+              k_values = unique(stats::na.omit(target_k_tbl$k))
+            ) %>%
+              dplyr::select(i, j, time, k, !!var_name := .data[[var_name]]) %>%
+              dplyr::inner_join(target_k_tbl, by = c("i", "j", "time", "k")) %>%
+              dplyr::select(-k)
+          }
+        } else {
+          var_tbl <- ereefs_var_time_table(
+            file_to_use,
+            var_name,
+            matched_points,
+            time_index = time_index,
+            ds = timing[[2]],
+            raw_time = timing[[3]],
+            k_values = layer_request
+          ) %>%
+            dplyr::filter(k == layer_request) %>%
+            dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+        }
+      } else {
+        var_tbl <- ereefs_var_time_table(
+          file_to_use,
+          var_name,
+          matched_points,
+          time_index = time_index,
+          ds = timing[[2]],
+          raw_time = timing[[3]],
+          k_values = NULL
+        ) %>%
+          dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+      }
+
+      result_tbl <- result_tbl %>%
+        dplyr::left_join(var_tbl, by = c("i", "j", "time"))
+    }
+
+    result_tbl
+  })
+
+  dplyr::bind_rows(extracted) %>%
+    dplyr::arrange(latitude, longitude, time)
+}
+
+get_ereefs_bottom_ts <- function(var_names = c("Chl_a_sum", "TN"),
+                                 geocoordinates = c(-23.39189, 150.88852),
+                                 start_date = c(2016, 2, 4),
+                                 end_date = c(2016, 3, 2),
+                                 input_file = "catalog",
+                                 input_grid = NA,
+                                 eta_stem = NA,
+                                 override_positive = FALSE,
+                                 verbosity = 1) {
+  get_ereefs_ts(
+    var_names = var_names,
+    geocoordinates = geocoordinates,
+    layer = "bottom",
+    start_date = start_date,
+    end_date = end_date,
+    input_file = input_file,
+    input_grid = input_grid,
+    eta_stem = eta_stem,
+    override_positive = override_positive,
+    verbosity = verbosity
+  )
+}
+
+get_ereefs_depth_integrated_ts <- function(var_names = c("Chl_a_sum", "TN"),
+                                           geocoordinates = c(-23.39189, 150.88852),
+                                           start_date = c(2016, 2, 4),
+                                           end_date = c(2016, 3, 2),
+                                           input_file = "catalog",
+                                           input_grid = NA,
+                                           eta_stem = NA,
+                                           override_positive = FALSE,
+                                           verbosity = 1,
+                                           mass = FALSE) {
+  rm(verbosity)
+  assignList(get_params(start_date, end_date, input_file, var_names))
+  grids <- get_ereefs_grids(input_file, input_grid)
+  if (is.null(grids$z_grid)) {
+    stop("z_grid is required for depth-integrated extraction.")
+  }
+
+  matched_points <- ereefs_match_geocoordinates(geocoordinates, grids$spatial_grid) %>%
+    dplyr::mutate(row_id = dplyr::row_number())
+
+  extracted <- lapply(resolved_files$opendap_url, function(file_to_use) {
+    timing <- get_origin_and_times(file_to_use)
+    time_index <- ereefs_time_indices(
+      timing[[2]],
+      start_date,
+      end_date,
+      nearest_if_empty = isTRUE(all.equal(start_date, end_date))
+    )
+    if (!length(time_index)) {
+      return(NULL)
+    }
+
+    botz_tbl <- ereefs_botz_table(file_to_use, matched_points, override_positive = override_positive)
+    eta_tbl <- ereefs_eta_table(
+      file_to_use,
+      matched_points = matched_points,
+      ds = timing[[2]],
+      time_index = time_index,
+      start_date = start_date,
+      end_date = end_date,
+      eta_stem = eta_stem
+    )
+    wet_tbl <- ereefs_wet_layer_table(botz_tbl, eta_tbl, grids$z_grid) %>%
+      dplyr::filter(dz > 0)
+
+    if (!nrow(wet_tbl)) {
+      return(NULL)
+    }
+
+    result_tbl <- matched_points %>%
+      dplyr::select(-row_id) %>%
+      dplyr::slice(rep(seq_len(dplyr::n()), each = length(time_index))) %>%
+      dplyr::mutate(time = rep(timing[[2]][time_index], times = nrow(matched_points))) %>%
+      dplyr::left_join(
+        wet_tbl %>%
+          dplyr::group_by(row_id, time) %>%
+          dplyr::summarise(watercol_depth = sum(dz), .groups = "drop") %>%
+          dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = "row_id") %>%
+          dplyr::select(i, j, time, watercol_depth),
+        by = c("i", "j", "time")
+      )
+
+    for (var_name in var_names) {
+      dims <- ereefs_var_dims(file_to_use, var_name)
+      if (!("k" %in% dims$role)) {
+        base_tbl <- ereefs_var_time_table(
+          file_to_use,
+          var_name,
+          matched_points,
+          time_index = time_index,
+          ds = timing[[2]],
+          raw_time = timing[[3]]
+        ) %>%
+          dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+        result_tbl <- result_tbl %>% dplyr::left_join(base_tbl, by = c("i", "j", "time"))
+        next
+      }
+
+      var_tbl <- ereefs_var_time_table(
+          file_to_use,
+          var_name,
+          matched_points,
+          time_index = time_index,
+          ds = timing[[2]],
+          raw_time = timing[[3]],
+          k_values = wet_tbl$k
+        ) %>%
+        dplyr::select(i, j, time, k, !!var_name := .data[[var_name]])
+
+      summary_tbl <- wet_tbl %>%
+        dplyr::left_join(var_tbl, by = c("i", "j", "time", "k")) %>%
+        dplyr::group_by(i, j, time) %>%
+        dplyr::summarise(
+          watercol_depth = sum(dz, na.rm = TRUE),
+          !!var_name := if (mass) {
+            sum(.data[[var_name]] * dz, na.rm = TRUE)
+          } else {
+            sum(.data[[var_name]] * dz, na.rm = TRUE) / sum(dz, na.rm = TRUE)
+          },
+          .groups = "drop"
+        )
+
+      result_tbl <- result_tbl %>% dplyr::left_join(summary_tbl, by = c("i", "j", "time", "watercol_depth"))
+    }
+
+    result_tbl
+  })
+
+  dplyr::bind_rows(extracted) %>%
+    dplyr::arrange(latitude, longitude, time)
+}
+
+get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
+                                          geocoordinates = c(-23.39189, 150.88852),
+                                          depth = 5,
+                                          start_date = c(2016, 2, 4),
+                                          end_date = c(2016, 3, 2),
+                                          input_file = "catalog",
+                                          input_grid = NA,
+                                          eta_stem = NA,
+                                          verbosity = 1) {
+  rm(verbosity)
+  assignList(get_params(start_date, end_date, input_file, var_names))
+  grids <- get_ereefs_grids(input_file, input_grid)
+  if (is.null(grids$z_grid)) {
+    stop("z_grid is required for depth-below-free-surface extraction.")
+  }
+
+  matched_points <- ereefs_match_geocoordinates(geocoordinates, grids$spatial_grid) %>%
+    dplyr::mutate(row_id = dplyr::row_number())
+
+  extracted <- lapply(resolved_files$opendap_url, function(file_to_use) {
+    timing <- get_origin_and_times(file_to_use)
+    time_index <- ereefs_time_indices(
+      timing[[2]],
+      start_date,
+      end_date,
+      nearest_if_empty = isTRUE(all.equal(start_date, end_date))
+    )
+    if (!length(time_index)) {
+      return(NULL)
+    }
+
+    botz_tbl <- ereefs_botz_table(file_to_use, matched_points)
+    eta_tbl <- ereefs_eta_table(
+      file_to_use,
+      matched_points = matched_points,
+      ds = timing[[2]],
+      time_index = time_index,
+      start_date = start_date,
+      end_date = end_date,
+      eta_stem = eta_stem
+    )
+    wet_tbl <- ereefs_wet_layer_table(botz_tbl, eta_tbl, grids$z_grid)
+    target_k <- ereefs_extract_target_k(wet_tbl, depth = depth)
+
+    result_tbl <- matched_points %>%
+      dplyr::select(-row_id) %>%
+      dplyr::slice(rep(seq_len(dplyr::n()), each = length(time_index))) %>%
+      dplyr::mutate(time = rep(timing[[2]][time_index], times = nrow(matched_points)))
+
+    for (var_name in var_names) {
+      dims <- ereefs_var_dims(file_to_use, var_name)
+      if (!("k" %in% dims$role)) {
+        base_tbl <- ereefs_var_time_table(
+          file_to_use,
+          var_name,
+          matched_points,
+          time_index = time_index,
+          ds = timing[[2]],
+          raw_time = timing[[3]]
+        ) %>%
+          dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+        result_tbl <- result_tbl %>% dplyr::left_join(base_tbl, by = c("i", "j", "time"))
+        next
+      }
+
+      var_tbl <- ereefs_var_time_table(
+          file_to_use,
+          var_name,
+          matched_points,
+          time_index = time_index,
+          ds = timing[[2]],
+          raw_time = timing[[3]],
+          k_values = unique(stats::na.omit(target_k$k))
+        ) %>%
+        dplyr::select(i, j, time, k, !!var_name := .data[[var_name]])
+
+      target_tbl <- target_k %>%
+        dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = "row_id") %>%
+        dplyr::select(i, j, time, k)
+
+      result_tbl <- result_tbl %>%
+        dplyr::left_join(
+          target_tbl %>%
+            dplyr::left_join(var_tbl, by = c("i", "j", "time", "k")) %>%
+            dplyr::select(-k),
+          by = c("i", "j", "time")
+        )
+    }
+
+    result_tbl
+  })
+
+  dplyr::bind_rows(extracted) %>%
+    dplyr::arrange(latitude, longitude, time)
+}
+
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:44
+# - date: 2026-04-26
+# - prompt_used: "Refactor the eReefs R toolkit away from ncdf4 toward tidync, add regular-grid support alongside curvilinear grids, archive existing R files, and refresh docs/examples."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 19:08
+# - date: 2026-04-26
+# - prompt_used: "Install dependencies, verify the refactored toolkit, improve efficiency for large THREDDS-served files, and build a working Jupyter demo notebook."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 21:27
+# - date: 2026-04-26
+# - prompt_used: "Continue the live OPeNDAP refactor by removing stem-based file reconstruction, resolving time ranges from THREDDS catalogs, and supporting centre-only NCI simple files."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 21:34
+# - date: 2026-04-26
+# - prompt_used: "Continue the live OPeNDAP refactor by removing stem-based file reconstruction, resolving time ranges from THREDDS catalogs, and supporting centre-only NCI simple files."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 21:37
+# - date: 2026-04-26
+# - prompt_used: "Continue the live OPeNDAP refactor by removing stem-based file reconstruction, resolving time ranges from THREDDS catalogs, and supporting centre-only NCI simple files."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 19:49
+# - date: 2026-04-26
+# - prompt_used: "Install dependencies, verify the refactored toolkit, improve efficiency for large THREDDS-served files, and build a working Jupyter demo notebook."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 22:52
+# - date: 2026-04-26
+# - prompt_used: "Finish the tidy tidync-first refactor, keep it efficient for large live OPeNDAP datasets, validate depth/free-surface logic, audit dependencies, and review plotting palettes."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 00:04
+# - date: 2026-04-27
+# - prompt_used: "Finish the tidy tidync-first refactor, keep it efficient for large live OPeNDAP datasets, validate depth/free-surface logic, audit dependencies, and review plotting palettes."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 01:28
+# - date: 2026-04-27
+# - prompt_used: "Fix local EMS time filtering so coordinate-based time dimensions use raw values while record-style time dimensions use positional indices."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 01:40
+# - date: 2026-04-27
+# - prompt_used: "Add a zc-based z_grid reconstruction fallback for simple EMS files, with an explicit warning about the assumptions."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:24
+# - date: 2026-04-27
+# - prompt_used: "Fix map/grid orientation bugs by reordering arrays explicitly by i/j/k/time roles before flattening them onto polygons."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:30
+# - date: 2026-04-27
+# - prompt_used: "Make the role-based array reordering filter-aware so singleton time and k dimensions dropped by the backend do not break map orientation fixes."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:20
+# - date: 2026-04-27
+# - prompt_used: "Check extraction array ordering as well as map ordering, and expand the live OPeNDAP demo with time-series, profile, slice, and surface-transect examples."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:43
+# - date: 2026-04-27
+# - prompt_used: "Single-time requests should fall back to the nearest available model time with a warning if there is no exact timestamp match."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 11:40
+# - date: 2026-04-28
+# - prompt_used: "Fix the blank live slice vignette example by checking botz sign conventions and correcting matched-cell bathymetry joins so plot_ereefs_slice() draws rectangles for each intersected cell."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:14
+# - date: 2026-04-28
+# - prompt_used: "Generalize the copied-up surface-layer convention so shared wet-layer helpers, surface extraction, and vertical arrays all treat simple-file surface values consistently."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:35
+# - date: 2026-04-28
+# - prompt_used: "Make z_grid and grid metadata reuse more efficient by caching get_ereefs_grids() results so repeated layer/profile calls do not recalculate grids for the same source file."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:43
+# - date: 2026-04-28
+# - prompt_used: "Extend grid caching across dated files in the same catalog family so z_grid and spatial grids are reused across daily/monthly siblings as well as exact file repeats."
