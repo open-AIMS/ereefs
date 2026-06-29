@@ -269,7 +269,7 @@ vector (e.g., <code>var_names = c("temp", "salt")</code>).</p>
 <span>  var_names <span class="op">=</span> <span class="st">"NH4"</span>,</span>
 <span>  target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-30 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
 <span>  geolocation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>latitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.26639219</span>, <span class="op">-</span><span class="fl">19.26639219</span><span class="op">)</span>, longitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">146.805701</span>, <span class="fl">147.38</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"</span></span>
+<span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Now visualise the results:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -342,13 +342,34 @@ single location and time from the same live OPeNDAP file:</p>
 <p><code><a href="../reference/get_ereefs_profile.html">get_ereefs_profile()</a></code> now favours robustness over
 low-level NetCDF slicing, which makes it slower for long requests but
 much less brittle for OPeNDAP-served data.</p>
+<p>It can also extract a sequence of profiles over a date range. The
+next example uses the same live NCI catalog as the slice example above,
+extracting <code>NH4</code> for five daily simple files at a point
+half-way along the Townsville transect:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">profile_range</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_profile.html">get_ereefs_profile</a></span><span class="op">(</span></span>
+<span>  var_names <span class="op">=</span> <span class="st">"NH4"</span>,</span>
+<span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-26 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
+<span>  end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-30 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
+<span>  geolocation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.26639219</span>, <span class="fl">147.0928505</span><span class="op">)</span>,</span>
+<span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/plot_ereefs_zvt.html">plot_ereefs_zvt()</a></code> shows the resulting profile sequence
+as a time-depth plot:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ereefs_zvt.html">plot_ereefs_zvt</a></span><span class="op">(</span></span>
+<span>  <span class="va">profile_range</span>,</span>
+<span>  var_name <span class="op">=</span> <span class="st">"NH4"</span>,</span>
+<span>  scale_col <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"#efe9d5"</span>, <span class="st">"#1f7a8c"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><img src="vignette-fig-exmp10b-1.png" alt="plot of chunk exmp10b" width="80%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level2">
 <h2 id="time-series">Time series<a class="anchor" aria-label="anchor" href="#time-series"></a>
 </h2>
 <p>We can also extract a time-series of surface data at a single or
 multiple specified locations (choose menu option 11):</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tsdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="st">"salt"</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -360,12 +381,12 @@ multiple specified locations (choose menu option 11):</p>
 attached as attributes. This keeps the table itself tidy while still
 making units and longer variable descriptions available for plotting
 labels or reporting:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">tsdata</span>, <span class="st">"variable_metadata"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">tsdata</span>, <span class="st">"units"</span><span class="op">)</span></span></code></pre></div>
 <p>For example, we can quickly plot the extracted surface temperature
 and salinity time-series:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">tsdata</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -382,14 +403,14 @@ is currently present in that catalog, the available part is returned
 with a warning.</p>
 <p>The locations could even be at all the Marine Monitoring Program
 routine water quality sampling locations:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mmpdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"salt"</span>, <span class="st">"TN"</span><span class="op">)</span>, geocoordinates <span class="op">=</span> <span class="st">"mmp"</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The time-series can also be extract at a specified depth of 5 m below
 MSL:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">deeperdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -407,7 +428,7 @@ extract a time-series of data at the bottom of the water column.
 However, to extract a time-series of data averaged over the depth of the
 water column, the user woul use the function
 <code>get_ereefs_depth_integrated_ts</code>:</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_integrated_ts.html">get_ereefs_depth_integrated_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -416,7 +437,7 @@ water column, the user woul use the function
 <span><span class="op">)</span></span></code></pre></div>
 <p>Other options include extracting a time-series of the mass per square
 metre of a variable, integrated over the depth of the water column:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intdatapermass</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_integrated_ts.html">get_ereefs_depth_integrated_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -425,7 +446,7 @@ metre of a variable, integrated over the depth of the water column:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>or extracting a time-series of data at a specified depth below the
 tidal free surface (rather than below MSL):</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tidalintdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_specified_ts.html">get_ereefs_depth_specified_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -433,7 +454,7 @@ tidal free surface (rather than below MSL):</p>
 <span>  input_file <span class="op">=</span> <span class="st">"notebooks/demo_data/regular_demo_2020-01.nc"</span>, depth <span class="op">=</span> <span class="fl">2.0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Those depth-aware series can also be compared visually:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">depth_plot_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">deeperdata</span><span class="op">$</span><span class="va">time</span>, value <span class="op">=</span> <span class="va">deeperdata</span><span class="op">$</span><span class="va">temp</span>, series <span class="op">=</span> <span class="st">"5 m below MSL"</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">intdata</span><span class="op">$</span><span class="va">time</span>, value <span class="op">=</span> <span class="va">intdata</span><span class="op">$</span><span class="va">temp</span>, series <span class="op">=</span> <span class="st">"depth average"</span><span class="op">)</span>,</span>
@@ -609,6 +630,20 @@ metadata:
 - time: 12:21
 - date: 2026-06-29
 - prompt_used: "Add a what datasets are available section to the how-to vignette linking users to the eReefs marine model results page."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 13:24
+- date: 2026-06-29
+- prompt_used: "Evaluate GitHub issue #6 carefully, fix date-range profile plotting, and add a vignette example if successful."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 13:50
+- date: 2026-06-29
+- prompt_used: "Change the issue #6 vignette demo to use five days of live NCI NH4 profile data at the midpoint of the slice transect."
 -->
 </div>
   </div>
