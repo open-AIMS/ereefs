@@ -70,7 +70,7 @@ products that provide cell centres only.</p>
 <span>  var_name <span class="op">=</span> <span class="st">"true_colour"</span>,</span>
 <span>  target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">30</span><span class="op">)</span>,</span>
 <span>  layer <span class="op">=</span> <span class="st">"surface"</span>,</span>
-<span>  Land_map <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  land_map <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"catalog"</span>,</span>
 <span>  input_grid <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  scale_col <span class="op">=</span> <span class="st">"viridis"</span>,</span>
@@ -85,7 +85,8 @@ products that provide cell centres only.</p>
 <span>  label_towns <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  strict_bounds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  mark_points <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  gbr_poly <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  gbr_poly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  Land_map <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -108,7 +109,7 @@ available, the nearest model output time is used.</p></dd>
 below mean sea level, or `"surface"`/`"bottom"`.</p></dd>
 
 
-<dt id="arg-land-map">Land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
+<dt id="arg-land-map">land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
 <dd><p>Logical; add a simple land underlay where available.</p></dd>
 
 
@@ -175,6 +176,10 @@ compatibility.</p></dd>
 
 <dt id="arg-gbr-poly">gbr_poly<a class="anchor" aria-label="anchor" href="#arg-gbr-poly"></a></dt>
 <dd><p>Logical; add GBR polygon overlay when available.</p></dd>
+
+
+<dt id="arg-land-map">Land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
+<dd><p>Deprecated compatibility alias for `land_map`.</p></dd>
 
 </dl></div>
     <div id="value">

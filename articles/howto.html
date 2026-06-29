@@ -100,7 +100,7 @@ polygons from centre coordinates when needed. For scalar variables, the
 default colour palette is now <code>viridis</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="making-maps-and-images-for-animations-from-ereefs-output">Making maps and images for animations from eReefs output<a class="anchor" aria-label="anchor" href="#making-maps-and-images-for-animations-from-ereefs-output"></a>
+<h2 id="making-maps-and-animations-from-ereefs-output">Making maps and animations from eReefs output<a class="anchor" aria-label="anchor" href="#making-maps-and-animations-from-ereefs-output"></a>
 </h2>
 <div class="section level3">
 <h3 id="static-maps">Static maps<a class="anchor" aria-label="anchor" href="#static-maps"></a>
@@ -154,32 +154,36 @@ to the plot, and focus on a particular region:</p>
 <span>  var_name <span class="op">=</span> <span class="st">"NH4"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2022-10-30"</span><span class="op">)</span>,</span>
 <span>  layer <span class="op">=</span> <span class="op">-</span><span class="fl">5</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"</span>,</span>
-<span>  Land_map <span class="op">=</span> <span class="cn">TRUE</span>, box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">145</span>, <span class="fl">150</span>, <span class="op">-</span><span class="fl">22</span>, <span class="op">-</span><span class="fl">18</span><span class="op">)</span>, scale_lim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span>  land_map <span class="op">=</span> <span class="cn">TRUE</span>, box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">145</span>, <span class="fl">150</span>, <span class="op">-</span><span class="fl">22</span>, <span class="op">-</span><span class="fl">18</span><span class="op">)</span>, scale_lim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2.5</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp5-1.png" alt="plot of chunk exmp5" width="80%" style="display: block; margin: auto;"></p>
 </div>
 <div class="section level3">
-<h3 id="images-for-animations">Images for animations<a class="anchor" aria-label="anchor" href="#images-for-animations"></a>
+<h3 id="animations">Animations<a class="anchor" aria-label="anchor" href="#animations"></a>
 </h3>
-<p>We can also create the image files needed for a true colour animation
-of surface salinity in this area. <code><a href="../reference/map_ereefs_movie.html">map_ereefs_movie()</a></code> now
-saves the individual frame images and can also assemble them into a GIF
-or MP4 directly. Numeric variables use one shared colour scale across
-all frames by default, so the colours remain comparable from one
-time-step to the next. Below, <code>salt_list</code> is a list that
-includes the plot handle as well as the temporal mean salinity for each
-point in the map over the period of the animation, plus the cell centre
-geo-locations (choose menu option 9). By default, images are saved to
-the directory <code>"ToAnimate"</code>, but can be changed via the
-argument <code>output_dir</code> (<strong>NB: the code below is not
-run</strong>):</p>
+<p><code><a href="../reference/map_ereefs_movie.html">map_ereefs_movie()</a></code> now assembles GIF or MP4 animations
+directly. Numeric variables use one shared colour scale across all
+frames by default, so the colours remain comparable from one time-step
+to the next. The example below creates a short true-colour GIF near the
+mouth of the Burdekin River over a few days in February 2019. Temporary
+frame images are removed after the GIF is created unless
+<code>keep_frames = TRUE</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># code not run</span></span>
-<span><span class="fu"><a href="../reference/map_ereefs_movie.html">map_ereefs_movie</a></span><span class="op">(</span></span>
-<span>  var_name <span class="op">=</span> <span class="st">"salt"</span>, start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">2</span>, <span class="fl">15</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2019</span>, <span class="fl">3</span>, <span class="fl">10</span><span class="op">)</span>,</span>
-<span>  Land_map <span class="op">=</span> <span class="cn">TRUE</span>, box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">145</span>, <span class="fl">150</span>, <span class="op">-</span><span class="fl">22</span>, <span class="op">-</span><span class="fl">18</span><span class="op">)</span>, scale_col <span class="op">=</span> <span class="st">"viridis"</span>,</span>
-<span>  scale_lim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">30</span>, <span class="fl">35</span><span class="op">)</span>, animation_format <span class="op">=</span> <span class="st">"gif"</span></span>
+<span><span class="va">burdekin_movie</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/map_ereefs_movie.html">map_ereefs_movie</a></span><span class="op">(</span></span>
+<span>  var_name <span class="op">=</span> <span class="st">"true_colour"</span>,</span>
+<span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2019-02-01"</span><span class="op">)</span>,</span>
+<span>  end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2019-02-05"</span><span class="op">)</span>,</span>
+<span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml"</span>,</span>
+<span>  layer <span class="op">=</span> <span class="st">"surface"</span>,</span>
+<span>  land_map <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">147.0</span>, <span class="fl">148.3</span>, <span class="op">-</span><span class="fl">20.1</span>, <span class="op">-</span><span class="fl">19.0</span><span class="op">)</span>,</span>
+<span>  output_dir <span class="op">=</span> <span class="st">"vignettes/burdekin_animation_frames"</span>,</span>
+<span>  animation_format <span class="op">=</span> <span class="st">"gif"</span>,</span>
+<span>  animation_file <span class="op">=</span> <span class="st">"vignettes/vignette-fig-burdekin-true-colour-animation.gif"</span>,</span>
+<span>  fps <span class="op">=</span> <span class="fl">2</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p><img src="vignette-fig-burdekin-true-colour-animation.gif" alt="Short true-colour animation near the Burdekin River mouth in February 2019" width="80%" style="display: block; margin: auto;"></p>
 </div>
 </div>
 <div class="section level2">
@@ -462,6 +466,41 @@ metadata:
 - time: 17:03
 - date: 2026-04-28
 - prompt_used: "Document multi-point curved transects in the vignette and add a live hydrodynamic arc-shaped slice example with both a map and slice figure."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:13
+- date: 2026-06-29
+- prompt_used: "Update vignette descriptions for changed functions, rename the animation section, and add a true-colour Burdekin River mouth GIF example."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:21
+- date: 2026-06-29
+- prompt_used: "Change the ammonia map example colour scale upper limit to 2.5 while keeping the new true-colour animation example."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:25
+- date: 2026-06-29
+- prompt_used: "Use polygon rendering for the true-colour GIF example because smooth rasterisation is intended for scalar fields."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 16:07
+- date: 2026-06-29
+- prompt_used: "Update the animation vignette text to document automatic frame cleanup after GIF or MP4 generation."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 10:28
+- date: 2026-06-29
+- prompt_used: "Fix GitHub issues #29, #30, and #31 by updating vignette examples to use snake_case land_map."
 -->
 </div>
   </div>

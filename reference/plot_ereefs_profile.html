@@ -61,11 +61,12 @@
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plot_ereefs_profile</span><span class="op">(</span></span>
-<span>  <span class="va">profileObj</span>,</span>
+<span>  profile_obj <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  var_name <span class="op">=</span> <span class="st">"Chl_a_sum"</span>,</span>
 <span>  target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2016</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  colour <span class="op">=</span> <span class="st">"blue"</span></span>
+<span>  colour <span class="op">=</span> <span class="st">"blue"</span>,</span>
+<span>  profileObj <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -73,13 +74,15 @@
     <h2>Arguments</h2>
 
 
-<dl><dt id="arg-profileobj">profileObj<a class="anchor" aria-label="anchor" href="#arg-profileobj"></a></dt>
-<dd><p>A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles</p></dd>
+<dl><dt id="arg-profile-obj">profile_obj<a class="anchor" aria-label="anchor" href="#arg-profile-obj"></a></dt>
+<dd><p>A list object as output by [get_ereefs_profile()],
+containing dates, eta, z_grid, botz and profiles.</p></dd>
 
 
 <dt id="arg-var-name">var_name<a class="anchor" aria-label="anchor" href="#arg-var-name"></a></dt>
-<dd><p>The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
-If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.</p></dd>
+<dd><p>The name of the variable to plot (must be a colname in profile$profiles). Default `"Chl_a_sum"`.
+If `profile_obj` contains only one variable, var_name is ignored and
+the content of the profile is shown.</p></dd>
 
 
 <dt id="arg-target-date">target_date<a class="anchor" aria-label="anchor" href="#arg-target-date"></a></dt>
@@ -90,6 +93,14 @@ If profileObj contains only one variable, var_name is ignored and the content of
 <dt id="arg-p">p<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
 <dd><p>The handle of an existing figure, if you don't want to create a new figure</p></dd>
 
+
+<dt id="arg-colour">colour<a class="anchor" aria-label="anchor" href="#arg-colour"></a></dt>
+<dd><p>Line colour for the plotted profile.</p></dd>
+
+
+<dt id="arg-profileobj">profileObj<a class="anchor" aria-label="anchor" href="#arg-profileobj"></a></dt>
+<dd><p>Deprecated compatibility alias for `profile_obj`.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
@@ -99,7 +110,7 @@ If profileObj contains only one variable, var_name is ignored and the content of
     <div id="ref-examples">
     <h2>Examples</h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="fu">plot_ereefs_profile</span><span class="op">(</span><span class="fu"><a href="get_ereefs_profile.html">get_ereefs_profile</a></span><span class="op">(</span><span class="st">'TN'</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">plot_ereefs_profile</span><span class="op">(</span><span class="fu"><a href="get_ereefs_profile.html">get_ereefs_profile</a></span><span class="op">(</span><span class="st">"TN"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

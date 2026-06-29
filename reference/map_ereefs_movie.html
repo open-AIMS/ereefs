@@ -72,7 +72,8 @@ requested and optionally assembling them into a GIF or MP4 animation.</p>
 <span>  animation_format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"gif"</span>, <span class="st">"mp4"</span>, <span class="st">"mp3"</span><span class="op">)</span>,</span>
 <span>  animation_file <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  fps <span class="op">=</span> <span class="fl">2</span>,</span>
-<span>  Land_map <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  keep_frames <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  land_map <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"catalog"</span>,</span>
 <span>  input_grid <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  scale_col <span class="op">=</span> <span class="st">"viridis"</span>,</span>
@@ -92,7 +93,8 @@ requested and optionally assembling them into a GIF or MP4 animation.</p>
 <span>  max_u <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  scale_arrows <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  show_bathy <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  contour_breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">20</span><span class="op">)</span></span>
+<span>  contour_breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">20</span><span class="op">)</span>,</span>
+<span>  Land_map <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -140,7 +142,13 @@ outputs.</p></dd>
 <dd><p>Frames per second for assembled animations.</p></dd>
 
 
-<dt id="arg-land-map">Land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
+<dt id="arg-keep-frames">keep_frames<a class="anchor" aria-label="anchor" href="#arg-keep-frames"></a></dt>
+<dd><p>Logical; if `FALSE`, delete temporary frame PNGs after a
+GIF or MP4 has been assembled. Frames are always kept when
+`animation_format = "none"`.</p></dd>
+
+
+<dt id="arg-land-map">land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
 <dd><p>Logical; add a simple land underlay where available.</p></dd>
 
 
@@ -230,6 +238,10 @@ compatibility.</p></dd>
 <dt id="arg-contour-breaks">contour_breaks<a class="anchor" aria-label="anchor" href="#arg-contour-breaks"></a></dt>
 <dd><p>Deprecated legacy argument retained for backward
 compatibility.</p></dd>
+
+
+<dt id="arg-land-map">Land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
+<dd><p>Deprecated compatibility alias for `land_map`.</p></dd>
 
 </dl></div>
     <div id="value">

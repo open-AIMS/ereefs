@@ -66,7 +66,7 @@ returned by `map_ereefs(..., return_poly = TRUE)`, into a `ggplot2` map.</p>
 <span>  <span class="va">datapoly</span>,</span>
 <span>  var_longname <span class="op">=</span> <span class="st">""</span>,</span>
 <span>  var_units <span class="op">=</span> <span class="st">""</span>,</span>
-<span>  Land_map <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  land_map <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  scale_col <span class="op">=</span> <span class="st">"viridis"</span>,</span>
 <span>  scale_lim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
 <span>  plot_style <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"polygon"</span>, <span class="st">"smooth"</span><span class="op">)</span>,</span>
@@ -76,7 +76,8 @@ returned by `map_ereefs(..., return_poly = TRUE)`, into a `ggplot2` map.</p>
 <span>  zoom <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  suppress_print <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  gbr_poly <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  gbr_poly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  Land_map <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -97,7 +98,7 @@ package, or a list returned by `map_ereefs(..., return_poly = TRUE)`.</p></dd>
 <dd><p>Optional units label.</p></dd>
 
 
-<dt id="arg-land-map">Land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
+<dt id="arg-land-map">land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
 <dd><p>Logical; add a simple land underlay where available.</p></dd>
 
 
@@ -142,6 +143,10 @@ from the data.</p></dd>
 
 <dt id="arg-gbr-poly">gbr_poly<a class="anchor" aria-label="anchor" href="#arg-gbr-poly"></a></dt>
 <dd><p>Logical; add GBR polygon overlay when available.</p></dd>
+
+
+<dt id="arg-land-map">Land_map<a class="anchor" aria-label="anchor" href="#arg-land-map"></a></dt>
+<dd><p>Deprecated compatibility alias for `land_map`.</p></dd>
 
 </dl></div>
     <div id="value">
