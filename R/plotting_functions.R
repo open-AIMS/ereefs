@@ -753,11 +753,11 @@ map_ereefs_movie <- function(var_name = "true_colour",
     if ((start_year == end_year)&&(start_month == end_month)) {
        day_count <- end_day - start_day + 1
     } else if (mcount == 1) {
-       day_count <- daysIn(as.Date(paste(year, month, 1, sep = "-"))) - start_day + 1
+       day_count <- lubridate::days_in_month(as.Date(paste(year, month, 1, sep = "-"))) - start_day + 1
     } else if (mcount == (length(mths))) {
        day_count <- end_day
     } else {
-       day_count <- daysIn(as.Date(paste(year, month, 1, sep = "-")))
+       day_count <- lubridate::days_in_month(as.Date(paste(year, month, 1, sep = "-")))
     }
 
     if (ereefs_case[2] == "4km") { 
@@ -1268,6 +1268,8 @@ ereefs_extract_map_matrix <- function(input_file,
     base_var <- dplyr::case_when(
       var_name == "speed" ~ if ("u1" %in% ereefs_var_names(input_file)) "u1" else "u",
       var_name == "ZooT" ~ "ZooL_N",
+      var_name == "true_colour" ~ "R_470",
+      var_name == "plume" ~ ereefs_map_reference_var(input_file, "plume"),
       TRUE ~ var_name
     )
     pick_layer <- ereefs_surface_layer(input_file, base_var)
@@ -1297,6 +1299,16 @@ ereefs_extract_map_matrix <- function(input_file,
 
   if (var_name == "plume") {
     spectral_vars <- c("R_412", "R_443", "R_488", "R_531", "R_547", "R_667", "R_678")
+    missing_vars <- setdiff(spectral_vars, ereefs_var_names(input_file))
+    if (length(missing_vars)) {
+      stop(
+        "plume maps require spectral reflectance variables ",
+        paste(spectral_vars, collapse = ", "),
+        ". Missing from this file: ",
+        paste(missing_vars, collapse = ", "),
+        call. = FALSE
+      )
+    }
     rsr <- lapply(spectral_vars, function(x) {
       filters_x <- read_filters(x)
       dims_x <- ereefs_var_dims(input_file, x)
@@ -1437,11 +1449,29 @@ ereefs_build_map_geometry <- function(grids, box_bounds = c(NA, NA, NA, NA)) {
   list(cells = cells, positions = positions)
 }
 
+ereefs_resolve_land_map <- function(land_map, Land_map = NULL) {
+  if (!is.null(Land_map)) {
+    warning("Land_map is deprecated; use land_map instead.", call. = FALSE)
+    land_map <- Land_map
+  }
+  isTRUE(land_map)
+}
+
+ereefs_internal_data <- function(primary_name, legacy_name) {
+  if (exists(primary_name, inherits = TRUE)) {
+    return(get(primary_name, inherits = TRUE))
+  }
+  if (exists(legacy_name, inherits = TRUE)) {
+    return(get(legacy_name, inherits = TRUE))
+  }
+  NULL
+}
+
 ereefs_plot_datapoly <- function(datapoly,
                                  var_name,
                                  var_longname = "",
                                  var_units = "",
-                                 Land_map = FALSE,
+                                 land_map = FALSE,
                                  scale_col = "viridis",
                                  scale_lim = c(NA, NA),
                                  plot_style = c("polygon", "smooth"),
@@ -1451,14 +1481,17 @@ ereefs_plot_datapoly <- function(datapoly,
                                  p = NA,
                                  suppress_print = TRUE,
                                  gbr_poly = FALSE,
-                                 mark_points = NULL) {
+                                 mark_points = NULL,
+                                 Land_map = NULL) {
   plot_style <- match.arg(plot_style)
+  land_map <- ereefs_resolve_land_map(land_map, Land_map)
   if (!inherits(p, "ggplot")) {
     p <- ggplot2::ggplot()
   }
-  if (Land_map && exists("map.df")) {
+  map_df <- ereefs_internal_data("map_df", "map.df")
+  if (land_map && !is.null(map_df)) {
     p <- p + ggplot2::geom_polygon(
-      data = map.df,
+      data = map_df,
       colour = "black",
       fill = "lightgrey",
       linewidth = 0.3,
@@ -1589,8 +1622,9 @@ ereefs_plot_datapoly <- function(datapoly,
     p <- p + ggplot2::geom_point(data = mark_points, ggplot2::aes(x = longitude, y = latitude), shape = 4)
   }
 
-  if (gbr_poly && exists("sdf.gbr")) {
-    p <- p + ggplot2::geom_path(data = sdf.gbr, ggplot2::aes(y = lat, x = long, group = group))
+  sdf_gbr <- ereefs_internal_data("sdf_gbr", "sdf.gbr")
+  if (gbr_poly && !is.null(sdf_gbr)) {
+    p <- p + ggplot2::geom_path(data = sdf_gbr, ggplot2::aes(y = lat, x = long, group = group))
   }
 
   if (all(is.na(box_bounds))) {
@@ -1625,7 +1659,7 @@ ereefs_plot_datapoly <- function(datapoly,
 #'   available, the nearest model output time is used.
 #' @param layer Layer selector. Use a positive layer index, a negative depth
 #'   below mean sea level, or `"surface"`/`"bottom"`.
-#' @param Land_map Logical; add a simple land underlay where available.
+#' @param land_map Logical; add a simple land underlay where available.
 #' @param input_file NetCDF file path, OPeNDAP URL, or THREDDS catalog URL.
 #' @param input_grid Optional alternative source for grid metadata.
 #' @param scale_col Colour scale specification. Defaults to `"viridis"` for
@@ -1646,6 +1680,7 @@ ereefs_plot_datapoly <- function(datapoly,
 #'   compatibility.
 #' @param mark_points Optional locations to mark on the map.
 #' @param gbr_poly Logical; add GBR polygon overlay when available.
+#' @param Land_map Deprecated compatibility alias for `land_map`.
 #'
 #' @return A `ggplot2` object, or if `return_poly = TRUE`, a list containing the
 #'   plot, plotting polygons, cell values, and associated metadata.
@@ -1653,7 +1688,7 @@ ereefs_plot_datapoly <- function(datapoly,
 map_ereefs <- function(var_name = "true_colour",
                        target_date = c(2018, 1, 30),
                        layer = "surface",
-                       Land_map = FALSE,
+                       land_map = FALSE,
                        input_file = "catalog",
                        input_grid = NA,
                        scale_col = "viridis",
@@ -1668,10 +1703,12 @@ map_ereefs <- function(var_name = "true_colour",
                        label_towns = TRUE,
                        strict_bounds = FALSE,
                        mark_points = NULL,
-                       gbr_poly = FALSE) {
+                       gbr_poly = FALSE,
+                       Land_map = NULL) {
   plot_style <- match.arg(plot_style)
+  land_map <- ereefs_resolve_land_map(land_map, Land_map)
   rm(zoom, strict_bounds)
-  assignList(get_params(target_date, target_date, input_file, var_name))
+  assign_list(get_params(target_date, target_date, input_file, var_name))
 
   map_date <- as.Date(start_date)
   file_to_use <- ereefs_pick_file_for_date(resolved_files, map_date)
@@ -1721,7 +1758,7 @@ map_ereefs <- function(var_name = "true_colour",
     var_name = if (var_name == "true_color") "true_colour" else var_name,
     var_longname = plot_title,
     var_units = extracted$units,
-    Land_map = Land_map,
+    land_map = land_map,
     scale_col = scale_col,
     scale_lim = scale_lim,
     plot_style = plot_style,
@@ -1766,6 +1803,9 @@ map_ereefs <- function(var_name = "true_colour",
 #' @param animation_file Optional output filename for the assembled animation.
 #' @param fps Frames per second for assembled animations.
 #' @param stride Temporal stride used to choose frames.
+#' @param keep_frames Logical; if `FALSE`, delete temporary frame PNGs after a
+#'   GIF or MP4 has been assembled. Frames are always kept when
+#'   `animation_format = "none"`.
 #' @param verbosity Verbosity level for progress messages.
 #' @param add_arrows Deprecated legacy argument retained for backward
 #'   compatibility.
@@ -1790,7 +1830,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              animation_format = c("none", "gif", "mp4", "mp3"),
                              animation_file = NA,
                              fps = 2,
-                             Land_map = FALSE,
+                             keep_frames = FALSE,
+                             land_map = FALSE,
                              input_file = "catalog",
                              input_grid = NA,
                              scale_col = "viridis",
@@ -1810,9 +1851,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              max_u = NA,
                              scale_arrows = NA,
                              show_bathy = FALSE,
-                             contour_breaks = c(5, 10, 20)) {
+                             contour_breaks = c(5, 10, 20),
+                             Land_map = NULL) {
   plot_style <- match.arg(plot_style)
   animation_format <- match.arg(animation_format)
+  land_map <- ereefs_resolve_land_map(land_map, Land_map)
+  if (identical(var_name, "true_color")) {
+    var_name <- "true_colour"
+  }
   if (identical(animation_format, "mp3")) {
     warning("animation_format = 'mp3' is not valid for image sequences. Using 'mp4' instead.")
     animation_format <- "mp4"
@@ -1852,7 +1898,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       var_name = var_name,
       target_date = as.Date(date_sequence[[frame_index]]),
       layer = layer,
-      Land_map = Land_map,
+      land_map = land_map,
       input_file = ereefs_pick_file_for_date(file_table, date_sequence[[frame_index]]),
       input_grid = input_grid,
       scale_col = scale_col,
@@ -1876,7 +1922,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
         function(a, b) {
           if (is.na(a)) return(b)
           if (is.na(b)) return(a)
-          rgb((col2rgb(a) + col2rgb(b)) / 2, maxColorValue = 255)
+          rgb_values <- as.vector((col2rgb(a) + col2rgb(b)) / 2)
+          rgb(rgb_values[[1]], rgb_values[[2]], rgb_values[[3]], maxColorValue = 255)
         },
         accumulated$value,
         frame_values$value
@@ -1918,7 +1965,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
       var_name = if (var_name == "true_color") "true_colour" else var_name,
       var_longname = plot_title,
       var_units = frame$var_units,
-      Land_map = Land_map,
+      land_map = land_map,
       scale_col = scale_col,
       scale_lim = effective_scale_lim,
       plot_style = plot_style,
@@ -1957,6 +2004,13 @@ map_ereefs_movie <- function(var_name = "true_colour",
     } else if (identical(animation_format, "mp4")) {
       magick::image_write_video(animation, path = animation_file, fps = fps)
     }
+    if (!isTRUE(keep_frames)) {
+      existing_frames <- frame_files[file.exists(frame_files)]
+      if (length(existing_frames)) {
+        unlink(existing_frames)
+      }
+      frame_files <- character(0)
+    }
   }
   list(
     p = last_frame,
@@ -1979,7 +2033,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #'   package, or a list returned by `map_ereefs(..., return_poly = TRUE)`.
 #' @param var_longname Optional long name for the plot title.
 #' @param var_units Optional units label.
-#' @param Land_map Logical; add a simple land underlay where available.
+#' @param land_map Logical; add a simple land underlay where available.
 #' @param scale_col Colour scale specification. Defaults to `"viridis"` for
 #'   scalar maps.
 #' @param scale_lim Numeric colour limits. If left as `NA`, limits are inferred
@@ -1993,13 +2047,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @param p Optional existing plot object to add to.
 #' @param suppress_print Logical; if `TRUE`, suppresses automatic printing.
 #' @param gbr_poly Logical; add GBR polygon overlay when available.
+#' @param Land_map Deprecated compatibility alias for `land_map`.
 #'
 #' @return A `ggplot2` object.
 #' @export
 plot_map <- function(datapoly,
                      var_longname = "",
                      var_units = "",
-                     Land_map = FALSE,
+                     land_map = FALSE,
                      scale_col = "viridis",
                      scale_lim = c(NA, NA),
                      plot_style = c("polygon", "smooth"),
@@ -2009,8 +2064,10 @@ plot_map <- function(datapoly,
                      zoom = 6,
                      p = NA,
                      suppress_print = TRUE,
-                     gbr_poly = FALSE) {
+                     gbr_poly = FALSE,
+                     Land_map = NULL) {
   plot_style <- match.arg(plot_style)
+  land_map <- ereefs_resolve_land_map(land_map, Land_map)
   rm(zoom)
   if ("datapoly" %in% names(datapoly)) {
     var_longname <- if (nzchar(var_longname)) var_longname else datapoly$var_longname
@@ -2026,7 +2083,7 @@ plot_map <- function(datapoly,
     var_name = var_name,
     var_longname = var_longname,
     var_units = var_units,
-    Land_map = Land_map,
+    land_map = land_map,
     scale_col = scale_col,
     scale_lim = scale_lim,
     plot_style = plot_style,
@@ -2129,3 +2186,43 @@ plot_map <- function(datapoly,
 # - time: 09:22
 # - date: 2026-04-28
 # - prompt_used: "Fix the remaining howto vignette map clipping, add the missing smooth-map figure, and switch the profile and slice examples to live OPeNDAP data."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:28
+# - date: 2026-06-29
+# - prompt_used: "Finish the package-check cleanup for issues #24 and #25 by making the remaining imported helper usage explicit."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:35
+# - date: 2026-06-29
+# - prompt_used: "Replace the remaining legacy daysIn() calls with lubridate::days_in_month() while finishing the dependency cleanup for issues #24 and #25."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:21
+# - date: 2026-06-29
+# - prompt_used: "Fix true-colour map animation surface-layer dispatch and update the ammonia vignette scale request."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:33
+# - date: 2026-06-29
+# - prompt_used: "Check and fix special-variable map handling for true-colour, plume, speed, and ZooT before regenerating the vignette animation."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:43
+# - date: 2026-06-29
+# - prompt_used: "Check and harden special-variable map handling so plume reports missing reflectance bands clearly."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:52
+# - date: 2026-06-29
+# - prompt_used: "Use the shared special-variable reference-band resolver for plume surface-layer selection."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:07
+# - date: 2026-06-29
+# - prompt_used: "Change map_ereefs_movie() so temporary frame images are cleaned up after generating a GIF or MP4 unless keep_frames is requested."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:28
+# - date: 2026-06-29
+# - prompt_used: "Fix GitHub issues #29, #30, and #31 by adding land_map, snake_case internal data access, deprecated aliases, and cleaner return style."

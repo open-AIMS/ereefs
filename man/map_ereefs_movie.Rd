@@ -14,7 +14,8 @@ map_ereefs_movie(
   animation_format = c("none", "gif", "mp4", "mp3"),
   animation_file = NA,
   fps = 2,
-  Land_map = FALSE,
+  keep_frames = FALSE,
+  land_map = FALSE,
   input_file = "catalog",
   input_grid = NA,
   scale_col = "viridis",
@@ -34,7 +35,8 @@ map_ereefs_movie(
   max_u = NA,
   scale_arrows = NA,
   show_bathy = FALSE,
-  contour_breaks = c(5, 10, 20)
+  contour_breaks = c(5, 10, 20),
+  Land_map = NULL
 )
 }
 \arguments{
@@ -60,7 +62,11 @@ outputs.}
 
 \item{fps}{Frames per second for assembled animations.}
 
-\item{Land_map}{Logical; add a simple land underlay where available.}
+\item{keep_frames}{Logical; if `FALSE`, delete temporary frame PNGs after a
+GIF or MP4 has been assembled. Frames are always kept when
+`animation_format = "none"`.}
+
+\item{land_map}{Logical; add a simple land underlay where available.}
 
 \item{input_file}{NetCDF file path, OPeNDAP URL, or THREDDS catalog URL.}
 
@@ -109,6 +115,8 @@ compatibility.}
 
 \item{contour_breaks}{Deprecated legacy argument retained for backward
 compatibility.}
+
+\item{Land_map}{Deprecated compatibility alias for `land_map`.}
 }
 \value{
 A list containing the final plot, averaged plotting polygons, saved

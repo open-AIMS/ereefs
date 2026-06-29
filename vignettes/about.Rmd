@@ -50,6 +50,8 @@ If you want to extract time-series of the most commonly needed physical and chem
 
 - The [GBRF website](https://www.barrierreef.org/what-we-do/projects/eReefs), with videos and descriptions by comms professionals.
 
+For practical examples of the main package functions, see the [general usage vignette](howto.html).
+
 <!--
 metadata:
 - gpt_version: GPT-5 Codex
@@ -70,4 +72,11 @@ metadata:
 - time: 18:18
 - date: 2026-04-27
 - prompt_used: "Get pandoc working, test the vignettes, and update stale vignette text to match the current animation and live-catalog behavior."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:13
+- date: 2026-06-29
+- prompt_used: "Add a link from the about vignette to the general usage vignette after updating the animation examples."
 -->

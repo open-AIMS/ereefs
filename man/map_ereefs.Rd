@@ -8,7 +8,7 @@ map_ereefs(
   var_name = "true_colour",
   target_date = c(2018, 1, 30),
   layer = "surface",
-  Land_map = FALSE,
+  land_map = FALSE,
   input_file = "catalog",
   input_grid = NA,
   scale_col = "viridis",
@@ -23,7 +23,8 @@ map_ereefs(
   label_towns = TRUE,
   strict_bounds = FALSE,
   mark_points = NULL,
-  gbr_poly = FALSE
+  gbr_poly = FALSE,
+  Land_map = NULL
 )
 }
 \arguments{
@@ -36,7 +37,7 @@ available, the nearest model output time is used.}
 \item{layer}{Layer selector. Use a positive layer index, a negative depth
 below mean sea level, or `"surface"`/`"bottom"`.}
 
-\item{Land_map}{Logical; add a simple land underlay where available.}
+\item{land_map}{Logical; add a simple land underlay where available.}
 
 \item{input_file}{NetCDF file path, OPeNDAP URL, or THREDDS catalog URL.}
 
@@ -72,6 +73,8 @@ compatibility.}
 \item{mark_points}{Optional locations to mark on the map.}
 
 \item{gbr_poly}{Logical; add GBR polygon overlay when available.}
+
+\item{Land_map}{Deprecated compatibility alias for `land_map`.}
 }
 \value{
 A `ggplot2` object, or if `return_poly = TRUE`, a list containing the

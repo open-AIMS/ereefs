@@ -8,6 +8,10 @@ Authors@R: c(person("Barbara", "Robson", email="B.Robson@aims.gov.au",
                    role = "ctb"),
              person("Diego", "Barneche", email="d.barneche@aims.gov.au",
                    role = "ctb"))
+Author: Barbara Robson [aut, cre],
+  Mark Baird [ctb],
+  Diego Barneche [ctb]
+Maintainer: Barbara Robson <B.Robson@aims.gov.au>
 Description: A few useful functions to make accessing eReefs and other 
     CSIRO-EMS output files easier. The functions provided here
     should work under Windows for locally-stored files, but will also work for
@@ -60,15 +64,12 @@ Imports: ncdf4 (>= 1.16),
          tidync,
          ncmeta,
          tidyr,
+         tibble,
          rlang,
          reticulate,
          scales,
          terra,
-         xml2
+         xml2,
+         jsonlite
 Suggests: magick
 RoxygenNote: 7.3.2
-# metadata: 
-# - gpt_version: GPT-5 Codex
-# - time: 16:58
-# - date: 2026-04-27
-# - prompt_used: "Make notebook plots save as well as display, and have map_ereefs_movie save frames then build an animation file."

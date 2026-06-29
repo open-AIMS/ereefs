@@ -1,6 +1,11 @@
 #' Calculate rough distance in kilometers between two points
 #'
 #' Not exported. This is very approximate - a package is available if a more accurate distance is needed.
+#' @param long1 Longitude of the first point, in decimal degrees.
+#' @param lat1 Latitude of the first point, in decimal degrees.
+#' @param long2 Longitude of the second point, in decimal degrees.
+#' @param lat2 Latitude of the second point, in decimal degrees.
+#' @return Approximate distance in kilometres.
 earth.dist <- function(long1, lat1, long2, lat2) {
   rad <- pi / 180
   a1 <- lat1 * rad
@@ -65,16 +70,40 @@ get_ereefs_case <- function(filename) {
   return(ereefs_case)
 }
 
-#' Utility function copied directly from the package 'tis' by Jeff Hallman (https://github.com/cran/tis/blob/master/R/assignList.R)
+#' Assign values from a named list into an environment
+#'
+#' Utility function based on `assignList()` from the package `tis` by Jeff
+#' Hallman (https://github.com/cran/tis/blob/master/R/assignList.R).
 #' Assigns the values in a list to variables in an environment. The variable names are taken from the names of the list, so all of the elements of the list must have non-blank names.
+#'
+#' @param a_list Named list whose values will be assigned into the target
+#'   environment.
+#' @param pos Position of the target environment on the search path.
+#' @param envir Environment in which to assign the objects.
+#' @param inherits Passed through to [base::assign()].
+#' @return Invisibly returns `NULL`.
+#' @export
 
-assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = FALSE) {
-  if(is.null(nms <- names(aList))) stop("names(aList) is NULL")
+assign_list <- function(a_list, pos = -1, envir = as.environment(pos), inherits = FALSE) {
+  if(is.null(nms <- names(a_list))) stop("names(a_list) is NULL")
   if(any(nms == "")) stop("blank name")
   if(missing(envir) && pos < 0)
     envir <- parent.frame(-pos)
   for(nm in nms)
-    assign(x = nm, value = aList[[nm]], envir = envir, inherits = inherits)
+    assign(x = nm, value = a_list[[nm]], envir = envir, inherits = inherits)
+}
+
+#' Assign values from a named list into an environment
+#'
+#' Deprecated compatibility wrapper for [assign_list()].
+#'
+#' @param aList Deprecated; use `a_list`.
+#' @inheritParams assign_list
+#' @return Invisibly returns `NULL`.
+#' @export
+assignList <- function(aList, pos = -1, envir = as.environment(pos), inherits = FALSE) {
+  warning("assignList() is deprecated; use assign_list() instead.", call. = FALSE)
+  assign_list(a_list = aList, pos = pos, envir = envir, inherits = inherits)
 }
 
 #' Set up various parameters needed by many of the data extraction and plotting functions
@@ -506,7 +535,6 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
                           override_positive = FALSE, 
                           verbosity = 1,
                           default_to_bottom = TRUE) {
-  library(dplyr)
   if (is.null(dim(geocoordinates))) {
     geocoordinates <- array(geocoordinates, c(1, 2))
   }
@@ -514,7 +542,7 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_yr,
   # end_date, end_day, end_month, end_yr, mths, yrs, var_list, ereefs_origin, ds, and spatial_grid
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
   if (end_date == start_date) end_date <- end_date + 1
 
   if (layer == "integrated") {
@@ -526,7 +554,7 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
                                 input_file, input_grid, eta_stem, override_positive))
   }
   if (is.character(geocoordinates[[1]][1]) && (geocoordinates[[1]][1] == "mmp")) {
-    geocoordinates <- tibble(latitude = mmp_sites$latitude, longitude = mmp_sites$longitude)
+    geocoordinates <- tibble::tibble(latitude = mmp_sites$latitude, longitude = mmp_sites$longitude)
     mmp <- TRUE
   } else {
     mmp <- FALSE
@@ -535,7 +563,7 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
   # Make sure the geocoordinates are in the desired tibble format. Warn if column names are absent or unclear.
   if (!("data.frame" %in% class(geocoordinates))) {
     # geocoordinates has been provided as an array/matrix. Coerce it into a tibble for consistency.
-    geocoordinates <- tibble(latitude = geocoordinates[, 1], longitude = geocoordinates[, 2])
+    geocoordinates <- tibble::tibble(latitude = geocoordinates[, 1], longitude = geocoordinates[, 2])
   }
   ilat <- which((names(geocoordinates) == "latitude") | (names(geocoordinates) == "lat"))
   ilon <- which((names(geocoordinates) == "longitude") | (names(geocoordinates) == "lon"))
@@ -574,11 +602,11 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
       if ((start_yr==end_yr)&&(start_month==end_month)) {
         day_count <- end_day - start_day + 1
       } else if (mcount == 1) {
-        day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
+        day_count <- lubridate::days_in_month(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
       } else if (mcount == (length(mths))) {
         day_count <- end_day
       } else {
-        day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-')))
+        day_count <- lubridate::days_in_month(as.Date(paste(yr, month, 1, sep='-')))
       }
       if (ereefs_case[2] == '4km') { 
         fileslist <- 1
@@ -837,51 +865,30 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
     }
     results <- wc %>% dplyr::left_join(geocoordinates, by = c("i", "j"))
   }
-  if (mmp) results <- left_join(results, mmp_sites, by = c("latitude", "longitude"))
+  if (mmp) results <- dplyr::left_join(results, mmp_sites, by = c("latitude", "longitude"))
   # For some reason, the following gave incorrect results when I tried to do it via dplyr::mutate, but this works
   if (dim(results)[1]) results$time <- lubridate::seconds(results$time * 86400) + ereefs_origin
-  results <- results %>% select(-grid_index)
+  results <- results %>% dplyr::select(-grid_index)
 
   return(results)
 }
 
-#' Extracts time-series of selected variables from the bottom water-column cell at specified locations from eReefs output files
+#' Extract time-series from the bottom wet layer
 #'
-#' Now just a wrapper to get_ereefs_ts().
-#' By Barbara Robson (AIMS).
+#' Thin wrapper around [get_ereefs_ts()] that sets `layer = "bottom"`.
 #'
-#' @return a tibble containing the dates and values of extracted variables
-#' @param var_names either a single character value or a vector specifying the short names for variables that you 
-#'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
-#' @param geocoordinates is a vector containing the decimal latitude and longitude of the desired location. If 
-#'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-#'        is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).
-#' @param start_date Start of the extraction period. Can be a `Date`,
-#'      `POSIXct`, character string, or a vector such as `c(year, month, day)`.
-#'      Date-only inputs default to midday in `Etc/GMT-10`.
-#' @param end_date End of the extraction period, specified as for `start_date`.
-#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-#'        Numeric values are interpreted as references to selections available from the old menu.
-#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
-#' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
-#'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
-#'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-#'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
-#'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-#'      (not simple-format) ereefs netcdf output file such as 
-#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
-#'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
-#' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
-#'       incorrect. Default FALSE
+#' @inheritParams get_ereefs_ts
+#' @return A tibble containing dates, matched locations, and extracted values.
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+#' get_ereefs_bottom_ts(
+#'   c("Chl_a_sum", "NH4"),
+#'   geocoordinates = tibble::tibble(latitude = -23.39189, longitude = 150.88852),
+#'   start_date = c(2010, 12, 31),
+#'   end_date = c(2011, 1, 5),
+#'   input_file = 2
+#' )
 #'}
 get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                           geocoordinates=c(-23.39189, 150.88852), 
@@ -901,46 +908,26 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
                 verbosity=1)
 }
 
-#' Extracts depth-integrated time-series of selected variables at specified locations from eReefs output files
+#' Extract depth-integrated time-series
 #'
-#' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value.
-#' By Barbara Robson (AIMS).
+#' Calculates either the mean concentration over the wet water column or, when
+#' `mass = TRUE`, the vertically integrated mass per square metre.
 #'
-#' @return a tibble containing the dates and values of extracted variables
-#' @param var_names either a single character value or a vector specifying the short names for variables that you 
-#'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
-#' @param geocoordinates is a vector containing the decimal latitude and longitude of the desired location. If 
-#'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-#'        is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).
-#' @param start_date Start of the extraction period. Can be a `Date`,
-#'      `POSIXct`, character string, or a vector such as `c(year, month, day)`.
-#'      Date-only inputs default to midday in `Etc/GMT-10`.
-#' @param end_date End of the extraction period, specified as for `start_date`.
-#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-#'        Numeric values are interpreted as references to selections available from the old menu.
-#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
-#' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
-#'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
-#'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-#'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
-#'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-#'      (not simple-format) ereefs netcdf output file such as 
-#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
-#'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
-#' @param override_positive Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
-#'       incorrect. Default FALSE
-#' @param verbosity (Defailt 1) how much do you want to know about progress?
-#' @param mass (Default FALSE) Set to true if you want the mass per square metre rather than the mean concentration over depth returned
+#' @inheritParams get_ereefs_ts
+#' @param mass Logical; if `TRUE`, return mass per square metre instead of the
+#'   mean concentration over depth.
+#' @return A tibble containing dates, matched locations, water-column depth, and
+#'   extracted values.
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_depth_integrated_ts(c('Chl_a_sum', 'NH4'), geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-#' get_ereefs_depth_integrated_ts(c('salt', 'temp'), geocoordinates=tibble(latitude=c(-23.39189, -23.3), longitude=c(150.88852, 150.8)), start_date=c(2011,1,2),end_date=c(2011,1,5))
+#' get_ereefs_depth_integrated_ts(
+#'   c("Chl_a_sum", "NH4"),
+#'   geocoordinates = tibble::tibble(latitude = -23.39189, longitude = 150.88852),
+#'   start_date = c(2010, 12, 31),
+#'   end_date = c(2011, 1, 5),
+#'   input_file = 2
+#' )
 #'}
 get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                         geocoordinates=c(-23.39189, 150.88852), 
@@ -956,7 +943,7 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_yr,
   # end_date, end_day, end_month, end_yr, mths, yrs, var_list, ereefs_origin and spatial_grid
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
 
 
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
@@ -1028,11 +1015,11 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if ((start_yr==end_yr)&&(start_month==end_month)) {
          day_count <- end_day - start_day + 1
       } else if (mcount == 1) {
-         day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
+         day_count <- lubridate::days_in_month(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
       } else if (mcount == (length(mths))) {
          day_count <- end_day
       } else {
-         day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-')))
+         day_count <- lubridate::days_in_month(as.Date(paste(yr, month, 1, sep='-')))
       }
       if (ereefs_case[2] == '4km') { 
         fileslist <- 1
@@ -1228,47 +1215,28 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   return(results)
 }
 
-#' Extracts time-series of selected variables from eReefs output files at a specified location and depth below the
-#' tidal free surface. Use get_ereefs_ts() instead for a specified depth below MSL: this is faster and given the 
-#' thickness of the layers, usually almost the same.
+#' Extract time-series at a fixed depth below the free surface
 #'
-#' See also get_ereefs_ts() to extract from a specified layer instead of a depth-integrated value and 
-#' get_ereefs_depth_integrated_ts() to calculate depth-integrated values. Barbara Robson (AIMS).
+#' Use [get_ereefs_ts()] instead when a fixed depth below mean sea level is
+#' sufficient. This helper is slower because it needs free-surface information
+#' to determine the appropriate wet layer at each time step.
 #'
-#' @return a tibble containing the dates and values of extracted variables
-#' @param var_names either a single character value or a vector specifying the short names for variables that you 
-#'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
-#' @param geocoordinates A vector containing the decimal latitude and longitude of the desired location. If 
-#'        you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-#'        is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).
-#' @param depth  Depth in metres below the surface. Default 1.0. If the bottom of the water is shallower than the specified depth,
-#'               return values from the bottom of the water column.
-#' @param start_date Start of the extraction period. Can be a `Date`,
-#'      `POSIXct`, character string, or a vector such as `c(year, month, day)`.
-#'      Date-only inputs default to midday in `Etc/GMT-10`.
-#' @param end_date End of the extraction period, specified as for `start_date`.
-#' @param input_file is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-#'        Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-#'        Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-#'        Numeric values are interpreted as references to selections available from the old menu.
-#'        Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )
-#' @param input_grid Name of the locally-stored or opendap-served netcdf file that contains the grid
-#'      coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
-#'      z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-#'      of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
-#'      z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-#'      (not simple-format) ereefs netcdf output file such as 
-#'      "https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-#' @param eta_stem The URI or file location of the model output files that contains the surface elevation (eta), minus the
-#'       date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-#'       only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).
+#' @inheritParams get_ereefs_ts
+#' @param depth Depth in metres below the free surface. If the water column is
+#'   shallower than the requested depth, values are taken from the bottom wet
+#'   layer.
+#' @return A tibble containing dates, matched locations, and extracted values.
 #' @export
 #' @examples
 #' \dontrun{
-#' get_ereefs_depth_specified_ts(c('Chl_a_sum', 'NH4'), depth=5.0, geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), 
-#'   start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
-#' get_ereefs_depth_specified_ts('salt', depth=1.0, geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), 
-#'   start_date=c(2010,12,31),end_date=c(2011,1,5))
+#' get_ereefs_depth_specified_ts(
+#'   c("Chl_a_sum", "NH4"),
+#'   depth = 5,
+#'   geocoordinates = tibble::tibble(latitude = -23.39189, longitude = 150.88852),
+#'   start_date = c(2010, 12, 31),
+#'   end_date = c(2011, 1, 5),
+#'   input_file = 2
+#' )
 #'}
 get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'), 
                                           geocoordinates=c(-23.39189, 150.88852), 
@@ -1283,7 +1251,7 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_yr,
   # end_date, end_day, end_month, end_yr, mths, yrs, var_list, ereefs_origin and spatial_grid
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
 
 
   z_grid <- get_ereefs_grids(input_file, input_grid)[['z_grid']]
@@ -1345,11 +1313,11 @@ get_ereefs_depth_specified_ts <- function(var_names=c('Chl_a_sum', 'TN'),
       if ((start_yr==end_yr)&&(start_month==end_month)) {
          day_count <- end_day - start_day + 1
       } else if (mcount == 1) {
-         day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
+         day_count <- lubridate::days_in_month(as.Date(paste(yr, month, 1, sep='-'))) - start_day + 1
       } else if (mcount == (length(mths))) {
          day_count <- end_day
       } else {
-         day_count <- daysIn(as.Date(paste(yr, month, 1, sep='-')))
+         day_count <- lubridate::days_in_month(as.Date(paste(yr, month, 1, sep='-')))
       }
       if (ereefs_case[2] == '4km') { 
         fileslist <- 1
@@ -1985,7 +1953,7 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
                           verbosity = 0,
                           default_to_bottom = TRUE) {
   rm(verbosity)
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
 
   grids <- get_ereefs_grids(input_file, input_grid)
   matched_points <- ereefs_match_geocoordinates(geocoordinates, grids$spatial_grid) %>%
@@ -2153,7 +2121,7 @@ get_ereefs_depth_integrated_ts <- function(var_names = c("Chl_a_sum", "TN"),
                                            verbosity = 1,
                                            mass = FALSE) {
   rm(verbosity)
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
   grids <- get_ereefs_grids(input_file, input_grid)
   if (is.null(grids$z_grid)) {
     stop("z_grid is required for depth-integrated extraction.")
@@ -2264,7 +2232,7 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
                                           eta_stem = NA,
                                           verbosity = 1) {
   rm(verbosity)
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
   grids <- get_ereefs_grids(input_file, input_grid)
   if (is.null(grids$z_grid)) {
     stop("z_grid is required for depth-below-free-surface extraction.")
@@ -2455,3 +2423,23 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
 # - time: 16:18
 # - date: 2026-04-28
 # - prompt_used: "Do a final documentation polish pass so the help text reads consistently with the current tidy-dev workflow."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:46
+# - date: 2026-06-29
+# - prompt_used: "Save the current instruction block locally, then finish GitHub issues #24 and #25 by tightening argument documentation and making package imports/dependencies explicit."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:24
+# - date: 2026-06-29
+# - prompt_used: "Resolve the remaining helper-function documentation mismatches reported by R CMD check for issues #24 and #25."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:35
+# - date: 2026-06-29
+# - prompt_used: "Replace the remaining legacy daysIn() calls with lubridate::days_in_month() while finishing the dependency cleanup for issues #24 and #25."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:28
+# - date: 2026-06-29
+# - prompt_used: "Fix GitHub issues #29, #30, and #31 by adding snake_case helper names, deprecating camelCase aliases, and standardising touched code style."

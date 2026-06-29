@@ -2,7 +2,7 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{get_ereefs_bottom_ts}
 \alias{get_ereefs_bottom_ts}
-\title{Extracts time-series of selected variables from the bottom water-column cell at specified locations from eReefs output files}
+\title{Extract time-series from the bottom wet layer}
 \usage{
 get_ereefs_bottom_ts(
   var_names = c("Chl_a_sum", "TN"),
@@ -20,47 +20,52 @@ get_ereefs_bottom_ts(
 \item{var_names}{either a single character value or a vector specifying the short names for variables that you 
 want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').}
 
-\item{geocoordinates}{is a vector containing the decimal latitude and longitude of the desired location. If 
-you want to specify an x-y grid coordinate instead of a latitude and longitude, you can: to do this, 
-is.integer(geocoordinates) must be TRUE. Defaults to c(-23.39189, 150.88852).}
+\item{geocoordinates}{A tibble of decimal latitude and longitude pairs, or a
+length-two vector containing a single location. `geocoordinates` can
+also be set to `"mmp"` to extract time-series at all Marine
+Monitoring Program sites. Additional columns are preserved, for
+example site names.}
 
-\item{start_date}{Start of the extraction period. Can be a `Date`,
-`POSIXct`, character string, or a vector such as `c(year, month, day)`.
-Date-only inputs default to midday in `Etc/GMT-10`.}
+\item{start_date}{Start of the extraction period. Can be a vector such as
+`c(year, month, day)`, a `Date`/`POSIXct`, or a character string
+accepted by [get_date_time()].}
 
-\item{end_date}{End of the extraction period, specified as for `start_date`.}
+\item{end_date}{End of the extraction period, specified as for
+`start_date`.}
 
-\item{input_file}{is the URL or file location of any of the EMS output files or a THREDDS catalog URI. 
-Defaults to a menu selection based on current NCI catalogs. Can also be set to "nci", "menu" or "catalog" for the same behaviour.
-Set to "old_menu" to provide old menu options instead of menu options from the NCI catalog.
-Numeric values are interpreted as references to selections available from the old menu.
-Short codes can be used for some options (codenames as used in https://research.csiro.au/ereefs/models/model-outputs/access-to-raw-model-output/ )}
+\item{input_file}{NetCDF file path, OPeNDAP URL, or THREDDS catalog URI.
+THREDDS catalogs are preferred for live multi-file requests. Legacy
+shortcuts such as `"nci"`, `"menu"`, `"catalog"`, `"old_menu"`, and
+old numeric menu selections are still accepted for backward
+compatibility.}
 
-\item{input_grid}{Name of the locally-stored or opendap-served netcdf file that contains the grid
-coordinates for the top and bottom of each layer (z_grid). If not specified, the function will first look for
-z_grid can be found in the first INPUT_STEM file, and if not found, will check whether the size 
-of the variables in the input file corresponds to the size expected for GBR4 or GBR1, and load an appropriate 
-z grid from data files stored in this package. Alternatively, you can provide the location of a full 
-(not simple-format) ereefs netcdf output file such as 
-"https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc"
-"https://dapds00.nci.org.au/thredds/dodsC/fx3/gbr4_hydro_all/gbr4_all_2016-09.nc".}
+\item{input_grid}{Optional alternative source for vertical grid metadata
+(`z_grid`). This can be a local or remote NetCDF file that carries the
+required layer-interface information.}
 
-\item{eta_stem}{The URI or file location of the model output files that contains the surface elevation (eta), minus the
-date components of the filename in the case of GBR1 or GBR4 files, and ommitting the file extension, ".nc". Needed
-only if eta is not in the files indicated by input_stem (e.g. some GBR1 bgc files).}
+\item{eta_stem}{Legacy fallback for locating surface elevation (`eta`) when
+it is not in the main file. Usually unnecessary for catalog-driven
+workflows.}
 
 \item{override_positive}{Reverse the value of the "positive" attribute of botz for BGC files, assuming that it is
-incorrect. Default FALSE}
+incorrect. Default FALSE. Not normally needed.}
+
+\item{verbosity}{How much information to display along the way (0 to 2. Default is 1).}
 }
 \value{
-a tibble containing the dates and values of extracted variables
+A tibble containing dates, matched locations, and extracted values.
 }
 \description{
-Now just a wrapper to get_ereefs_ts().
-By Barbara Robson (AIMS).
+Thin wrapper around [get_ereefs_ts()] that sets `layer = "bottom"`.
 }
 \examples{
 \dontrun{
-get_ereefs_bottom_ts(c('Chl_a_sum', 'NH4'), geocoordinates=tibble(latitude=-23.39189, longitude=150.88852), layer='surface', start_date=c(2010,12,31),end_date=c(2011,1,5), input_file=2)
+get_ereefs_bottom_ts(
+  c("Chl_a_sum", "NH4"),
+  geocoordinates = tibble::tibble(latitude = -23.39189, longitude = 150.88852),
+  start_date = c(2010, 12, 31),
+  end_date = c(2011, 1, 5),
+  input_file = 2
+)
 }
 }

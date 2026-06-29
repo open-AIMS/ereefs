@@ -6,6 +6,16 @@ upgrade-impacting changes rather than an exhaustive commit history.
 
 ## Breaking and near-breaking changes
 
+### Public argument names are moving toward snake_case
+
+- Plotting helpers now prefer lower-case snake_case argument names such as
+  `land_map` and `profile_obj`.
+- Deprecated compatibility aliases such as `Land_map` and `profileObj` are still
+  accepted, but emit warnings. New examples and documentation use the snake_case
+  forms.
+- The internal list-assignment helper is now `assign_list()`; `assignList()`
+  remains as a deprecated compatibility wrapper.
+
 ### Data access now follows a `tidync`/`ncmeta`-first path
 
 - The main extraction and plotting workflows now use `tidync` and `ncmeta`
@@ -216,3 +226,11 @@ If you have older scripts, check these first:
 - Usage vignette: `vignettes/howto.Rmd`
 - Comparison/background vignette: `vignettes/about.Rmd`
 - Live and local demo notebooks: `notebooks/`
+
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 10:28
+- date: 2026-06-29
+- prompt_used: "Fix GitHub issues #29, #30, and #31 by documenting the snake_case argument migration and deprecated compatibility aliases."
+-->

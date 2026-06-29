@@ -41,6 +41,9 @@ it is not in the main file.}
 
 \item{squeeze}{Whether to reduce the dimensionality of the returned profile
 array when there is only one variable and/or one time step.}
+
+\item{override_positive}{Reverse the `botz` sign convention when a file has
+an incorrect `positive` attribute. Normally not needed.}
 }
 \value{
 A list containing the time vector, surface elevation (`eta`),

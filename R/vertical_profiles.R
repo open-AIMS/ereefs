@@ -140,7 +140,7 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
       target_date <- as.Date(target_date)
     }
     target_day <- lubridate::day(target_date)
-    target_month <- lubridate:::month(target_date)
+    target_month <- lubridate::month(target_date)
     target_year <- lubridate::year(target_date)
 
     #location_grid <- arrayInd(llind, dim(latitude))
@@ -303,6 +303,8 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'       it is not in the main file.
 #' @param squeeze Whether to reduce the dimensionality of the returned profile
 #'       array when there is only one variable and/or one time step.
+#' @param override_positive Reverse the `botz` sign convention when a file has
+#'   an incorrect `positive` attribute. Normally not needed.
 #' @export
 get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 geolocation=c(-23.39189, 150.88852),
@@ -318,7 +320,7 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
   # Get parameter values and assign results from returned list to relevant variable names
   # This assigns input_file, ereefs_case, input_stem, start_date, end_date, start_tod, start_month, start_year,
   # end_date, end_day, end_month, end_year, mths, years, var_list, ereefs_origin and blank_length
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
 
   if (length(dim(geolocation)) > 0) stop('get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() instead if appropriate.')
   #check_platform_ok(input_stem)
@@ -396,11 +398,11 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
      if ((start_year==end_year)&&(start_month==end_month)) {
         day_count <- end_day - start_day + 1
      } else if (mcount == 1) {
-        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
+        day_count <- lubridate::days_in_month(as.Date(paste(year, month, 1, sep='-'))) - start_day + 1
      } else if (mcount == (length(mths))) {
         day_count <- end_day
      } else {
-        day_count <- daysIn(as.Date(paste(year, month, 1, sep='-')))
+        day_count <- lubridate::days_in_month(as.Date(paste(year, month, 1, sep='-')))
      }
      if (ereefs_case[2] == '4km') { 
         fileslist <- 1
@@ -507,60 +509,71 @@ get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 #'
 #' Relies on output from get_ereefs_profile().
 #'
-#' @param profileObj A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles
-#' @param var_name The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
-#'        If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.
+#' @param profile_obj A list object as output by [get_ereefs_profile()],
+#'   containing dates, eta, z_grid, botz and profiles.
+#' @param var_name The name of the variable to plot (must be a colname in profile$profiles). Default `"Chl_a_sum"`.
+#'        If `profile_obj` contains only one variable, var_name is ignored and
+#'        the content of the profile is shown.
 #' @param target_date The target date or date-time to plot. Can be a `Date`,
 #'   `POSIXct`, character string, or a vector such as `c(year, month, day)`.
 #' @param p The handle of an existing figure, if you don't want to create a new figure
+#' @param colour Line colour for the plotted profile.
+#' @param profileObj Deprecated compatibility alias for `profile_obj`.
 #' @return the handle of a figure containing the vertical profile plot
 #' @examples 
 #' \dontrun{
-#' plot_ereefs_profile(get_ereefs_profile('TN'))
+#' plot_ereefs_profile(get_ereefs_profile("TN"))
 #' }
 #' @export
-plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(2016,01,01), p=NA, colour='blue') {
+plot_ereefs_profile <- function(profile_obj = NULL, var_name = "Chl_a_sum", target_date = c(2016, 1, 1), p = NA, colour = "blue", profileObj = NULL) {
+  if (is.null(profile_obj)) {
+    if (is.null(profileObj)) {
+      stop("profile_obj must be supplied.", call. = FALSE)
+    }
+    warning("profileObj is deprecated; use profile_obj instead.", call. = FALSE)
+    profile_obj <- profileObj
+  }
   # Date to plot
   # Dates to plot
   target_date <- get_date_time(target_date)
   target_day <- lubridate::day(target_date)
   target_tod <- as.numeric(target_date - lubridate::floor_date(target_date, "day"))
-  target_month <- lubridate:::month(target_date)
+  target_month <- lubridate::month(target_date)
   target_year <- lubridate::year(target_date)
 
-  day <- which.min(abs(target_date-profileObj$dates))
-  if (names(profileObj)[5]=="profiles") { 
-     colnum <- which(colnames(profileObj$profiles)==var_name)
-     if (length(dim(profileObj$profiles))>2) {
-	     dind <- which.min(abs(profileObj$dates-target_date)) 
-        values <- array(profileObj$profiles[, colnum, dind], length(profileObj$z_grid)-1)
-	     eta <- profileObj$eta[dind]
+  day <- which.min(abs(target_date-profile_obj$dates))
+  if (names(profile_obj)[5]=="profiles") { 
+     colnum <- which(colnames(profile_obj$profiles)==var_name)
+     if (length(dim(profile_obj$profiles))>2) {
+	     dind <- which.min(abs(profile_obj$dates-target_date)) 
+        values <- array(profile_obj$profiles[, colnum, dind], length(profile_obj$z_grid)-1)
+	     eta <- profile_obj$eta[dind]
      } else {
-	     values <- array(profileObj$profiles[, colnum])
-	     eta <- profileObj$eta
+	     values <- array(profile_obj$profiles[, colnum])
+	     eta <- profile_obj$eta
      }
   } else { 
      # Only one variable
-     var_name <- names(profileObj)[5]
-     names(profileObj)[5] <- "profiles"
-     if (is.null(dim(profileObj$profiles))) {
+     var_name <- names(profile_obj)[5]
+     names(profile_obj)[5] <- "profiles"
+     if (is.null(dim(profile_obj$profiles))) {
         # Only one time-step
-        values <- profileObj$profiles
-	     eta <- profileObj$eta
+        values <- profile_obj$profiles
+	     eta <- profile_obj$eta
      } else {
-	     dind <- which.min(abs(profileObj$dates-target_date)) 
-        values <- array(profileObj$profiles[, dind], length(profileObj$z_grid)-1)
-	     eta <- profileObj$eta[dind]
+	     dind <- which.min(abs(profile_obj$dates-target_date)) 
+        values <- array(profile_obj$profiles[, dind], length(profile_obj$z_grid)-1)
+	     eta <- profile_obj$eta[dind]
      }
   }
   wet <- which(!is.na(values))
   values <- c(values[wet], values[max(wet)])
-  z <- c(profileObj$botz, profileObj$z_grid[wet[1:length(wet)-1]+1], eta)
+  z <- c(profile_obj$botz, profile_obj$z_grid[wet[1:length(wet)-1]+1], eta)
   mydata <- data.frame(z=z, values=values)
   if (length(p)==1) p <- ggplot2::ggplot(mydata)
-  p <- p + ggplot2::geom_path(data=mydata, ggplot2::aes(x=values, y=z), colour=colour) + ggplot2::xlab(var_name) + ggplot2::ylab('metres above msl')
+  p <- p + ggplot2::geom_path(data=mydata, ggplot2::aes(x=values, y=z), colour=colour) + ggplot2::xlab(var_name) + ggplot2::ylab("metres above msl")
   #print(p)
-  return(p)
+  p
 }
 
 #' Produces a coloured tile plot of a vertical slice already fetched from an eReefs or other EMS netcdf file.
@@ -568,10 +581,12 @@ plot_ereefs_profile <- function(profileObj, var_name='Chl_a_sum', target_date=c(
 #' Relies on output from get_ereefs_slice().
 #'
 #' @param slice A list object as returned by [get_ereefs_slice()].
+#' @param var_name Name of the variable to display from `slice$values`.
 #' @param scale_col Colour scale specification. `"viridis"` is the default for
 #'      scalar slices.
 #' @param scale_lim values for low and high limits of colourscale. Defaults to
 #'                  the full range of the plotted data.
+#' @param var_units Units label to show on the fill scale.
 #' @return p handle for the generated figure
 #' @export
 plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral", scale_lim=NA, var_units="") {
@@ -645,8 +660,9 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral",
 #'
 #' Relies on output from get_ereefs_profile().
 #'
-#' @param profileObj A list object as output by get_ereefs_profile(), containing dates, eta, z_grid, botz,
-#'              and a data frame of values.
+#' @param slice A list object as output by get_ereefs_profile(), containing
+#'   dates, eta, z_grid, botz, and profile values.
+#' @param var_name Name of the variable to display from `slice$profiles`.
 #' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
@@ -730,7 +746,7 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
                                eta_stem = NA,
                                squeeze = TRUE,
                                override_positive = FALSE) {
-  assignList(get_params(start_date, end_date, input_file, var_names))
+  assign_list(get_params(start_date, end_date, input_file, var_names))
   if (length(dim(geolocation)) > 0) {
     stop("get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() for transects.")
   }
@@ -864,7 +880,7 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
                              robust = FALSE,
                              override_positive = FALSE) {
   target_date <- get_date_time(target_date)
-  assignList(get_params(target_date, target_date, input_file, var_names))
+  assign_list(get_params(target_date, target_date, input_file, var_names))
   grids <- get_ereefs_grids(substitute_filename(input_file), input_grid)
   dense_points <- ereefs_densify_path(geolocation)
   matched <- ereefs_nearest_cells(dense_points, grids$spatial_grid) %>%
@@ -1268,6 +1284,15 @@ return(d)
 }
 
 #' An internal utility function to find the grid line intersections of a line segment
+#'
+#' @param geolocation Two-row latitude/longitude table defining the line
+#'   segment to trace.
+#' @param x_grid Grid of cell-corner longitudes.
+#' @param y_grid Grid of cell-corner latitudes.
+#' @param latitude Cell-centre latitude grid.
+#' @param longitude Cell-centre longitude grid.
+#' @param first_point Logical; if `TRUE`, include the starting point of the
+#'   transect in the returned intersection set.
 #
 #' @importFrom magrittr %>%
 #' @importFrom dplyr filter mutate
@@ -1576,3 +1601,18 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - time: 16:18
 # - date: 2026-04-28
 # - prompt_used: "Do a final documentation polish pass so the help text reads consistently with the current tidy-dev workflow."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:28
+# - date: 2026-06-29
+# - prompt_used: "Replace the remaining deprecated lubridate:::month calls and finish the R CMD check cleanup for issues #24 and #25."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:35
+# - date: 2026-06-29
+# - prompt_used: "Replace the remaining legacy daysIn() calls with lubridate::days_in_month() while finishing the dependency cleanup for issues #24 and #25."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:28
+# - date: 2026-06-29
+# - prompt_used: "Fix GitHub issues #29, #30, and #31 by adding profile_obj, deprecating profileObj, and cleaning touched return/quote style."

@@ -8,7 +8,7 @@ plot_map(
   datapoly,
   var_longname = "",
   var_units = "",
-  Land_map = FALSE,
+  land_map = FALSE,
   scale_col = "viridis",
   scale_lim = c(NA, NA),
   plot_style = c("polygon", "smooth"),
@@ -18,7 +18,8 @@ plot_map(
   zoom = 6,
   p = NA,
   suppress_print = TRUE,
-  gbr_poly = FALSE
+  gbr_poly = FALSE,
+  Land_map = NULL
 )
 }
 \arguments{
@@ -29,7 +30,7 @@ package, or a list returned by `map_ereefs(..., return_poly = TRUE)`.}
 
 \item{var_units}{Optional units label.}
 
-\item{Land_map}{Logical; add a simple land underlay where available.}
+\item{land_map}{Logical; add a simple land underlay where available.}
 
 \item{scale_col}{Colour scale specification. Defaults to `"viridis"` for
 scalar maps.}
@@ -53,6 +54,8 @@ from the data.}
 \item{suppress_print}{Logical; if `TRUE`, suppresses automatic printing.}
 
 \item{gbr_poly}{Logical; add GBR polygon overlay when available.}
+
+\item{Land_map}{Deprecated compatibility alias for `land_map`.}
 }
 \value{
 A `ggplot2` object.

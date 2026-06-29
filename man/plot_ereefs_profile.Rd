@@ -5,23 +5,30 @@
 \title{Plots a single vertical profile using output from get_ereefs_profile()}
 \usage{
 plot_ereefs_profile(
-  profileObj,
+  profile_obj = NULL,
   var_name = "Chl_a_sum",
   target_date = c(2016, 1, 1),
   p = NA,
-  colour = "blue"
+  colour = "blue",
+  profileObj = NULL
 )
 }
 \arguments{
-\item{profileObj}{A list object as output by get_ereefs_profiles(), containing dates, eta, z_grid, botz and profiles}
+\item{profile_obj}{A list object as output by [get_ereefs_profile()],
+containing dates, eta, z_grid, botz and profiles.}
 
-\item{var_name}{The name of the variable to plot (must be a colname in profile$profiles). Default 'Chl_a_sum'.
-If profileObj contains only one variable, var_name is ignored and the content of the profile is shown.}
+\item{var_name}{The name of the variable to plot (must be a colname in profile$profiles). Default `"Chl_a_sum"`.
+If `profile_obj` contains only one variable, var_name is ignored and
+the content of the profile is shown.}
 
 \item{target_date}{The target date or date-time to plot. Can be a `Date`,
 `POSIXct`, character string, or a vector such as `c(year, month, day)`.}
 
 \item{p}{The handle of an existing figure, if you don't want to create a new figure}
+
+\item{colour}{Line colour for the plotted profile.}
+
+\item{profileObj}{Deprecated compatibility alias for `profile_obj`.}
 }
 \value{
 the handle of a figure containing the vertical profile plot
@@ -31,6 +38,6 @@ Relies on output from get_ereefs_profile().
 }
 \examples{
 \dontrun{
-plot_ereefs_profile(get_ereefs_profile('TN'))
+plot_ereefs_profile(get_ereefs_profile("TN"))
 }
 }

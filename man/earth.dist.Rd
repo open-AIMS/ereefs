@@ -9,6 +9,18 @@ earth.dist(long1, lat1, long2, lat2)
 
 earth.dist(long1, lat1, long2, lat2)
 }
+\arguments{
+\item{long1}{Longitude of the first point, in decimal degrees.}
+
+\item{lat1}{Latitude of the first point, in decimal degrees.}
+
+\item{long2}{Longitude of the second point, in decimal degrees.}
+
+\item{lat2}{Latitude of the second point, in decimal degrees.}
+}
+\value{
+Approximate distance in kilometres.
+}
 \description{
 Not exported. This is very approximate - a package is available if a more accurate distance is needed.
 

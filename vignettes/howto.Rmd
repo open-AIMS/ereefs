@@ -21,7 +21,7 @@ library(ereefs)
 
 The current package supports both curvilinear EMS files that provide cell corners and regular regridded files that only provide cell centres. The plotting functions detect the available geometry and reconstruct map polygons from centre coordinates when needed. For scalar variables, the default colour palette is now `viridis`.
 
-# Making maps and images for animations from eReefs output
+# Making maps and animations from eReefs output
 
 ## Static maps
 
@@ -85,25 +85,35 @@ map_ereefs(
   var_name = "NH4", target_date = as.Date("2022-10-30"),
   layer = -5,
   input_file = "https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc",
-  Land_map = TRUE, box_bounds = c(145, 150, -22, -18), scale_lim = c(0, 10)
+  land_map = TRUE, box_bounds = c(145, 150, -22, -18), scale_lim = c(0, 2.5)
 )
 ```
 
 <img src="vignette-fig-exmp5-1.png" alt="plot of chunk exmp5" width="80%" style="display: block; margin: auto;" />
 
-## Images for animations
+## Animations
 
-We can also create the image files needed for a true colour animation of surface salinity in this area. `map_ereefs_movie()` now saves the individual frame images and can also assemble them into a GIF or MP4 directly. Numeric variables use one shared colour scale across all frames by default, so the colours remain comparable from one time-step to the next. Below, `salt_list` is a list that includes the plot handle as well as the temporal mean salinity for each point in the map over the period of the animation, plus the cell centre geo-locations (choose menu option 9). By default, images are saved to the directory `"ToAnimate"`, but can be changed via the argument `output_dir` (**NB: the code below is not run**):
+`map_ereefs_movie()` now assembles GIF or MP4 animations directly. Numeric variables use one shared colour scale across all frames by default, so the colours remain comparable from one time-step to the next. The example below creates a short true-colour GIF near the mouth of the Burdekin River over a few days in February 2019. Temporary frame images are removed after the GIF is created unless `keep_frames = TRUE`:
 
 
 ```r
 # code not run
-map_ereefs_movie(
-  var_name = "salt", start_date = c(2019, 2, 15), end_date = c(2019, 3, 10),
-  Land_map = TRUE, box_bounds = c(145, 150, -22, -18), scale_col = "viridis",
-  scale_lim = c(30, 35), animation_format = "gif"
+burdekin_movie <- map_ereefs_movie(
+  var_name = "true_colour",
+  start_date = as.Date("2019-02-01"),
+  end_date = as.Date("2019-02-05"),
+  input_file = "https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml",
+  layer = "surface",
+  land_map = TRUE,
+  box_bounds = c(147.0, 148.3, -20.1, -19.0),
+  output_dir = "vignettes/burdekin_animation_frames",
+  animation_format = "gif",
+  animation_file = "vignettes/vignette-fig-burdekin-true-colour-animation.gif",
+  fps = 2
 )
 ```
+
+<img src="vignette-fig-burdekin-true-colour-animation.gif" alt="Short true-colour animation near the Burdekin River mouth in February 2019" width="80%" style="display: block; margin: auto;" />
 
 # Plotting vertical profiles and slices through the data
 
@@ -416,4 +426,39 @@ metadata:
 - time: 17:03
 - date: 2026-04-28
 - prompt_used: "Document multi-point curved transects in the vignette and add a live hydrodynamic arc-shaped slice example with both a map and slice figure."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:13
+- date: 2026-06-29
+- prompt_used: "Update vignette descriptions for changed functions, rename the animation section, and add a true-colour Burdekin River mouth GIF example."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:21
+- date: 2026-06-29
+- prompt_used: "Change the ammonia map example colour scale upper limit to 2.5 while keeping the new true-colour animation example."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 15:25
+- date: 2026-06-29
+- prompt_used: "Use polygon rendering for the true-colour GIF example because smooth rasterisation is intended for scalar fields."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 16:07
+- date: 2026-06-29
+- prompt_used: "Update the animation vignette text to document automatic frame cleanup after GIF or MP4 generation."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 10:28
+- date: 2026-06-29
+- prompt_used: "Fix GitHub issues #29, #30, and #31 by updating vignette examples to use snake_case land_map."
 -->

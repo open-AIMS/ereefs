@@ -28,8 +28,10 @@ poly2sv <- function(polydf) {
 #' @param xmn Minimum x value to use for the grid. Defaults to 142.45
 #' @param ymn Minimum y value for the grid. Defaults to -27.5
 #' @param resolution Grid resolution in degrees. Defaults to 0.01
-#' @param xmax Maximum x value for the grid. Defaults to max value from the SpatVector extent
-#' @param ymax Maximum y value for the grid. Defaults to max value from the SpatVector extent
+#' @param xmx Maximum x value for the grid. Defaults to the maximum x extent of
+#'   `sv`.
+#' @param ymx Maximum y value for the grid. Defaults to the maximum y extent of
+#'   `sv`.
 #' @param r A raster object with the correct grid set up (optional). Default=NULL
 #' @return A raster object, as used in the package 'terra'
 #' @export
@@ -70,3 +72,8 @@ sp2raster <- function(sv, xmn=142.45, ymn=-27.5, resolution=0.01, xmx=NA, ymx=NA
 # - time: 17:05
 # - date: 2026-04-26
 # - prompt_used: "Install the required packages, test the refactored eReefs package against THREDDS-served data, and set up a working Jupyter demo notebook."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:24
+# - date: 2026-06-29
+# - prompt_used: "Resolve the remaining raster-helper documentation mismatches reported by R CMD check for issues #24 and #25."

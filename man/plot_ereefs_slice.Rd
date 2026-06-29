@@ -15,11 +15,15 @@ plot_ereefs_slice(
 \arguments{
 \item{slice}{A list object as returned by [get_ereefs_slice()].}
 
+\item{var_name}{Name of the variable to display from `slice$values`.}
+
 \item{scale_col}{Colour scale specification. `"viridis"` is the default for
 scalar slices.}
 
 \item{scale_lim}{values for low and high limits of colourscale. Defaults to
 the full range of the plotted data.}
+
+\item{var_units}{Units label to show on the fill scale.}
 }
 \value{
 p handle for the generated figure

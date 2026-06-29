@@ -12,6 +12,7 @@ demo_paths <- create_demo_datasets(file.path("notebooks", "demo_data"))
 vignette_dir <- "vignettes"
 nci_simple <- "https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"
 nci_hyd_simple <- "https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_Dhnd/gbr4_simple_2022-10-30.nc"
+nci_bgc_catalog <- "https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml"
 aims_catalog <- "https://thredds.ereefs.aims.gov.au/thredds/catalog/ereefs/gbr1_2.0/stats-monthly-monthly/catalog.xml"
 
 save_vignette_plot <- function(plot_obj, filename, width = 9, height = 6) {
@@ -79,12 +80,29 @@ exmp5 <- map_ereefs(
   target_date = as.Date("2022-10-30"),
   layer = -5,
   input_file = nci_simple,
-  Land_map = TRUE,
+  land_map = TRUE,
   box_bounds = c(145, 150, -22, -18),
-  scale_lim = c(0, 10),
+  scale_lim = c(0, 2.5),
   suppress_print = TRUE
 )
 save_vignette_plot(exmp5, "vignette-fig-exmp5-1.png")
+
+burdekin_movie <- map_ereefs_movie(
+  var_name = "true_colour",
+  start_date = as.Date("2019-02-01"),
+  end_date = as.Date("2019-02-05"),
+  input_file = nci_bgc_catalog,
+  layer = "surface",
+  land_map = TRUE,
+  box_bounds = c(147.0, 148.3, -20.1, -19.0),
+  output_dir = file.path(vignette_dir, "burdekin_animation_frames"),
+  animation_format = "gif",
+  animation_file = file.path(vignette_dir, "vignette-fig-burdekin-true-colour-animation.gif"),
+  fps = 2,
+  keep_frames = FALSE,
+  suppress_print = TRUE,
+  verbosity = 0
+)
 
 temp_slice <- get_ereefs_slice(
   var_names = "NH4",
@@ -222,3 +240,28 @@ cat("vignette-figures-updated\n")
 # - time: 17:04
 # - date: 2026-04-28
 # - prompt_used: "Document multi-point curved transects in the vignette and add a live hydrodynamic arc-shaped slice example with both a map and slice figure."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:13
+# - date: 2026-06-29
+# - prompt_used: "Update the vignette figure-generation script to create the true-colour Burdekin River mouth GIF animation example."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:21
+# - date: 2026-06-29
+# - prompt_used: "Change the ammonia vignette figure colour scale upper limit to 2.5 while keeping the true-colour GIF generation step."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:25
+# - date: 2026-06-29
+# - prompt_used: "Use polygon rendering for the true-colour GIF example because smooth rasterisation is intended for scalar fields."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:07
+# - date: 2026-06-29
+# - prompt_used: "Regenerate the true-colour GIF example with automatic temporary frame cleanup."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:28
+# - date: 2026-06-29
+# - prompt_used: "Fix GitHub issues #29, #30, and #31 by updating generated vignette examples to use snake_case land_map."

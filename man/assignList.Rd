@@ -2,12 +2,22 @@
 % Please edit documentation in R/data_extraction_functions.R
 \name{assignList}
 \alias{assignList}
-\title{Utility function copied directly from the package 'tis' by Jeff Hallman (https://github.com/cran/tis/blob/master/R/assignList.R)
-Assigns the values in a list to variables in an environment. The variable names are taken from the names of the list, so all of the elements of the list must have non-blank names.}
+\title{Assign values from a named list into an environment}
 \usage{
 assignList(aList, pos = -1, envir = as.environment(pos), inherits = FALSE)
 }
+\arguments{
+\item{aList}{Deprecated; use `a_list`.}
+
+\item{pos}{Position of the target environment on the search path.}
+
+\item{envir}{Environment in which to assign the objects.}
+
+\item{inherits}{Passed through to [base::assign()].}
+}
+\value{
+Invisibly returns `NULL`.
+}
 \description{
-Utility function copied directly from the package 'tis' by Jeff Hallman (https://github.com/cran/tis/blob/master/R/assignList.R)
-Assigns the values in a list to variables in an environment. The variable names are taken from the names of the list, so all of the elements of the list must have non-blank names.
+Deprecated compatibility wrapper for [assign_list()].
 }

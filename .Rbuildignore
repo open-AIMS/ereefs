@@ -1,0 +1,15 @@
+^\\.agents($|/)
+^\\.git($|/)
+^\\.github($|/)
+^\\.jupyter($|/)
+^\\.r_libs($|/)
+^\\.Rproj\\.user($|/)
+^\\.Rhistory$
+^\\.RData$
+^\\.Ruserdata$
+^catalog_hyd\\.xml$
+^notebooks($|/)
+^ToAnimate($|/)
+^archive($|/)
+^ignore($|/)
+^\\.\\.?Rcheck($|/)

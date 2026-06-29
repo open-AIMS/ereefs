@@ -759,6 +759,12 @@ ereefs_map_reference_var <- function(input_file, var_name) {
     return("R_645")
   }
   if (var_name == "plume") {
+    vars <- ereefs_var_names(input_file)
+    spectral_vars <- c("R_412", "R_443", "R_488", "R_531", "R_547", "R_667", "R_678")
+    available <- spectral_vars[spectral_vars %in% vars]
+    if (length(available)) {
+      return(available[[1]])
+    }
     return("R_412")
   }
   if (var_name == "ZooT") {
@@ -1329,6 +1335,11 @@ ereefs_towns <- function() {
 # - time: 13:35
 # - date: 2026-04-28
 # - prompt_used: "Make z_grid and grid metadata reuse more efficient by caching get_ereefs_grids() results so repeated layer/profile calls do not recalculate grids for the same source file."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 15:43
+# - date: 2026-06-29
+# - prompt_used: "Check and harden special-variable map handling so plume geometry lookup uses available reflectance bands and reports missing bands clearly."
 # metadata:
 # - gpt_version: GPT-5 Codex
 # - time: 13:43

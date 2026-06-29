@@ -23,6 +23,12 @@ sp2raster(
 
 \item{resolution}{Grid resolution in degrees. Defaults to 0.01}
 
+\item{xmx}{Maximum x value for the grid. Defaults to the maximum x extent of
+`sv`.}
+
+\item{ymx}{Maximum y value for the grid. Defaults to the maximum y extent of
+`sv`.}
+
 \item{r}{A raster object with the correct grid set up (optional). Default=NULL}
 }
 \value{

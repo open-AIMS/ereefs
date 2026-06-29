@@ -13,6 +13,21 @@ find_intersections(
   first_point = FALSE
 )
 }
+\arguments{
+\item{geolocation}{Two-row latitude/longitude table defining the line
+segment to trace.}
+
+\item{x_grid}{Grid of cell-corner longitudes.}
+
+\item{y_grid}{Grid of cell-corner latitudes.}
+
+\item{latitude}{Cell-centre latitude grid.}
+
+\item{longitude}{Cell-centre longitude grid.}
+
+\item{first_point}{Logical; if `TRUE`, include the starting point of the
+transect in the returned intersection set.}
+}
 \description{
 An internal utility function to find the grid line intersections of a line segment
 }

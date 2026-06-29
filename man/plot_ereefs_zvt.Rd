@@ -12,12 +12,14 @@ plot_ereefs_zvt(
 )
 }
 \arguments{
+\item{slice}{A list object as output by get_ereefs_profile(), containing
+dates, eta, z_grid, botz, and profile values.}
+
+\item{var_name}{Name of the variable to display from `slice$profiles`.}
+
 \item{scale_col}{Colours to use for low and high values. Default c("ivory", "hotpink").}
 
 \item{scale_lim}{values for low and high limits of colourscale. Defaults to full range.}
-
-\item{profileObj}{A list object as output by get_ereefs_profile(), containing dates, eta, z_grid, botz,
-and a data frame of values.}
 }
 \value{
 p handle for the generated figure
