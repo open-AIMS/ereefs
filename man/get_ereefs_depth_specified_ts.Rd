@@ -55,6 +55,8 @@ workflows.}
 }
 \value{
 A tibble containing dates, matched locations, and extracted values.
+  Variable metadata from the source NetCDF file is attached as
+  `variable_metadata`, `units`, `long_name`, and `standard_name` attributes.
 }
 \description{
 Use [get_ereefs_ts()] instead when a fixed depth below mean sea level is

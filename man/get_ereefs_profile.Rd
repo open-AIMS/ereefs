@@ -48,7 +48,9 @@ an incorrect `positive` attribute. Normally not needed.}
 \value{
 A list containing the time vector, surface elevation (`eta`),
   vertical grid (`z_grid`), bottom depth (`botz`), and extracted profile
-  values.
+  values. Variable metadata from the source NetCDF file is included as a
+  list element and as `variable_metadata`, `units`, `long_name`, and
+  `standard_name` attributes.
 }
 \description{
 See also plot_ereefs_profile(), which relies on output from this function.

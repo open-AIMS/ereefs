@@ -33,6 +33,8 @@ Description: A few useful functions to make accessing eReefs and other
     Functions to extract profiles and vertical slices:
       get_ereefs_profile()
       get_ereefs_slice()
+    Function to inspect available metadata before extracting data:
+      inspect_ereefs_data()
     Functions to plot profiles:
       plot_ereefs_profile()
       plot_ereefs_zvt()

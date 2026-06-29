@@ -63,7 +63,9 @@ incorrect. Default FALSE. Not normally needed.}
 requested layer contains `NA` values. Defaults to `TRUE`.}
 }
 \value{
-a data tibble containing extracted variables, including dates and locations
+A tibble containing extracted variables, dates, matched model cells,
+  and locations. Variable metadata from the source NetCDF file is attached as
+  `variable_metadata`, `units`, `long_name`, and `standard_name` attributes.
 }
 \description{
 Create a time-series of values of one or more selected model output

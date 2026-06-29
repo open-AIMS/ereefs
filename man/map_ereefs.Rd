@@ -18,7 +18,7 @@ map_ereefs(
   zoom = 6,
   box_bounds = c(NA, NA, NA, NA),
   p = NA,
-  suppress_print = TRUE,
+  suppress_print = NULL,
   return_poly = FALSE,
   label_towns = TRUE,
   strict_bounds = FALSE,
@@ -60,7 +60,9 @@ from the extracted data.}
 
 \item{p}{Optional existing plot object to add to.}
 
-\item{suppress_print}{Logical; if `TRUE`, suppresses automatic printing.}
+\item{suppress_print}{Deprecated and ignored. Plotting functions now follow
+normal `ggplot2` behavior: assign the returned object to suppress automatic
+console printing.}
 
 \item{return_poly}{Logical; if `TRUE`, return a list containing the plot and
 plotting polygons instead of only the plot object.}

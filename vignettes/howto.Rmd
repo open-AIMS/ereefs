@@ -1,7 +1,12 @@
 ---
 title: "General usage"
 output:
-  rmarkdown::html_vignette:
+  rmarkdown::html_document:
+    theme: default
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
 vignette: >
   %\VignetteIndexEntry{General usage}
   %\VignetteEngine{knitr::rmarkdown}
@@ -20,6 +25,29 @@ library(ereefs)
 ```
 
 The current package supports both curvilinear EMS files that provide cell corners and regular regridded files that only provide cell centres. The plotting functions detect the available geometry and reconstruct map polygons from centre coordinates when needed. For scalar variables, the default colour palette is now `viridis`.
+
+# What datasets are available?
+
+The eReefs models have been run in multiple configurations, with different grid resolutions, forcing datasets, variables, output frequencies, and file formats. For the latest overview of open-access marine model results, including guidance on how to find current NCI-served eReefs outputs and what is included in the different products, start with the eReefs open-access dataset page: [Marine model results](https://www.ereefs.org.au/outputs/open-access-datasets/marine-model-results).
+
+Once you have found a candidate NetCDF file or THREDDS catalog, `inspect_ereefs_data()` can give you a quick R-side summary of the available variables, dimensions, spatial coverage, and date coverage before you request a large extraction.
+
+# Inspecting available data
+
+Before extracting data from an unfamiliar NetCDF file or THREDDS catalog, use `inspect_ereefs_data()` to see what is available. It reads metadata, coordinates, and time information rather than full model variable arrays, so it is a safe first step for large OPeNDAP-served files:
+
+```{r inspect-demo}
+library(ereefs)
+
+inspection <- inspect_ereefs_data(
+  "../notebooks/demo_data/regular_demo_2020-01.nc"
+)
+
+inspection$summary
+inspection$variables
+```
+
+The `summary` table reports spatial coverage, time coverage, grid style, grid dimensions, and variable counts. The `variables` table lists variable names, units, long names, standard names, dimensions, dimension roles, and whether each row appears to be a model data variable rather than a coordinate or grid variable. For THREDDS catalogs, `inspection$files` also lists the catalog files used to infer file-level date coverage.
 
 # Making maps and animations from eReefs output
 
@@ -168,8 +196,7 @@ arc_map <- map_ereefs(
   target_date = as.POSIXct("2022-10-30 12:00:00", tz = "Etc/GMT-10"),
   layer = "surface",
   input_file = "https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_Dhnd/gbr4_simple_2022-10-30.nc",
-  box_bounds = c(146.6, 147.8, -19.5, -18.5),
-  suppress_print = TRUE
+  box_bounds = c(146.6, 147.8, -19.5, -18.5)
 ) +
   geom_path(
     data = arc_transect,
@@ -240,6 +267,13 @@ tsdata <- get_ereefs_ts(
   geocoordinates = data.frame(latitude = -19.75, longitude = 146.75),
   input_file = "notebooks/demo_data/regular_demo_2020-01.nc"
 )
+```
+
+The returned object is a tibble, with NetCDF variable metadata attached as attributes. This keeps the table itself tidy while still making units and longer variable descriptions available for plotting labels or reporting:
+
+```r
+attr(tsdata, "variable_metadata")
+attr(tsdata, "units")
 ```
 
 For example, we can quickly plot the extracted surface temperature and salinity time-series:
@@ -461,4 +495,39 @@ metadata:
 - time: 10:28
 - date: 2026-06-29
 - prompt_used: "Fix GitHub issues #29, #30, and #31 by updating vignette examples to use snake_case land_map."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 11:21
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #21 by removing suppress_print from vignette examples and relying on returned ggplot objects."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 11:48
+- date: 2026-06-29
+- prompt_used: "Check whether the vignettes need updating after adding extraction metadata attributes, re-render them, and show the rendered result in the browser."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:00
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #26 by adding inspect_ereefs_data() and update all documentation including the vignette."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:00
+- date: 2026-06-29
+- prompt_used: "Show the evaluated inspect_ereefs_data() demo output in the how-to vignette."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:21
+- date: 2026-06-29
+- prompt_used: "Add a what datasets are available section to the how-to vignette linking users to the eReefs marine model results page."
 -->

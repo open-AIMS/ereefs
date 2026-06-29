@@ -10,7 +10,9 @@ A package for accessing, extracting, and visualising eReefs and
   other CSIRO-EMS model output. The current development workflow is designed
   around local NetCDF files, live OPeNDAP datasets, and THREDDS catalog
   services, with support for both curvilinear EMS grids and centre-only
-  regular grids.
+  regular grids. Use [inspect_ereefs_data()] to inspect variables, units,
+  dimensions, spatial coverage, and date coverage before extracting large
+  remote datasets.
 }
 \references{
 https://www.ereefs.org.au/about/

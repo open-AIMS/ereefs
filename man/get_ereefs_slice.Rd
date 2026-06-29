@@ -47,7 +47,9 @@ incorrect. Default FALSE}
 \value{
 A list containing surface elevation (`eta`), bottom depth (`botz`),
   intersected cell centres and intersections, the vertical grid (`z_grid`),
-  extracted values, and cross-reference information for the input transect.
+  extracted values, variable metadata, and cross-reference information for
+  the input transect. The list also has `variable_metadata`, `units`,
+  `long_name`, and `standard_name` attributes.
 }
 \description{
 Extracts either a series of vertical profiles along a path or a vertical

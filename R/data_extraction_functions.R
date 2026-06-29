@@ -483,7 +483,9 @@ substitute_filename <- function(input_file = "catalog") {
 #' If you run into memory constraints, consider grouping points to be extracted within regions, and calling this once
 #' for each region.
 #'
-#' @return a data tibble containing extracted variables, including dates and locations
+#' @return A tibble containing extracted variables, dates, matched model cells,
+#'   and locations. Variable metadata from the source NetCDF file is attached as
+#'   `variable_metadata`, `units`, `long_name`, and `standard_name` attributes.
 #' @param var_names either a single character value or a vector specifying the short names for variables that you 
 #'        want from the netcdf file. Defaults to c('Chl_a_sum', 'TN').
 #' @param geocoordinates A tibble of decimal latitude and longitude pairs, or a
@@ -917,7 +919,9 @@ get_ereefs_bottom_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #' @param mass Logical; if `TRUE`, return mass per square metre instead of the
 #'   mean concentration over depth.
 #' @return A tibble containing dates, matched locations, water-column depth, and
-#'   extracted values.
+#'   extracted values. Variable metadata from the source NetCDF file is attached
+#'   as `variable_metadata`, `units`, `long_name`, and `standard_name`
+#'   attributes; `watercol_depth` is reported in metres.
 #' @export
 #' @examples
 #' \dontrun{
@@ -1226,6 +1230,8 @@ get_ereefs_depth_integrated_ts <- function(var_names=c('Chl_a_sum', 'TN'),
 #'   shallower than the requested depth, values are taken from the bottom wet
 #'   layer.
 #' @return A tibble containing dates, matched locations, and extracted values.
+#'   Variable metadata from the source NetCDF file is attached as
+#'   `variable_metadata`, `units`, `long_name`, and `standard_name` attributes.
 #' @export
 #' @examples
 #' \dontrun{
@@ -1954,6 +1960,7 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
                           default_to_bottom = TRUE) {
   rm(verbosity)
   assign_list(get_params(start_date, end_date, input_file, var_names))
+  variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
 
   grids <- get_ereefs_grids(input_file, input_grid)
   matched_points <- ereefs_match_geocoordinates(geocoordinates, grids$spatial_grid) %>%
@@ -2084,7 +2091,8 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
   })
 
   dplyr::bind_rows(extracted) %>%
-    dplyr::arrange(latitude, longitude, time)
+    dplyr::arrange(latitude, longitude, time) %>%
+    ereefs_attach_variable_metadata(variable_metadata)
 }
 
 get_ereefs_bottom_ts <- function(var_names = c("Chl_a_sum", "TN"),
@@ -2122,6 +2130,24 @@ get_ereefs_depth_integrated_ts <- function(var_names = c("Chl_a_sum", "TN"),
                                            mass = FALSE) {
   rm(verbosity)
   assign_list(get_params(start_date, end_date, input_file, var_names))
+  variable_metadata <- ereefs_variable_metadata(
+    resolved_files,
+    var_names,
+    extra_metadata = dplyr::tibble(
+      variable = "watercol_depth",
+      units = "m",
+      long_name = "Water-column depth",
+      standard_name = NA_character_
+    )
+  )
+  if (isTRUE(mass)) {
+    variable_metadata$units[variable_metadata$variable %in% var_names] <- ifelse(
+      is.na(variable_metadata$units[variable_metadata$variable %in% var_names]),
+      NA_character_,
+      paste(variable_metadata$units[variable_metadata$variable %in% var_names], "m")
+    )
+  }
+
   grids <- get_ereefs_grids(input_file, input_grid)
   if (is.null(grids$z_grid)) {
     stop("z_grid is required for depth-integrated extraction.")
@@ -2219,7 +2245,8 @@ get_ereefs_depth_integrated_ts <- function(var_names = c("Chl_a_sum", "TN"),
   })
 
   dplyr::bind_rows(extracted) %>%
-    dplyr::arrange(latitude, longitude, time)
+    dplyr::arrange(latitude, longitude, time) %>%
+    ereefs_attach_variable_metadata(variable_metadata)
 }
 
 get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
@@ -2233,6 +2260,7 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
                                           verbosity = 1) {
   rm(verbosity)
   assign_list(get_params(start_date, end_date, input_file, var_names))
+  variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
   grids <- get_ereefs_grids(input_file, input_grid)
   if (is.null(grids$z_grid)) {
     stop("z_grid is required for depth-below-free-surface extraction.")
@@ -2315,7 +2343,8 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
   })
 
   dplyr::bind_rows(extracted) %>%
-    dplyr::arrange(latitude, longitude, time)
+    dplyr::arrange(latitude, longitude, time) %>%
+    ereefs_attach_variable_metadata(variable_metadata)
 }
 
 # metadata:
@@ -2443,3 +2472,8 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
 # - time: 10:28
 # - date: 2026-06-29
 # - prompt_used: "Fix GitHub issues #29, #30, and #31 by adding snake_case helper names, deprecating camelCase aliases, and standardising touched code style."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 11:36
+# - date: 2026-06-29
+# - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."

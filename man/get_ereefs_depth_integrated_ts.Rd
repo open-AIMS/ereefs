@@ -58,7 +58,9 @@ mean concentration over depth.}
 }
 \value{
 A tibble containing dates, matched locations, water-column depth, and
-  extracted values.
+  extracted values. Variable metadata from the source NetCDF file is attached
+  as `variable_metadata`, `units`, `long_name`, and `standard_name`
+  attributes; `watercol_depth` is reported in metres.
 }
 \description{
 Calculates either the mean concentration over the wet water column or, when

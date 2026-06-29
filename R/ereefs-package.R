@@ -4,7 +4,9 @@
 #'   other CSIRO-EMS model output. The current development workflow is designed
 #'   around local NetCDF files, live OPeNDAP datasets, and THREDDS catalog
 #'   services, with support for both curvilinear EMS grids and centre-only
-#'   regular grids.
+#'   regular grids. Use [inspect_ereefs_data()] to inspect variables, units,
+#'   dimensions, spatial coverage, and date coverage before extracting large
+#'   remote datasets.
 #'
 #' @name ereefs-package
 #' @aliases ereefs
@@ -55,3 +57,8 @@
 # - time: 14:29
 # - date: 2026-06-29
 # - prompt_used: "Add the remaining explicit package imports used by plotting helpers so the package check is cleaner for issues #24 and #25."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 12:00
+# - date: 2026-06-29
+# - prompt_used: "Address GitHub issue #26 by adding inspect_ereefs_data() and update all documentation including the vignette."

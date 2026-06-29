@@ -144,6 +144,63 @@ ereefs_var_attr <- function(input_file, var_name, attribute) {
   att$value[[1]]
 }
 
+ereefs_metadata_source <- function(input_file) {
+  if (inherits(input_file, "data.frame")) {
+    for (candidate in c("opendap_url", "file", "input_file")) {
+      if (candidate %in% names(input_file) && nrow(input_file) > 0) {
+        return(as.character(input_file[[candidate]][[1]]))
+      }
+    }
+  }
+
+  if (length(input_file) == 0 || is.na(input_file[[1]])) {
+    return(NA_character_)
+  }
+
+  as.character(input_file[[1]])
+}
+
+ereefs_variable_metadata <- function(input_file, var_names, extra_metadata = NULL) {
+  metadata_file <- ereefs_metadata_source(input_file)
+  var_names <- unique(as.character(var_names))
+
+  safe_attr <- function(var_name, attribute) {
+    out <- tryCatch(
+      ereefs_var_attr(metadata_file, var_name, attribute),
+      error = function(e) NA_character_
+    )
+    if (length(out) != 1 || is.na(out) || !nzchar(out)) {
+      return(NA_character_)
+    }
+    as.character(out)
+  }
+
+  metadata <- dplyr::tibble(
+    variable = var_names,
+    units = vapply(var_names, safe_attr, character(1), attribute = "units"),
+    long_name = vapply(var_names, safe_attr, character(1), attribute = "long_name"),
+    standard_name = vapply(var_names, safe_attr, character(1), attribute = "standard_name")
+  )
+
+  if (!is.null(extra_metadata) && nrow(extra_metadata) > 0) {
+    metadata <- dplyr::bind_rows(metadata, extra_metadata)
+  }
+
+  metadata
+}
+
+ereefs_attach_variable_metadata <- function(x, variable_metadata) {
+  if (is.null(variable_metadata) || !nrow(variable_metadata)) {
+    return(x)
+  }
+
+  attr(x, "variable_metadata") <- variable_metadata
+  attr(x, "units") <- stats::setNames(variable_metadata$units, variable_metadata$variable)
+  attr(x, "long_name") <- stats::setNames(variable_metadata$long_name, variable_metadata$variable)
+  attr(x, "standard_name") <- stats::setNames(variable_metadata$standard_name, variable_metadata$variable)
+  x
+}
+
 ereefs_mask_array_sentinels <- function(arr, input_file, var_name) {
   if (!is.numeric(arr)) {
     return(arr)
@@ -1345,3 +1402,8 @@ ereefs_towns <- function() {
 # - time: 13:43
 # - date: 2026-04-28
 # - prompt_used: "Extend grid caching across dated files in the same catalog family so z_grid and spatial grids are reused across daily/monthly siblings as well as exact file repeats."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 11:36
+# - date: 2026-06-29
+# - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."

@@ -17,7 +17,7 @@ plot_map(
   label_towns = TRUE,
   zoom = 6,
   p = NA,
-  suppress_print = TRUE,
+  suppress_print = NULL,
   gbr_poly = FALSE,
   Land_map = NULL
 )
@@ -51,7 +51,9 @@ from the data.}
 
 \item{p}{Optional existing plot object to add to.}
 
-\item{suppress_print}{Logical; if `TRUE`, suppresses automatic printing.}
+\item{suppress_print}{Deprecated and ignored. Plotting functions now follow
+normal `ggplot2` behavior: assign the returned object to suppress automatic
+console printing.}
 
 \item{gbr_poly}{Logical; add GBR polygon overlay when available.}
 

@@ -24,7 +24,7 @@ map_ereefs_movie(
   smooth_pixels = 600,
   zoom = 6,
   box_bounds = c(NA, NA, NA, NA),
-  suppress_print = TRUE,
+  suppress_print = NULL,
   stride = "daily",
   verbosity = 0,
   label_towns = TRUE,
@@ -87,7 +87,9 @@ from the extracted data.}
 \item{box_bounds}{Optional bounds in the form
 `c(longitude_min, longitude_max, latitude_min, latitude_max)`.}
 
-\item{suppress_print}{Logical; if `TRUE`, suppresses automatic printing.}
+\item{suppress_print}{Deprecated and ignored. Plotting functions now follow
+normal `ggplot2` behavior: assign the returned object to suppress automatic
+console printing.}
 
 \item{stride}{Temporal stride used to choose frames.}
 

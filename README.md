@@ -75,6 +75,12 @@ plotting workflows, `viridis` is now the default colour palette.
 `ereefs` is designed to assist R users who need more customised access
 to eReefs data. This includes things like:
 
+- Inspecting unfamiliar eReefs or EMS NetCDF files and THREDDS catalogs
+  with `inspect_ereefs_data()` before extracting data. This provides a
+  quick overview of spatial coverage, time coverage, available
+  variables, units, dimension roles, and catalog files without reading
+  full model arrays;
+
 - Accessing data from versions of the eReefs model that are not
   available through the web-based data service;
 
@@ -196,6 +202,7 @@ metadata:
 - date: 2026-04-27
 - prompt_used: "After comparing the reconstructed simple-file z_grid to the standard-file z_grid, reset the top interface to 1e20 for macrotidal safety."
 -->
+
 <!--
 metadata:
 - gpt_version: GPT-5 Codex
@@ -210,4 +217,12 @@ metadata:
 - time: 08:41
 - date: 2026-04-28
 - prompt_used: "Update vignette PNGs to match the current code and make viridis the default colour palette."
+-->
+
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:00
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #26 by adding inspect_ereefs_data() and update all documentation including the vignette."
 -->

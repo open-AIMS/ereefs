@@ -1457,6 +1457,16 @@ ereefs_resolve_land_map <- function(land_map, Land_map = NULL) {
   isTRUE(land_map)
 }
 
+ereefs_warn_ignored_suppress_print <- function(suppress_print) {
+  if (!is.null(suppress_print)) {
+    warning(
+      "suppress_print is deprecated and ignored; assign the returned plot object to suppress automatic ggplot printing.",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
 ereefs_internal_data <- function(primary_name, legacy_name) {
   if (exists(primary_name, inherits = TRUE)) {
     return(get(primary_name, inherits = TRUE))
@@ -1479,7 +1489,6 @@ ereefs_plot_datapoly <- function(datapoly,
                                  box_bounds = c(NA, NA, NA, NA),
                                  label_towns = TRUE,
                                  p = NA,
-                                 suppress_print = TRUE,
                                  gbr_poly = FALSE,
                                  mark_points = NULL,
                                  Land_map = NULL) {
@@ -1672,7 +1681,9 @@ ereefs_plot_datapoly <- function(datapoly,
 #' @param box_bounds Optional bounds in the form
 #'   `c(longitude_min, longitude_max, latitude_min, latitude_max)`.
 #' @param p Optional existing plot object to add to.
-#' @param suppress_print Logical; if `TRUE`, suppresses automatic printing.
+#' @param suppress_print Deprecated and ignored. Plotting functions now follow
+#'   normal `ggplot2` behavior: assign the returned object to suppress automatic
+#'   console printing.
 #' @param return_poly Logical; if `TRUE`, return a list containing the plot and
 #'   plotting polygons instead of only the plot object.
 #' @param label_towns Logical; add town labels where available.
@@ -1698,7 +1709,7 @@ map_ereefs <- function(var_name = "true_colour",
                        zoom = 6,
                        box_bounds = c(NA, NA, NA, NA),
                        p = NA,
-                       suppress_print = TRUE,
+                       suppress_print = NULL,
                        return_poly = FALSE,
                        label_towns = TRUE,
                        strict_bounds = FALSE,
@@ -1707,6 +1718,7 @@ map_ereefs <- function(var_name = "true_colour",
                        Land_map = NULL) {
   plot_style <- match.arg(plot_style)
   land_map <- ereefs_resolve_land_map(land_map, Land_map)
+  ereefs_warn_ignored_suppress_print(suppress_print)
   rm(zoom, strict_bounds)
   assign_list(get_params(target_date, target_date, input_file, var_name))
 
@@ -1766,7 +1778,6 @@ map_ereefs <- function(var_name = "true_colour",
     box_bounds = box_bounds,
     label_towns = label_towns,
     p = p,
-    suppress_print = suppress_print,
     gbr_poly = gbr_poly,
     mark_points = mark_points
   )
@@ -1840,7 +1851,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              smooth_pixels = 600,
                              zoom = 6,
                              box_bounds = c(NA, NA, NA, NA),
-                             suppress_print = TRUE,
+                             suppress_print = NULL,
                              stride = "daily",
                              verbosity = 0,
                              label_towns = TRUE,
@@ -1856,6 +1867,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   plot_style <- match.arg(plot_style)
   animation_format <- match.arg(animation_format)
   land_map <- ereefs_resolve_land_map(land_map, Land_map)
+  ereefs_warn_ignored_suppress_print(suppress_print)
   if (identical(var_name, "true_color")) {
     var_name <- "true_colour"
   }
@@ -1906,7 +1918,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
       plot_style = plot_style,
       smooth_pixels = smooth_pixels,
       box_bounds = box_bounds,
-      suppress_print = TRUE,
       return_poly = TRUE,
       label_towns = label_towns,
       mark_points = mark_points,
@@ -1972,7 +1983,6 @@ map_ereefs_movie <- function(var_name = "true_colour",
       smooth_pixels = smooth_pixels,
       box_bounds = box_bounds,
       label_towns = label_towns,
-      suppress_print = suppress_print,
       gbr_poly = gbr_poly,
       mark_points = mark_points
     )
@@ -2045,7 +2055,9 @@ map_ereefs_movie <- function(var_name = "true_colour",
 #' @param label_towns Logical; add town labels where available.
 #' @param zoom Deprecated legacy argument retained for backward compatibility.
 #' @param p Optional existing plot object to add to.
-#' @param suppress_print Logical; if `TRUE`, suppresses automatic printing.
+#' @param suppress_print Deprecated and ignored. Plotting functions now follow
+#'   normal `ggplot2` behavior: assign the returned object to suppress automatic
+#'   console printing.
 #' @param gbr_poly Logical; add GBR polygon overlay when available.
 #' @param Land_map Deprecated compatibility alias for `land_map`.
 #'
@@ -2063,11 +2075,12 @@ plot_map <- function(datapoly,
                      label_towns = TRUE,
                      zoom = 6,
                      p = NA,
-                     suppress_print = TRUE,
+                     suppress_print = NULL,
                      gbr_poly = FALSE,
                      Land_map = NULL) {
   plot_style <- match.arg(plot_style)
   land_map <- ereefs_resolve_land_map(land_map, Land_map)
+  ereefs_warn_ignored_suppress_print(suppress_print)
   rm(zoom)
   if ("datapoly" %in% names(datapoly)) {
     var_longname <- if (nzchar(var_longname)) var_longname else datapoly$var_longname
@@ -2091,7 +2104,6 @@ plot_map <- function(datapoly,
     box_bounds = box_bounds,
     label_towns = label_towns,
     p = p,
-    suppress_print = suppress_print,
     gbr_poly = gbr_poly
   )
 }
@@ -2226,3 +2238,8 @@ plot_map <- function(datapoly,
 # - time: 10:28
 # - date: 2026-06-29
 # - prompt_used: "Fix GitHub issues #29, #30, and #31 by adding land_map, snake_case internal data access, deprecated aliases, and cleaner return style."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 11:21
+# - date: 2026-06-29
+# - prompt_used: "Address GitHub issue #21 by deprecating suppress_print and relying on normal ggplot2 auto-printing behavior."

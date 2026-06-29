@@ -27,7 +27,9 @@
 #'       incorrect. Default FALSE
 #' @return A list containing surface elevation (`eta`), bottom depth (`botz`),
 #'   intersected cell centres and intersections, the vertical grid (`z_grid`),
-#'   extracted values, and cross-reference information for the input transect.
+#'   extracted values, variable metadata, and cross-reference information for
+#'   the input transect. The list also has `variable_metadata`, `units`,
+#'   `long_name`, and `standard_name` attributes.
 #' @export
 get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 			 geolocation=data.frame(latitude=c(-20, -20), longitude=c(148.5, 149)),
@@ -285,7 +287,9 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'
 #' @return A list containing the time vector, surface elevation (`eta`),
 #'   vertical grid (`z_grid`), bottom depth (`botz`), and extracted profile
-#'   values.
+#'   values. Variable metadata from the source NetCDF file is included as a
+#'   list element and as `variable_metadata`, `units`, `long_name`, and
+#'   `standard_name` attributes.
 #' @param var_names A vector of EMS variable names. Defaults to
 #'   `c("Chl_a_sum", "TN")`.
 #' @param geolocation Latitude and longitude of the location to extract.
@@ -747,6 +751,7 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
                                squeeze = TRUE,
                                override_positive = FALSE) {
   assign_list(get_params(start_date, end_date, input_file, var_names))
+  variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
   if (length(dim(geolocation)) > 0) {
     stop("get_ereefs_profile() only handles one location per call. Use get_ereefs_slice() for transects.")
   }
@@ -868,7 +873,15 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
     values <- array(values, dim = dim(values)[c(1, 3)])
   }
 
-  list(dates = dates, eta = eta_record, z_grid = grids$z_grid, botz = botz_scalar, profiles = values)
+  profile <- list(
+    dates = dates,
+    eta = eta_record,
+    z_grid = grids$z_grid,
+    botz = botz_scalar,
+    profiles = values,
+    variable_metadata = variable_metadata
+  )
+  ereefs_attach_variable_metadata(profile, variable_metadata)
 }
 
 get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
@@ -881,6 +894,7 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
                              override_positive = FALSE) {
   target_date <- get_date_time(target_date)
   assign_list(get_params(target_date, target_date, input_file, var_names))
+  variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
   grids <- get_ereefs_grids(substitute_filename(input_file), input_grid)
   dense_points <- ereefs_densify_path(geolocation)
   matched <- ereefs_nearest_cells(dense_points, grids$spatial_grid) %>%
@@ -1035,15 +1049,17 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
       dplyr::pull(.data$botz)
   }
 
-  list(
+  slice <- list(
     eta = eta,
     botz = botz,
     z_grid = z_grid,
     values = values,
     cell_centres = matched %>% dplyr::select(latitude, longitude),
     cell_intersections = matched %>% dplyr::select(latitude, longitude),
-    crossref = seq_len(nrow(matched))
+    crossref = seq_len(nrow(matched)),
+    variable_metadata = variable_metadata
   )
+  ereefs_attach_variable_metadata(slice, variable_metadata)
 }
 
 ereefs_slice_distance_bounds <- function(slice) {
@@ -1616,3 +1632,8 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - time: 10:28
 # - date: 2026-06-29
 # - prompt_used: "Fix GitHub issues #29, #30, and #31 by adding profile_obj, deprecating profileObj, and cleaning touched return/quote style."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 11:36
+# - date: 2026-06-29
+# - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."

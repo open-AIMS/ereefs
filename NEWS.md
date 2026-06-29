@@ -6,6 +6,17 @@ upgrade-impacting changes rather than an exhaustive commit history.
 
 ## Breaking and near-breaking changes
 
+### New metadata inspector for unfamiliar datasets
+
+- `inspect_ereefs_data()` is a new lightweight helper for exploring unfamiliar
+  local NetCDF files, OPeNDAP URLs, or THREDDS catalogs before extracting data.
+- It returns tidy tables for dataset summary information, variables,
+  dimensions, and catalog files, including spatial coverage, temporal coverage,
+  units, long names, standard names, dimension roles, and an
+  `is_data_variable` flag.
+- The function is intended to read metadata and coordinate/time information
+  only, avoiding full model-variable reads from large remote OPeNDAP datasets.
+
 ### Public argument names are moving toward snake_case
 
 - Plotting helpers now prefer lower-case snake_case argument names such as
@@ -15,6 +26,14 @@ upgrade-impacting changes rather than an exhaustive commit history.
   forms.
 - The internal list-assignment helper is now `assign_list()`; `assignList()`
   remains as a deprecated compatibility wrapper.
+
+### Plotting follows normal `ggplot2` printing behavior
+
+- `suppress_print` is deprecated and ignored in the active plotting helpers.
+- Plotting functions no longer explicitly print their plots; they return
+  `ggplot2` objects. As with other `ggplot2` workflows, a call such as
+  `map_ereefs(...)` displays at the console, while `p <- map_ereefs(...)` stores
+  the plot without displaying it.
 
 ### Data access now follows a `tidync`/`ncmeta`-first path
 
@@ -49,6 +68,22 @@ If older code expects a base data frame, convert explicitly:
 ```r
 ts_df <- as.data.frame(ts)
 ```
+
+### Extracted data now carries NetCDF variable metadata
+
+- Extraction tibbles returned by `get_ereefs_ts()`,
+  `get_ereefs_bottom_ts()`, `get_ereefs_depth_integrated_ts()`, and
+  `get_ereefs_depth_specified_ts()` now include `variable_metadata`, `units`,
+  `long_name`, and `standard_name` attributes.
+- Vertical profile and slice outputs from `get_ereefs_profile()` and
+  `get_ereefs_slice()` include the same metadata as both attributes and a
+  `variable_metadata` list element.
+- Metadata is not added as ordinary data columns by default, to avoid breaking
+  tidy joins, pivots, and plotting code that expects only extracted data
+  variables in the table body.
+- For `get_ereefs_depth_integrated_ts(mass = TRUE)`, variable units are marked
+  as vertically integrated by appending `m`; `watercol_depth` is reported in
+  metres.
 
 ### `layer = "surface"` and `layer = "bottom"` now mean wet surface and wet bottom
 
@@ -233,4 +268,25 @@ metadata:
 - time: 10:28
 - date: 2026-06-29
 - prompt_used: "Fix GitHub issues #29, #30, and #31 by documenting the snake_case argument migration and deprecated compatibility aliases."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 11:21
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #21 by documenting that suppress_print is deprecated and plotting now follows normal ggplot2 behavior."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 11:36
+- date: 2026-06-29
+- prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:00
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #26 by adding inspect_ereefs_data() and update all documentation including the vignette."
 -->
