@@ -108,7 +108,7 @@ temp_slice <- get_ereefs_slice(
   var_names = "NH4",
   target_date = as.POSIXct("2022-10-30 12:00:00", tz = "Etc/GMT-10"),
   geolocation = data.frame(latitude = c(-19.26639219, -19.26639219), longitude = c(146.805701, 147.38)),
-  input_file = nci_simple
+  input_file = nci_bgc_catalog
 )
 exmp8 <- plot_ereefs_slice(temp_slice, var_name = "NH4", var_units = "mg N m-3")
 save_vignette_plot(exmp8, "vignette-fig-exmp8-1.png")
@@ -161,6 +161,20 @@ exmp10 <- plot_ereefs_profile(
   target_date = as.POSIXct("2022-10-30 12:00:00", tz = "Etc/GMT-10")
 )
 save_vignette_plot(exmp10, "vignette-fig-exmp10-1.png")
+
+profile_range <- get_ereefs_profile(
+  var_names = "NH4",
+  start_date = as.POSIXct("2022-10-26 12:00:00", tz = "Etc/GMT-10"),
+  end_date = as.POSIXct("2022-10-30 12:00:00", tz = "Etc/GMT-10"),
+  geolocation = c(-19.26639219, 147.0928505),
+  input_file = nci_bgc_catalog
+)
+exmp10b <- plot_ereefs_zvt(
+  profile_range,
+  var_name = "NH4",
+  scale_col = c("#efe9d5", "#1f7a8c")
+)
+save_vignette_plot(exmp10b, "vignette-fig-exmp10b-1.png", width = 9, height = 5)
 
 tsdata <- get_ereefs_ts(
   var_names = c("temp", "salt"),
@@ -265,3 +279,13 @@ cat("vignette-figures-updated\n")
 # - time: 10:28
 # - date: 2026-06-29
 # - prompt_used: "Fix GitHub issues #29, #30, and #31 by updating generated vignette examples to use snake_case land_map."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:24
+# - date: 2026-06-29
+# - prompt_used: "Evaluate GitHub issue #6 carefully, fix date-range profile plotting, and add a vignette example if successful."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:50
+# - date: 2026-06-29
+# - prompt_used: "Change the issue #6 vignette demo to use five days of live NCI NH4 profile data at the midpoint of the slice transect."

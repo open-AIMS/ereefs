@@ -153,7 +153,7 @@ temp_slice <- get_ereefs_slice(
   var_names = "NH4",
   target_date = as.POSIXct("2022-10-30 12:00:00", tz = "Etc/GMT-10"),
   geolocation = data.frame(latitude = c(-19.26639219, -19.26639219), longitude = c(146.805701, 147.38)),
-  input_file = "https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"
+  input_file = "https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml"
 )
 ```
 
@@ -253,6 +253,32 @@ plot_ereefs_profile(
 <img src="vignette-fig-exmp10-1.png" alt="plot of chunk exmp10" width="80%" style="display: block; margin: auto;" />
 
 `get_ereefs_profile()` now favours robustness over low-level NetCDF slicing, which makes it slower for long requests but much less brittle for OPeNDAP-served data.
+
+It can also extract a sequence of profiles over a date range. The next example
+uses the same live NCI catalog as the slice example above, extracting `NH4` for
+five daily simple files at a point half-way along the Townsville transect:
+
+```r
+profile_range <- get_ereefs_profile(
+  var_names = "NH4",
+  start_date = as.POSIXct("2022-10-26 12:00:00", tz = "Etc/GMT-10"),
+  end_date = as.POSIXct("2022-10-30 12:00:00", tz = "Etc/GMT-10"),
+  geolocation = c(-19.26639219, 147.0928505),
+  input_file = "https://thredds.nci.org.au/thredds/catalog/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/catalog.xml"
+)
+```
+
+`plot_ereefs_zvt()` shows the resulting profile sequence as a time-depth plot:
+
+```r
+plot_ereefs_zvt(
+  profile_range,
+  var_name = "NH4",
+  scale_col = c("#efe9d5", "#1f7a8c")
+)
+```
+
+<img src="vignette-fig-exmp10b-1.png" alt="plot of chunk exmp10b" width="80%" style="display: block; margin: auto;" />
 
 # Time series
 
@@ -530,4 +556,18 @@ metadata:
 - time: 12:21
 - date: 2026-06-29
 - prompt_used: "Add a what datasets are available section to the how-to vignette linking users to the eReefs marine model results page."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 13:24
+- date: 2026-06-29
+- prompt_used: "Evaluate GitHub issue #6 carefully, fix date-range profile plotting, and add a vignette example if successful."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 13:50
+- date: 2026-06-29
+- prompt_used: "Change the issue #6 vignette demo to use five days of live NCI NH4 profile data at the midpoint of the slice transect."
 -->

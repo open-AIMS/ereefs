@@ -1098,7 +1098,15 @@ ereefs_eta_table <- function(main_file,
     )
 
   if (isTRUE(eta_source$assumed_zero)) {
-    warning("eta is not available in this dataset, so depth-below-free-surface calculations are assuming eta = 0.")
+    family_key <- ereefs_grid_family_cache_key(main_file)
+    if (is.na(family_key)) {
+      family_key <- ereefs_grid_cache_key(main_file)
+    }
+    warn_key <- paste0("eta_assumed_zero_", family_key)
+    if (!exists(warn_key, envir = .ereefs_warning_cache, inherits = FALSE)) {
+      warning("eta is not available in this dataset, so depth-below-free-surface calculations are assuming eta = 0.")
+      assign(warn_key, TRUE, envir = .ereefs_warning_cache)
+    }
     return(base_tbl %>% dplyr::mutate(eta = 0))
   }
 
@@ -1407,3 +1415,8 @@ ereefs_towns <- function() {
 # - time: 11:36
 # - date: 2026-06-29
 # - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:50
+# - date: 2026-06-29
+# - prompt_used: "Cache missing-eta warnings by NetCDF family so catalog-backed profile requests warn once while assuming eta = 0."

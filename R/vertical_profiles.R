@@ -666,45 +666,98 @@ plot_ereefs_slice <- function(slice, var_name='Chl_a_sum', scale_col="spectral",
 #'
 #' @param slice A list object as output by get_ereefs_profile(), containing
 #'   dates, eta, z_grid, botz, and profile values.
-#' @param var_name Name of the variable to display from `slice$profiles`.
+#' @param var_name Name of the variable to display from `slice$profiles`. If
+#'   `slice$profiles` is a squeezed single-variable matrix, this is used only
+#'   for the legend title.
 #' @param scale_col Colours to use for low and high values. Default c("ivory", "hotpink").
 #' @param scale_lim values for low and high limits of colourscale. Defaults to full range.
 #' @return p handle for the generated figure
 #' @export
-plot_ereefs_zvt <- function(slice, var_name='Chl_a_sum', scale_col=c("ivory", "hotpink"), scale_lim=NA) {
-	numprofiles <- dim(slice$profiles)[3]
-	layers <- length(slice$z_grid) - 1
-	zmin <- array(slice$z_grid[1:layers], c(layers, numprofiles))
-	zmax <- array(slice$z_grid[2:(layers+1)], c(layers, numprofiles))
-	for (i in 1:numprofiles) {
-		zmin[zmin[,i]<slice$botz,i] <- slice$botz
-		zmin[zmin[,i]>slice$eta[i],i] <- slice$eta[i]
-		zmax[zmax[,i]<slice$botz,i] <- slice$botz
-		zmax[zmax[,i]>slice$eta[i],i] <- slice$eta[i]
-	}
-	d <- slice$dates
-	dmin <- c(d[1]-(d[2]-d[1])/2, d[1:(length(d)-1)])
-	dmin <- t(array(dmin, c(numprofiles, layers)))
-	dmax <- c(d[2:length(d)], d[length(d)-1] + (d[length(d)] - d[length(d)-1])/2)
-	dmax <- t(array(dmax, c(numprofiles, layers)))
+plot_ereefs_zvt <- function(slice, var_name = "Chl_a_sum", scale_col = c("ivory", "hotpink"), scale_lim = NA) {
+  profile_dims <- dim(slice$profiles)
+  if (is.null(profile_dims)) {
+    stop("plot_ereefs_zvt() needs profile output containing more than one time step.", call. = FALSE)
+  }
+  if (length(profile_dims) == 3) {
+    var_names <- dimnames(slice$profiles)[[2]]
+    if (!is.null(var_names) && var_name %in% var_names) {
+      var_index <- match(var_name, var_names)
+    } else {
+      var_index <- 1L
+      if (profile_dims[[2]] > 1) {
+        warning("var_name was not found in slice$profiles; plotting the first variable.", call. = FALSE)
+      }
+    }
+    profiles <- slice$profiles[, var_index, , drop = TRUE]
+  } else if (length(profile_dims) == 2) {
+    profiles <- slice$profiles
+  } else {
+    stop("Unsupported profile array shape in slice$profiles.", call. = FALSE)
+  }
 
-	ind <- which(!is.na(slice$profiles[, var_name, ]))
-	profiles <- slice$profiles[, var_name, ]
-	if (length(scale_lim)==1) {
-		scale_lim[1] <- min(c(profiles[ind]))
-		scale_lim[2] <- max(c(profiles[ind]))
-	}
+  layers <- length(slice$z_grid) - 1
+  if (nrow(profiles) != layers) {
+    stop("Profile layer count does not match z_grid.", call. = FALSE)
+  }
+  numprofiles <- ncol(profiles)
+  if (numprofiles != length(slice$dates)) {
+    stop("Profile time count does not match slice$dates.", call. = FALSE)
+  }
 
-	mydata <- data.frame(xmin=as.Date(dmin[ind], origin='1990-01-01'), xmax=as.Date(dmax[ind], origin='1990-01-01'), 
-			     ymin=zmin[ind], ymax=zmax[ind], 
-			     z=profiles[ind])
-	p <- ggplot2::ggplot(data=mydata, aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax, fill=z)) + 
-		ggplot2::geom_rect() +
-		ggplot2::scale_x_date() +
-		ggplot2::ylab('metres above msl') +
-		ggplot2::scale_fill_gradient(name=var_name, low=scale_col[1], high=scale_col[2], limits=scale_lim, oob=scales::squish)
-	plot(p)
-	return(p)
+  zmin <- array(slice$z_grid[seq_len(layers)], c(layers, numprofiles))
+  zmax <- array(slice$z_grid[seq_len(layers) + 1L], c(layers, numprofiles))
+  botz <- rep(slice$botz, length.out = numprofiles)
+  eta <- rep(slice$eta, length.out = numprofiles)
+  for (i in seq_len(numprofiles)) {
+    zmin[zmin[, i] < botz[[i]], i] <- botz[[i]]
+    zmin[zmin[, i] > eta[[i]], i] <- eta[[i]]
+    zmax[zmax[, i] < botz[[i]], i] <- botz[[i]]
+    zmax[zmax[, i] > eta[[i]], i] <- eta[[i]]
+  }
+
+  dates <- as.POSIXct(slice$dates)
+  if (length(dates) == 1) {
+    half_step <- as.difftime(12, units = "hours")
+    dmin <- dates - half_step
+    dmax <- dates + half_step
+  } else {
+    dmin <- c(dates[[1]] - (dates[[2]] - dates[[1]]) / 2, dates[-length(dates)])
+    dmax <- c(dates[-1], dates[[length(dates)]] + (dates[[length(dates)]] - dates[[length(dates) - 1L]]) / 2)
+  }
+  xmin <- t(array(dmin, c(numprofiles, layers)))
+  xmax <- t(array(dmax, c(numprofiles, layers)))
+
+  keep <- which(is.finite(profiles) & is.finite(zmin) & is.finite(zmax))
+  if (!length(keep)) {
+    stop("No finite profile values are available to plot.", call. = FALSE)
+  }
+  if (length(scale_lim) == 1 && is.na(scale_lim)) {
+    scale_lim <- range(profiles[keep], na.rm = TRUE)
+  }
+
+  mydata <- dplyr::tibble(
+    xmin = as.POSIXct(xmin[keep], origin = "1970-01-01", tz = attr(dates, "tzone")),
+    xmax = as.POSIXct(xmax[keep], origin = "1970-01-01", tz = attr(dates, "tzone")),
+    ymin = zmin[keep],
+    ymax = zmax[keep],
+    z = profiles[keep]
+  )
+  p <- ggplot2::ggplot(
+    data = mydata,
+    ggplot2::aes(xmin = .data$xmin, xmax = .data$xmax, ymin = .data$ymin, ymax = .data$ymax, fill = .data$z)
+  ) +
+    ggplot2::geom_rect() +
+    ggplot2::scale_x_datetime() +
+    ggplot2::ylab("metres above msl") +
+    ggplot2::scale_fill_gradient(
+      name = var_name,
+      low = scale_col[[1]],
+      high = scale_col[[2]],
+      limits = scale_lim,
+      oob = scales::squish
+    )
+  plot(p)
+  p
 }
 
 ereefs_nearest_cells <- function(points, spatial_grid) {
@@ -777,7 +830,7 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
   matched_point <- location %>%
     dplyr::slice(1) %>%
     dplyr::mutate(row_id = 1L)
-  eta_tbl <- lapply(resolved_files$opendap_url, function(file_to_use) {
+  profile_time_tbl <- lapply(resolved_files$opendap_url, function(file_to_use) {
     timing <- get_origin_and_times(file_to_use)
     time_index <- ereefs_time_indices(
       timing[[2]],
@@ -797,24 +850,33 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
       end_date = end_date,
       eta_stem = eta_stem
     ) %>%
-      dplyr::select(time, eta)
+      dplyr::select(time, eta) %>%
+      dplyr::mutate(
+        source_file = file_to_use,
+        time_index = time_index
+      )
   }) %>%
     dplyr::bind_rows() %>%
-    dplyr::arrange(.data$time)
+    dplyr::arrange(.data$time, .data$source_file, .data$time_index)
 
-  dates <- eta_tbl$time
-  eta_record <- eta_tbl$eta
+  if (!nrow(profile_time_tbl)) {
+    stop("No model output matched the requested profile time range.")
+  }
+
+  dates <- profile_time_tbl$time
+  eta_record <- profile_time_tbl$eta
   n_layers <- length(grids$z_grid) - 1
   values <- array(NA_real_, dim = c(n_layers, length(var_names), length(dates)))
   dimnames(values)[[2]] <- var_names
-  botz_scalar <- ereefs_z_sign(input_file, override_positive = override_positive) *
+  primary_file <- resolved_files$opendap_url[[1]]
+  botz_scalar <- ereefs_z_sign(primary_file, override_positive = override_positive) *
     as.numeric(ereefs_read_var_array(
-      input_file,
+      primary_file,
       "botz",
       filters = {
         botz_filters <- list()
-        botz_i_name <- ereefs_var_dim_name(input_file, "botz", "i")
-        botz_j_name <- ereefs_var_dim_name(input_file, "botz", "j")
+        botz_i_name <- ereefs_var_dim_name(primary_file, "botz", "i")
+        botz_j_name <- ereefs_var_dim_name(primary_file, "botz", "j")
         if (!is.na(botz_i_name)) {
           botz_filters[[botz_i_name]] <- location$i[[1]]
         }
@@ -825,22 +887,42 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
       }
     ))
 
-  for (layer_index in seq_len(n_layers)) {
-    layer_tbl <- get_ereefs_ts(
-      var_names = var_names,
-      geocoordinates = location_tbl,
-      layer = layer_index,
-      start_date = start_date,
-      end_date = end_date,
-      input_file = input_file,
-      input_grid = input_grid,
-      eta_stem = eta_stem,
-      override_positive = override_positive,
-      verbosity = 0,
-      default_to_bottom = FALSE
-    )
+  time_groups <- split(seq_len(nrow(profile_time_tbl)), profile_time_tbl$source_file)
+  for (file_to_use in names(time_groups)) {
+    row_index <- time_groups[[file_to_use]]
+    time_index <- profile_time_tbl$time_index[row_index]
+    timing <- get_origin_and_times(file_to_use)
+
     for (var_index in seq_along(var_names)) {
-      values[layer_index, var_index, ] <- layer_tbl[[var_names[[var_index]]]]
+      var_name <- var_names[[var_index]]
+      dims <- ereefs_var_dims(file_to_use, var_name)
+      if (!("k" %in% dims$role)) {
+        stop(sprintf("Variable %s is not depth resolved, so it cannot be used for vertical profile extraction.", var_name))
+      }
+
+      filters <- list()
+      filters[[dims$name[match("i", dims$role)]]] <- location$i[[1]]
+      filters[[dims$name[match("j", dims$role)]]] <- location$j[[1]]
+      filters[[dims$name[match("k", dims$role)]]] <- seq_len(n_layers)
+      filters[[dims$name[match("time", dims$role)]]] <- ereefs_time_filter_values(
+        file_to_use,
+        time_index,
+        timing[[3]],
+        time_dim_name = dims$name[match("time", dims$role)],
+        time_coord_dim = dims$coord_dim[match("time", dims$role)]
+      )
+
+      arr <- ereefs_read_var_array(file_to_use, var_name, filters = filters)
+      arr <- ereefs_mask_array_sentinels(arr, file_to_use, var_name)
+      arr <- ereefs_role_array(
+        arr,
+        dims = dims,
+        target_roles = c("i", "j", "k", "time"),
+        filters = filters,
+        drop_singleton = FALSE
+      )
+      arr <- array(arr, dim = c(1L, 1L, n_layers, length(time_index)))
+      values[, var_index, row_index] <- arr[1L, 1L, , ]
     }
   }
 
@@ -1637,3 +1719,13 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - time: 11:36
 # - date: 2026-06-29
 # - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:24
+# - date: 2026-06-29
+# - prompt_used: "Evaluate GitHub issue #6 carefully, fix date-range profile plotting, and add a vignette example if successful."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:50
+# - date: 2026-06-29
+# - prompt_used: "Change get_ereefs_profile() to bulk-read vertical layers for catalog-backed five-day NH4 profile examples."

@@ -15,7 +15,9 @@ plot_ereefs_zvt(
 \item{slice}{A list object as output by get_ereefs_profile(), containing
 dates, eta, z_grid, botz, and profile values.}
 
-\item{var_name}{Name of the variable to display from `slice$profiles`.}
+\item{var_name}{Name of the variable to display from `slice$profiles`. If
+`slice$profiles` is a squeezed single-variable matrix, this is used only
+for the legend title.}
 
 \item{scale_col}{Colours to use for low and high values. Default c("ivory", "hotpink").}
 
