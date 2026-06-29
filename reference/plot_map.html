@@ -75,7 +75,7 @@ returned by `map_ereefs(..., return_poly = TRUE)`, into a `ggplot2` map.</p>
 <span>  label_towns <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  zoom <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  suppress_print <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  suppress_print <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  gbr_poly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  Land_map <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -138,7 +138,9 @@ from the data.</p></dd>
 
 
 <dt id="arg-suppress-print">suppress_print<a class="anchor" aria-label="anchor" href="#arg-suppress-print"></a></dt>
-<dd><p>Logical; if `TRUE`, suppresses automatic printing.</p></dd>
+<dd><p>Deprecated and ignored. Plotting functions now follow
+normal `ggplot2` behavior: assign the returned object to suppress automatic
+console printing.</p></dd>
 
 
 <dt id="arg-gbr-poly">gbr_poly<a class="anchor" aria-label="anchor" href="#arg-gbr-poly"></a></dt>

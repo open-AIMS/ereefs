@@ -80,7 +80,7 @@ products that provide cell centres only.</p>
 <span>  zoom <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
 <span>  p <span class="op">=</span> <span class="cn">NA</span>,</span>
-<span>  suppress_print <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  suppress_print <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  return_poly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  label_towns <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  strict_bounds <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -153,7 +153,9 @@ from the extracted data.</p></dd>
 
 
 <dt id="arg-suppress-print">suppress_print<a class="anchor" aria-label="anchor" href="#arg-suppress-print"></a></dt>
-<dd><p>Logical; if `TRUE`, suppresses automatic printing.</p></dd>
+<dd><p>Deprecated and ignored. Plotting functions now follow
+normal `ggplot2` behavior: assign the returned object to suppress automatic
+console printing.</p></dd>
 
 
 <dt id="arg-return-poly">return_poly<a class="anchor" aria-label="anchor" href="#arg-return-poly"></a></dt>

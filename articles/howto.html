@@ -100,6 +100,73 @@ polygons from centre coordinates when needed. For scalar variables, the
 default colour palette is now <code>viridis</code>.</p>
 </div>
 <div class="section level2">
+<h2 id="what-datasets-are-available">What datasets are available?<a class="anchor" aria-label="anchor" href="#what-datasets-are-available"></a>
+</h2>
+<p>The eReefs models have been run in multiple configurations, with
+different grid resolutions, forcing datasets, variables, output
+frequencies, and file formats. For the latest overview of open-access
+marine model results, including guidance on how to find current
+NCI-served eReefs outputs and what is included in the different
+products, start with the eReefs open-access dataset page: <a href="https://www.ereefs.org.au/outputs/open-access-datasets/marine-model-results" class="external-link">Marine
+model results</a>.</p>
+<p>Once you have found a candidate NetCDF file or THREDDS catalog,
+<code><a href="../reference/inspect_ereefs_data.html">inspect_ereefs_data()</a></code> can give you a quick R-side summary
+of the available variables, dimensions, spatial coverage, and date
+coverage before you request a large extraction.</p>
+</div>
+<div class="section level2">
+<h2 id="inspecting-available-data">Inspecting available data<a class="anchor" aria-label="anchor" href="#inspecting-available-data"></a>
+</h2>
+<p>Before extracting data from an unfamiliar NetCDF file or THREDDS
+catalog, use <code><a href="../reference/inspect_ereefs_data.html">inspect_ereefs_data()</a></code> to see what is
+available. It reads metadata, coordinates, and time information rather
+than full model variable arrays, so it is a safe first step for large
+OPeNDAP-served files:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ereefs.info" class="external-link">ereefs</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">inspection</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/inspect_ereefs_data.html">inspect_ereefs_data</a></span><span class="op">(</span></span>
+<span>  <span class="st">"../notebooks/demo_data/regular_demo_2020-01.nc"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">inspection</span><span class="op">$</span><span class="va">summary</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 1 × 19</span></span></span>
+<span><span class="co">##   requested_input  inspected_source source_type file_count file_start file_end  </span></span>
+<span><span class="co">##   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;date&gt;</span>    </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">1</span> ../notebooks/de… ../notebooks/de… netcdf               1 2020-01-01 2020-01-01</span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 13 more variables: time_start &lt;dttm&gt;, time_end &lt;dttm&gt;, time_step &lt;chr&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   longitude_min &lt;dbl&gt;, longitude_max &lt;dbl&gt;, latitude_min &lt;dbl&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   latitude_max &lt;dbl&gt;, grid_type &lt;chr&gt;, i_count &lt;int&gt;, j_count &lt;int&gt;,</span></span></span>
+<span><span class="co">## <span style="color: #949494;">#   k_count &lt;int&gt;, variable_count &lt;int&gt;, data_variable_count &lt;int&gt;</span></span></span></code></pre>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">inspection</span><span class="op">$</span><span class="va">variables</span></span></code></pre></div>
+<pre><code><span><span class="co">## <span style="color: #949494;"># A tibble: 14 × 8</span></span></span>
+<span><span class="co">##    variable  units            long_name standard_name dimensions dimension_roles</span></span>
+<span><span class="co">##    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>          </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 1</span> botz      m                Depth of… depth         i,j        i,j            </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 2</span> eta       m                Surface … sea_surface_… i,j,time   i,j,time       </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 3</span> salt      PSU              salinity  <span style="color: #BB0000;">NA</span>            i,j,k,time i,j,k,time     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 4</span> temp      degC             temperat… <span style="color: #BB0000;">NA</span>            i,j,k,time i,j,k,time     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 5</span> u         m s-1            Eastward… eastward_sea… i,j,k,time i,j,k,time     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 6</span> v         m s-1            Northwar… northward_se… i,j,k,time i,j,k,time     </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 7</span> i         <span style="color: #BB0000;">NA</span>               i         <span style="color: #BB0000;">NA</span>            i          i              </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 8</span> j         <span style="color: #BB0000;">NA</span>               j         <span style="color: #BB0000;">NA</span>            j          j              </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;"> 9</span> k         <span style="color: #BB0000;">NA</span>               k         <span style="color: #BB0000;">NA</span>            k          k              </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">10</span> k_grid    <span style="color: #BB0000;">NA</span>               k_grid    <span style="color: #BB0000;">NA</span>            k_grid     k              </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">11</span> latitude  degrees_north    <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>            j          j              </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">12</span> longitude degrees_east     <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>            i          i              </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">13</span> time      days since 2020… time      <span style="color: #BB0000;">NA</span>            time       time           </span></span>
+<span><span class="co">## <span style="color: #BCBCBC;">14</span> z_grid    m                <span style="color: #BB0000;">NA</span>        <span style="color: #BB0000;">NA</span>            k_grid     k              </span></span>
+<span><span class="co">## <span style="color: #949494;"># ℹ 2 more variables: n_dimensions &lt;int&gt;, is_data_variable &lt;lgl&gt;</span></span></span></code></pre>
+<p>The <code>summary</code> table reports spatial coverage, time
+coverage, grid style, grid dimensions, and variable counts. The
+<code>variables</code> table lists variable names, units, long names,
+standard names, dimensions, dimension roles, and whether each row
+appears to be a model data variable rather than a coordinate or grid
+variable. For THREDDS catalogs, <code>inspection$files</code> also lists
+the catalog files used to infer file-level date coverage.</p>
+</div>
+<div class="section level2">
 <h2 id="making-maps-and-animations-from-ereefs-output">Making maps and animations from eReefs output<a class="anchor" aria-label="anchor" href="#making-maps-and-animations-from-ereefs-output"></a>
 </h2>
 <div class="section level3">
@@ -107,7 +174,7 @@ default colour palette is now <code>viridis</code>.</p>
 </h3>
 <p>One can create a map of a scalar field such as Secchi depth from a
 live NCI simple-format file:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"Secchi"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2022-10-30"</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"</span></span>
@@ -118,7 +185,7 @@ live NCI simple-format file:</p>
 regular display grid and interpolate between the display pixels. This
 only affects how the map is drawn; it does not change the extracted
 values:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"Secchi"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2022-10-30"</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"</span>,</span>
@@ -129,7 +196,7 @@ values:</p>
 <p>The same plotting path also works on regular-grid products that only
 provide cell centres. For example, here is a monthly mean surface
 temperature map from the AIMS regular-grid THREDDS catalog:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"temp_mean"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2019-10-01"</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.ereefs.aims.gov.au/thredds/catalog/ereefs/gbr1_2.0/stats-monthly-monthly/catalog.xml"</span>,</span>
@@ -138,7 +205,7 @@ temperature map from the AIMS regular-grid THREDDS catalog:</p>
 <p><img src="vignette-fig-exmp2-1.png" alt="plot of chunk exmp2" width="80%" style="display: block; margin: auto;"></p>
 <p>The colour scale and display style can still be customised
 explicitly:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"temp_mean"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2019-10-01"</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.ereefs.aims.gov.au/thredds/catalog/ereefs/gbr1_2.0/stats-monthly-monthly/catalog.xml"</span>,</span>
@@ -149,7 +216,7 @@ explicitly:</p>
 <p>We can also plot different variables such as ammonium at a particular
 depth (e.g., 5 m below MSL; default is at the surface), add a land map
 to the plot, and focus on a particular region:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"NH4"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="st">"2022-10-30"</span><span class="op">)</span>,</span>
 <span>  layer <span class="op">=</span> <span class="op">-</span><span class="fl">5</span>,</span>
@@ -168,7 +235,7 @@ to the next. The example below creates a short true-colour GIF near the
 mouth of the Burdekin River over a few days in February 2019. Temporary
 frame images are removed after the GIF is created unless
 <code>keep_frames = TRUE</code>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># code not run</span></span>
 <span><span class="va">burdekin_movie</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/map_ereefs_movie.html">map_ereefs_movie</a></span><span class="op">(</span></span>
 <span>  var_name <span class="op">=</span> <span class="st">"true_colour"</span>,</span>
@@ -197,7 +264,7 @@ passing a multi-row data frame of latitude and longitude points to
 <code>geolocation</code> in <code><a href="../reference/get_ereefs_slice.html">get_ereefs_slice()</a></code>. One can
 also get data from multiple variables by making <code>var_names</code> a
 vector (e.g., <code>var_names = c("temp", "salt")</code>).</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">temp_slice</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_slice.html">get_ereefs_slice</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"NH4"</span>,</span>
 <span>  target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-30 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -205,14 +272,14 @@ vector (e.g., <code>var_names = c("temp", "salt")</code>).</p>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Now visualise the results:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ereefs_slice.html">plot_ereefs_slice</a></span><span class="op">(</span><span class="va">temp_slice</span>, var_name <span class="op">=</span> <span class="st">"NH4"</span>, scale_col <span class="op">=</span> <span class="st">"viridis"</span>, var_units <span class="op">=</span> <span class="st">"mg N m-3"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp8-1.png" alt="plot of chunk exmp8" width="80%" style="display: block; margin: auto;"></p>
 <p>The same multi-point <code>geolocation</code> interface can be used
 to define a curved or zig-zag transect. Here is a live OPeNDAP example
 using hydrodynamic temperature data from an arc-shaped transect that
 bends north-east away from Townsville:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">arc_transect</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  latitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.26639219</span>, <span class="op">-</span><span class="fl">19.18</span>, <span class="op">-</span><span class="fl">19.02</span>, <span class="op">-</span><span class="fl">18.84</span>, <span class="op">-</span><span class="fl">18.70</span><span class="op">)</span>,</span>
 <span>  longitude <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">146.805701</span>, <span class="fl">146.95</span>, <span class="fl">147.12</span>, <span class="fl">147.33</span>, <span class="fl">147.56</span><span class="op">)</span></span>
@@ -226,7 +293,7 @@ bends north-east away from Townsville:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>We can map the surface temperature field from the same dataset, then
 overlay the curved transect path:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">arc_map</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/map_ereefs.html">map_ereefs</a></span><span class="op">(</span></span>
@@ -234,8 +301,7 @@ overlay the curved transect path:</p>
 <span>  target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-30 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
 <span>  layer <span class="op">=</span> <span class="st">"surface"</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_Dhnd/gbr4_simple_2022-10-30.nc"</span>,</span>
-<span>  box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">146.6</span>, <span class="fl">147.8</span>, <span class="op">-</span><span class="fl">19.5</span>, <span class="op">-</span><span class="fl">18.5</span><span class="op">)</span>,</span>
-<span>  suppress_print <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  box_bounds <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">146.6</span>, <span class="fl">147.8</span>, <span class="op">-</span><span class="fl">19.5</span>, <span class="op">-</span><span class="fl">18.5</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_path</a></span><span class="op">(</span></span>
 <span>    data <span class="op">=</span> <span class="va">arc_transect</span>,</span>
@@ -249,7 +315,7 @@ overlay the curved transect path:</p>
 <span><span class="va">arc_map</span></span></code></pre></div>
 <p><img src="vignette-fig-exmp8arc-map-1.png" alt="plot of chunk exmp8arcmap" width="80%" style="display: block; margin: auto;"></p>
 <p>Then we can visualise the corresponding vertical slice:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ereefs_slice.html">plot_ereefs_slice</a></span><span class="op">(</span></span>
 <span>  <span class="va">arc_slice</span>,</span>
 <span>  var_name <span class="op">=</span> <span class="st">"temp"</span>,</span>
@@ -259,7 +325,7 @@ overlay the curved transect path:</p>
 <p><img src="vignette-fig-exmp8arc-slice-1.png" alt="plot of chunk exmp8arcslice" width="80%" style="display: block; margin: auto;"></p>
 <p>We can also extract a vertical profile (rather than a slice) at a
 single location and time from the same live OPeNDAP file:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">profile_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_profile.html">get_ereefs_profile</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"NH4"</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-30 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -268,7 +334,7 @@ single location and time from the same live OPeNDAP file:</p>
 <span>  input_file <span class="op">=</span> <span class="st">"https://thredds.nci.org.au/thredds/dodsC/fx3/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2Gv3_B4p2_Cq5b_Dhnd/gbr4_H4p0_ABARRAr2_OBRAN2020_FG2G_B4p2_Cq5b_Dhnd_simple_2022-10-30.nc"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Now visualise the results:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_ereefs_profile.html">plot_ereefs_profile</a></span><span class="op">(</span></span>
 <span>  <span class="va">profile_data</span>, var_name <span class="op">=</span> <span class="st">"NH4"</span>, target_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2022-10-30 12:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -282,7 +348,7 @@ much less brittle for OPeNDAP-served data.</p>
 </h2>
 <p>We can also extract a time-series of surface data at a single or
 multiple specified locations (choose menu option 11):</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tsdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"temp"</span>, <span class="st">"salt"</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -290,9 +356,16 @@ multiple specified locations (choose menu option 11):</p>
 <span>  geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>latitude <span class="op">=</span> <span class="op">-</span><span class="fl">19.75</span>, longitude <span class="op">=</span> <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  input_file <span class="op">=</span> <span class="st">"notebooks/demo_data/regular_demo_2020-01.nc"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>The returned object is a tibble, with NetCDF variable metadata
+attached as attributes. This keeps the table itself tidy while still
+making units and longer variable descriptions available for plotting
+labels or reporting:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">tsdata</span>, <span class="st">"variable_metadata"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">tsdata</span>, <span class="st">"units"</span><span class="op">)</span></span></code></pre></div>
 <p>For example, we can quickly plot the extracted surface temperature
 and salinity time-series:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">tsdata</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">time</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
@@ -309,14 +382,14 @@ is currently present in that catalog, the available part is returned
 with a warning.</p>
 <p>The locations could even be at all the Marine Monitoring Program
 routine water quality sampling locations:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mmpdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"salt"</span>, <span class="st">"TN"</span><span class="op">)</span>, geocoordinates <span class="op">=</span> <span class="st">"mmp"</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">1</span>, <span class="fl">1</span><span class="op">)</span>, end_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2018</span>, <span class="fl">2</span>, <span class="fl">28</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The time-series can also be extract at a specified depth of 5 m below
 MSL:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">deeperdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_ts.html">get_ereefs_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -334,7 +407,7 @@ extract a time-series of data at the bottom of the water column.
 However, to extract a time-series of data averaged over the depth of the
 water column, the user woul use the function
 <code>get_ereefs_depth_integrated_ts</code>:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_integrated_ts.html">get_ereefs_depth_integrated_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -343,7 +416,7 @@ water column, the user woul use the function
 <span><span class="op">)</span></span></code></pre></div>
 <p>Other options include extracting a time-series of the mass per square
 metre of a variable, integrated over the depth of the water column:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">intdatapermass</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_integrated_ts.html">get_ereefs_depth_integrated_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -352,7 +425,7 @@ metre of a variable, integrated over the depth of the water column:</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>or extracting a time-series of data at a specified depth below the
 tidal free surface (rather than below MSL):</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tidalintdata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_ereefs_depth_specified_ts.html">get_ereefs_depth_specified_ts</a></span><span class="op">(</span></span>
 <span>  var_names <span class="op">=</span> <span class="st">"temp"</span>, geocoordinates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">19.75</span>, <span class="fl">146.75</span><span class="op">)</span>,</span>
 <span>  start_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.POSIXlt.html" class="external-link">as.POSIXct</a></span><span class="op">(</span><span class="st">"2020-01-01 00:00:00"</span>, tz <span class="op">=</span> <span class="st">"Etc/GMT-10"</span><span class="op">)</span>,</span>
@@ -360,7 +433,7 @@ tidal free surface (rather than below MSL):</p>
 <span>  input_file <span class="op">=</span> <span class="st">"notebooks/demo_data/regular_demo_2020-01.nc"</span>, depth <span class="op">=</span> <span class="fl">2.0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Those depth-aware series can also be compared visually:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">depth_plot_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">deeperdata</span><span class="op">$</span><span class="va">time</span>, value <span class="op">=</span> <span class="va">deeperdata</span><span class="op">$</span><span class="va">temp</span>, series <span class="op">=</span> <span class="st">"5 m below MSL"</span><span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">intdata</span><span class="op">$</span><span class="va">time</span>, value <span class="op">=</span> <span class="va">intdata</span><span class="op">$</span><span class="va">temp</span>, series <span class="op">=</span> <span class="st">"depth average"</span><span class="op">)</span>,</span>
@@ -501,6 +574,41 @@ metadata:
 - time: 10:28
 - date: 2026-06-29
 - prompt_used: "Fix GitHub issues #29, #30, and #31 by updating vignette examples to use snake_case land_map."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 11:21
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #21 by removing suppress_print from vignette examples and relying on returned ggplot objects."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 11:48
+- date: 2026-06-29
+- prompt_used: "Check whether the vignettes need updating after adding extraction metadata attributes, re-render them, and show the rendered result in the browser."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:00
+- date: 2026-06-29
+- prompt_used: "Address GitHub issue #26 by adding inspect_ereefs_data() and update all documentation including the vignette."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:00
+- date: 2026-06-29
+- prompt_used: "Show the evaluated inspect_ereefs_data() demo output in the how-to vignette."
+-->
+<!--
+metadata:
+- gpt_version: GPT-5 Codex
+- time: 12:21
+- date: 2026-06-29
+- prompt_used: "Add a what datasets are available section to the how-to vignette linking users to the eReefs marine model results page."
 -->
 </div>
   </div>
