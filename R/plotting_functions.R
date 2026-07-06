@@ -1549,14 +1549,14 @@ ereefs_plot_datapoly <- function(datapoly,
   if (identical(plot_style, "polygon")) {
     p <- p + ggplot2::geom_polygon(
       data = datapoly,
-      colour = NA,
-      linewidth = 0,
-      ggplot2::aes(x = x, y = y, fill = value, group = id)
+      linewidth = 0.15,
+      ggplot2::aes(x = x, y = y, fill = value, colour = value, group = id)
     )
   }
 
   if (var_name == "true_colour") {
-    p <- p + ggplot2::scale_fill_identity()
+    p <- p + ggplot2::scale_fill_identity() +
+      ggplot2::scale_colour_identity(guide = "none")
   } else if (scale_col[1] == "spectral") {
     p <- p + ggplot2::scale_fill_distiller(
       palette = "Spectral",
@@ -1565,22 +1565,34 @@ ereefs_plot_datapoly <- function(datapoly,
       limits = scale_lim,
       name = var_units,
       oob = scales::squish
+    ) + ggplot2::scale_colour_distiller(
+      palette = "Spectral",
+      na.value = "transparent",
+      guide = "none",
+      limits = scale_lim,
+      oob = scales::squish
     )
   } else if (scale_col[1] %in% c("viridis", "magma", "inferno", "plasma", "cividis", "turbo")) {
     palette_name <- switch(
       scale_col[1],
-      viridis = "viridis",
-      magma = "magma",
-      inferno = "inferno",
-      plasma = "plasma",
-      cividis = "cividis",
-      turbo = "turbo"
+      viridis = "Viridis",
+      magma = "Inferno",
+      inferno = "Inferno",
+      plasma = "Plasma",
+      cividis = "Cividis",
+      turbo = "Spectral"
     )
     p <- p + ggplot2::scale_fill_gradientn(
       colours = grDevices::hcl.colors(256, palette_name),
       na.value = "transparent",
       limits = scale_lim,
       name = var_units,
+      oob = scales::squish
+    ) + ggplot2::scale_colour_gradientn(
+      colours = grDevices::hcl.colors(256, palette_name),
+      na.value = "transparent",
+      limits = scale_lim,
+      guide = "none",
       oob = scales::squish
     )
   } else if (length(scale_col) < 3) {
@@ -1593,6 +1605,13 @@ ereefs_plot_datapoly <- function(datapoly,
       limits = scale_lim,
       name = var_units,
       oob = scales::squish
+    ) + ggplot2::scale_colour_gradient(
+      low = scale_col[1],
+      high = scale_col[2],
+      na.value = "transparent",
+      guide = "none",
+      limits = scale_lim,
+      oob = scales::squish
     )
   } else {
     p <- p + ggplot2::scale_fill_gradient2(
@@ -1604,6 +1623,15 @@ ereefs_plot_datapoly <- function(datapoly,
       guide = "colourbar",
       limits = scale_lim,
       name = var_units,
+      oob = scales::squish
+    ) + ggplot2::scale_colour_gradient2(
+      low = scale_col[1],
+      mid = scale_col[2],
+      high = scale_col[3],
+      midpoint = mean(scale_lim, na.rm = TRUE),
+      na.value = "transparent",
+      guide = "none",
+      limits = scale_lim,
       oob = scales::squish
     )
   }
@@ -1827,6 +1855,8 @@ map_ereefs <- function(var_name = "true_colour",
 #'   compatibility.
 #' @param contour_breaks Deprecated legacy argument retained for backward
 #'   compatibility.
+#' @param progress_callback Optional function called with a small list describing
+#'   animation progress. Intended for GUIs; ignored when `NULL`.
 #'
 #' @return A list containing the final plot, averaged plotting polygons, saved
 #'   frame filenames, animation filename, and the colour scale limits used
@@ -1863,7 +1893,8 @@ map_ereefs_movie <- function(var_name = "true_colour",
                              scale_arrows = NA,
                              show_bathy = FALSE,
                              contour_breaks = c(5, 10, 20),
-                             Land_map = NULL) {
+                             Land_map = NULL,
+                             progress_callback = NULL) {
   plot_style <- match.arg(plot_style)
   animation_format <- match.arg(animation_format)
   land_map <- ereefs_resolve_land_map(land_map, Land_map)
@@ -1901,7 +1932,16 @@ map_ereefs_movie <- function(var_name = "true_colour",
   last_frame <- NULL
   stored_frames <- vector("list", length(date_sequence))
   effective_scale_lim <- scale_lim
+  ereefs_movie_progress(progress_callback, "start", frame_count = length(date_sequence), message = "Preparing animation frames")
   for (frame_index in seq_along(date_sequence)) {
+    ereefs_movie_progress(
+      progress_callback,
+      "load",
+      frame_index = frame_index,
+      frame_count = length(date_sequence),
+      date = date_sequence[[frame_index]],
+      message = sprintf("Fetching data for frame %d of %d", frame_index, length(date_sequence))
+    )
     if (verbosity > 0) {
       message("Loading frame ", frame_index, " of ", length(date_sequence), " for ", date_sequence[[frame_index]])
     }
@@ -1924,6 +1964,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
       gbr_poly = gbr_poly
     )
     stored_frames[[frame_index]] <- frame
+    ereefs_movie_progress(
+      progress_callback,
+      "loaded",
+      frame_index = frame_index,
+      frame_count = length(date_sequence),
+      date = frame$date,
+      message = sprintf("Fetched frame %d of %d", frame_index, length(date_sequence))
+    )
 
     frame_values <- frame$cell_values %>% dplyr::select(id, value)
     if (is.null(accumulated)) {
@@ -1945,6 +1993,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   }
 
   if (var_name != "true_colour" && any(is.na(effective_scale_lim))) {
+    ereefs_movie_progress(progress_callback, "scale", frame_count = length(stored_frames), message = "Calculating shared colour scale")
     frame_ranges <- lapply(stored_frames, function(frame) {
       vals <- frame$cell_values$value
       vals <- vals[is.finite(vals)]
@@ -1965,6 +2014,14 @@ map_ereefs_movie <- function(var_name = "true_colour",
 
   for (frame_index in seq_along(stored_frames)) {
     frame <- stored_frames[[frame_index]]
+    ereefs_movie_progress(
+      progress_callback,
+      "render",
+      frame_index = frame_index,
+      frame_count = length(stored_frames),
+      date = frame$date,
+      message = sprintf("Rendering frame %d of %d", frame_index, length(stored_frames))
+    )
     if (verbosity > 0) {
       message("Rendering frame ", frame_index, " of ", length(stored_frames), " for ", frame$date)
     }
@@ -1990,6 +2047,15 @@ map_ereefs_movie <- function(var_name = "true_colour",
       fname <- file.path(output_dir, sprintf("%s_%05d.png", var_name, frame_index))
       ggplot2::ggsave(fname, p, dpi = 100)
       frame_files <- c(frame_files, fname)
+      ereefs_movie_progress(
+        progress_callback,
+        "saved",
+        frame_index = frame_index,
+        frame_count = length(stored_frames),
+        date = frame$date,
+        file = fname,
+        message = sprintf("Saved frame %d of %d", frame_index, length(stored_frames))
+      )
     }
     last_frame <- p
   }
@@ -2001,6 +2067,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
   positions <- frame$datapoly %>% dplyr::select(id, x, y)
   datapoly <- dplyr::left_join(accumulated, positions, by = "id")
   if (!identical(animation_format, "none")) {
+    ereefs_movie_progress(progress_callback, "assemble", frame_count = length(stored_frames), message = paste("Assembling", toupper(animation_format), "animation"))
     if (!length(frame_files)) {
       stop("animation_format requested but no frame files were saved.")
     }
@@ -2014,6 +2081,7 @@ map_ereefs_movie <- function(var_name = "true_colour",
     } else if (identical(animation_format, "mp4")) {
       magick::image_write_video(animation, path = animation_file, fps = fps)
     }
+    ereefs_movie_progress(progress_callback, "complete", frame_count = length(stored_frames), file = animation_file, message = "Animation assembled")
     if (!isTRUE(keep_frames)) {
       existing_frames <- frame_files[file.exists(frame_files)]
       if (length(existing_frames)) {
@@ -2032,6 +2100,31 @@ map_ereefs_movie <- function(var_name = "true_colour",
     output_dir = output_dir,
     scale_lim = effective_scale_lim
   )
+}
+
+ereefs_movie_progress <- function(callback,
+                                  stage,
+                                  frame_index = NA_integer_,
+                                  frame_count = NA_integer_,
+                                  date = NA,
+                                  file = NA_character_,
+                                  message = NULL) {
+  if (!is.function(callback)) {
+    return(invisible(NULL))
+  }
+  if (is.null(message)) {
+    message <- stage
+  }
+  payload <- list(
+    stage = stage,
+    frame_index = frame_index,
+    frame_count = frame_count,
+    date = date,
+    file = file,
+    message = message
+  )
+  try(callback(payload), silent = TRUE)
+  invisible(NULL)
 }
 
 #' Plot an already extracted eReefs polygon map object
@@ -2243,3 +2336,23 @@ plot_map <- function(datapoly,
 # - time: 11:21
 # - date: 2026-06-29
 # - prompt_used: "Address GitHub issue #21 by deprecating suppress_print and relying on normal ggplot2 auto-printing behavior."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 18:25
+# - date: 2026-07-05
+# - prompt_used: "Add optional animation progress callbacks so the GUI can report fetch/render/assemble stages and display frames as they are generated."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 19:00
+# - date: 2026-07-05
+# - prompt_used: "Fix stored-map re-rendering by using valid hcl.colors palette names for GUI colour-scale changes without data refetching."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 19:00
+# - date: 2026-07-05
+# - prompt_used: "Use locally supported hcl.colors palette names for magma and turbo GUI palette fallbacks."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 12:49
+# - date: 2026-07-06
+# - prompt_used: "When rendering polygon maps, make each polygon border use the same colour scale as its fill so visible seams match the polygon colour."

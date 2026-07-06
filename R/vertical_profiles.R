@@ -546,15 +546,27 @@ plot_ereefs_profile <- function(profile_obj = NULL, var_name = "Chl_a_sum", targ
   target_year <- lubridate::year(target_date)
 
   day <- which.min(abs(target_date-profile_obj$dates))
-  if (names(profile_obj)[5]=="profiles") { 
-     colnum <- which(colnames(profile_obj$profiles)==var_name)
-     if (length(dim(profile_obj$profiles))>2) {
-	     dind <- which.min(abs(profile_obj$dates-target_date)) 
+  if (names(profile_obj)[5]=="profiles") {
+     profile_dims <- dim(profile_obj$profiles)
+     if (length(profile_dims)>2) {
+	     colnum <- which(colnames(profile_obj$profiles)==var_name)
+        if (!length(colnum)) {
+          stop(sprintf("Variable %s was not found in this profile object.", var_name), call. = FALSE)
+        }
+	     dind <- which.min(abs(profile_obj$dates-target_date))
         values <- array(profile_obj$profiles[, colnum, dind], length(profile_obj$z_grid)-1)
 	     eta <- profile_obj$eta[dind]
-     } else {
+     } else if (!is.null(colnames(profile_obj$profiles)) && length(colnames(profile_obj$profiles))) {
+	     colnum <- which(colnames(profile_obj$profiles)==var_name)
+        if (!length(colnum)) {
+          stop(sprintf("Variable %s was not found in this profile object.", var_name), call. = FALSE)
+        }
 	     values <- array(profile_obj$profiles[, colnum])
 	     eta <- profile_obj$eta
+     } else {
+	     dind <- which.min(abs(profile_obj$dates-target_date))
+        values <- array(profile_obj$profiles[, dind], length(profile_obj$z_grid)-1)
+	     eta <- profile_obj$eta[dind]
      }
   } else { 
      # Only one variable
@@ -571,6 +583,9 @@ plot_ereefs_profile <- function(profile_obj = NULL, var_name = "Chl_a_sum", targ
      }
   }
   wet <- which(!is.na(values))
+  if (!length(wet)) {
+    stop("No finite profile values were available to plot for the requested variable and date.", call. = FALSE)
+  }
   values <- c(values[wet], values[max(wet)])
   z <- c(profile_obj$botz, profile_obj$z_grid[wet[1:length(wet)-1]+1], eta)
   mydata <- data.frame(z=z, values=values)
@@ -802,7 +817,8 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
                                input_grid = NA,
                                eta_stem = NA,
                                squeeze = TRUE,
-                               override_positive = FALSE) {
+                               override_positive = FALSE,
+                               progress_callback = NULL) {
   assign_list(get_params(start_date, end_date, input_file, var_names))
   variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
   if (length(dim(geolocation)) > 0) {
@@ -825,6 +841,14 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
   if (nrow(location) == 0) {
     stop("Could not match the requested location to a model cell.")
   }
+  ereefs_extraction_progress(
+    progress_callback,
+    stage = "start",
+    message = "Preparing vertical profile extraction",
+    file_count = length(resolved_files$opendap_url),
+    variable_count = length(var_names),
+    point_count = 1
+  )
 
   location_tbl <- dplyr::tibble(latitude = location$latitude[[1]], longitude = location$longitude[[1]])
   matched_point <- location %>%
@@ -888,13 +912,37 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
     ))
 
   time_groups <- split(seq_len(nrow(profile_time_tbl)), profile_time_tbl$source_file)
-  for (file_to_use in names(time_groups)) {
+  group_files <- names(time_groups)
+  for (file_idx in seq_along(group_files)) {
+    file_to_use <- group_files[[file_idx]]
     row_index <- time_groups[[file_to_use]]
     time_index <- profile_time_tbl$time_index[row_index]
     timing <- get_origin_and_times(file_to_use)
+    ereefs_extraction_progress(
+      progress_callback,
+      stage = "file",
+      message = "Reading profile source file",
+      file = file_to_use,
+      file_index = file_idx,
+      file_count = length(group_files),
+      time_count = length(time_index),
+      time_start = min(timing[[2]][time_index]),
+      time_end = max(timing[[2]][time_index])
+    )
 
     for (var_index in seq_along(var_names)) {
       var_name <- var_names[[var_index]]
+      ereefs_extraction_progress(
+        progress_callback,
+        stage = "variable",
+        message = "Extracting profile variable",
+        file = file_to_use,
+        file_index = file_idx,
+        file_count = length(group_files),
+        variable = var_name,
+        variable_index = var_index,
+        variable_count = length(var_names)
+      )
       dims <- ereefs_var_dims(file_to_use, var_name)
       if (!("k" %in% dims$role)) {
         stop(sprintf("Variable %s is not depth resolved, so it cannot be used for vertical profile extraction.", var_name))
@@ -963,6 +1011,14 @@ get_ereefs_profile <- function(var_names = c("Chl_a_sum", "TN"),
     profiles = values,
     variable_metadata = variable_metadata
   )
+  ereefs_extraction_progress(
+    progress_callback,
+    stage = "complete",
+    message = "Vertical profile extraction complete",
+    file_count = length(resolved_files$opendap_url),
+    variable_count = length(var_names),
+    point_count = 1
+  )
   ereefs_attach_variable_metadata(profile, variable_metadata)
 }
 
@@ -973,10 +1029,18 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
                              input_grid = NA,
                              eta_stem = NA,
                              robust = FALSE,
-                             override_positive = FALSE) {
+                             override_positive = FALSE,
+                             progress_callback = NULL) {
   target_date <- get_date_time(target_date)
   assign_list(get_params(target_date, target_date, input_file, var_names))
   variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
+  ereefs_extraction_progress(
+    progress_callback,
+    stage = "start",
+    message = "Preparing vertical slice extraction",
+    file_count = length(resolved_files$opendap_url),
+    variable_count = length(var_names)
+  )
   grids <- get_ereefs_grids(substitute_filename(input_file), input_grid)
   dense_points <- ereefs_densify_path(geolocation)
   matched <- ereefs_nearest_cells(dense_points, grids$spatial_grid) %>%
@@ -988,6 +1052,13 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
 
   if (robust) {
     profiles <- lapply(seq_len(nrow(matched)), function(row_id) {
+      ereefs_extraction_progress(
+        progress_callback,
+        stage = "point",
+        message = "Extracting robust slice profile",
+        point_index = row_id,
+        point_count = nrow(matched)
+      )
       get_ereefs_profile(
         var_names = var_names,
         geolocation = c(matched$latitude[[row_id]], matched$longitude[[row_id]]),
@@ -997,7 +1068,8 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
         input_grid = input_grid,
         eta_stem = eta_stem,
         squeeze = FALSE,
-        override_positive = override_positive
+        override_positive = override_positive,
+        progress_callback = progress_callback
       )
     })
 
@@ -1030,6 +1102,17 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
     if (!length(time_index)) {
       stop("No model output was available near the requested transect time.")
     }
+    ereefs_extraction_progress(
+      progress_callback,
+      stage = "file",
+      message = "Reading slice source file",
+      file = file_to_use,
+      file_index = 1L,
+      file_count = 1L,
+      time_count = length(time_index),
+      time_start = min(timing[[2]][time_index]),
+      time_end = max(timing[[2]][time_index])
+    )
     time_pos <- which.min(abs(as.numeric(timing[[2]][time_index] - target_date)))
     selected_time <- timing[[2]][time_index][[time_pos]]
 
@@ -1065,6 +1148,17 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
 
     for (var_index in seq_along(var_names)) {
       var_name <- var_names[[var_index]]
+      ereefs_extraction_progress(
+        progress_callback,
+        stage = "variable",
+        message = "Extracting slice variable",
+        file = file_to_use,
+        file_index = 1L,
+        file_count = 1L,
+        variable = var_name,
+        variable_index = var_index,
+        variable_count = length(var_names)
+      )
       dims <- ereefs_var_dims(file_to_use, var_name)
       if (!("k" %in% dims$role)) {
         stop(sprintf("Variable %s is not depth resolved, so it cannot be used for a vertical slice.", var_name))
@@ -1140,6 +1234,13 @@ get_ereefs_slice <- function(var_names = c("Chl_a_sum", "TN"),
     cell_intersections = matched %>% dplyr::select(latitude, longitude),
     crossref = seq_len(nrow(matched)),
     variable_metadata = variable_metadata
+  )
+  ereefs_extraction_progress(
+    progress_callback,
+    stage = "complete",
+    message = "Vertical slice extraction complete",
+    variable_count = length(var_names),
+    point_count = nrow(matched)
   )
   ereefs_attach_variable_metadata(slice, variable_metadata)
 }
@@ -1721,6 +1822,16 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."
 # metadata:
 # - gpt_version: GPT-5 Codex
+# - time: 16:03
+# - date: 2026-07-06
+# - prompt_used: "Fix vertical profile plotting so empty wet-value selections stop cleanly instead of warning from max(wet), and reuse the normalized GUI point date range for profile extraction."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 16:50
+# - date: 2026-07-06
+# - prompt_used: "Fix profile plotting so single-variable multi-date profiles use the time dimension correctly instead of looking for missing variable-name columns."
+# metadata:
+# - gpt_version: GPT-5 Codex
 # - time: 13:24
 # - date: 2026-06-29
 # - prompt_used: "Evaluate GitHub issue #6 carefully, fix date-range profile plotting, and add a vignette example if successful."
@@ -1729,3 +1840,8 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - time: 13:50
 # - date: 2026-06-29
 # - prompt_used: "Change get_ereefs_profile() to bulk-read vertical layers for catalog-backed five-day NH4 profile examples."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 17:04
+# - date: 2026-07-06
+# - prompt_used: "Emit lightweight progress callbacks for profile and slice extraction so the GUI can show current file, variable, and point index without extra I/O."

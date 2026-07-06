@@ -73,5 +73,16 @@ Imports: ncdf4 (>= 1.16),
          terra,
          xml2,
          jsonlite
-Suggests: magick
+Suggests: magick,
+         shiny,
+         testthat (>= 3.0.0)
 RoxygenNote: 7.3.2
+Config/testthat/edition: 3
+Config/codex-gpt-version: GPT-5 Codex
+Config/codex-edit-time: 12:21
+Config/codex-edit-date: 2026-07-05
+Config/codex-prompt-used: Remove bslib from optional package suggestions after replacing the GUI runtime with pure Shiny components.
+Config/codex-smoke-tests-gpt-version: GPT-5 Codex
+Config/codex-smoke-tests-edit-time: 18:45
+Config/codex-smoke-tests-edit-date: 2026-07-05
+Config/codex-smoke-tests-edit-prompt: Add smoke tests for GUI helper regressions, click coordinate conversion, DAP URL handling, and local map animation progress callbacks.

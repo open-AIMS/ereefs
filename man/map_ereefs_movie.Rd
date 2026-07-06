@@ -36,7 +36,8 @@ map_ereefs_movie(
   scale_arrows = NA,
   show_bathy = FALSE,
   contour_breaks = c(5, 10, 20),
-  Land_map = NULL
+  Land_map = NULL,
+  progress_callback = NULL
 )
 }
 \arguments{
@@ -119,6 +120,9 @@ compatibility.}
 compatibility.}
 
 \item{Land_map}{Deprecated compatibility alias for `land_map`.}
+
+\item{progress_callback}{Optional function called with a small list describing
+animation progress. Intended for GUIs; ignored when `NULL`.}
 }
 \value{
 A list containing the final plot, averaged plotting polygons, saved

@@ -1957,7 +1957,8 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
                           eta_stem = NA,
                           override_positive = FALSE,
                           verbosity = 0,
-                          default_to_bottom = TRUE) {
+                          default_to_bottom = TRUE,
+                          progress_callback = NULL) {
   rm(verbosity)
   assign_list(get_params(start_date, end_date, input_file, var_names))
   variable_metadata <- ereefs_variable_metadata(resolved_files, var_names)
@@ -1971,8 +1972,18 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
   } else {
     NA_integer_
   }
+  ereefs_extraction_progress(
+    progress_callback,
+    stage = "start",
+    message = "Preparing point time-series extraction",
+    file_count = length(resolved_files$opendap_url),
+    point_count = nrow(matched_points),
+    variable_count = length(var_names),
+    layer = layer
+  )
 
-  extracted <- lapply(resolved_files$opendap_url, function(file_to_use) {
+  extracted <- lapply(seq_along(resolved_files$opendap_url), function(file_idx) {
+    file_to_use <- resolved_files$opendap_url[[file_idx]]
     timing <- get_origin_and_times(file_to_use)
     time_index <- ereefs_time_indices(
       timing[[2]],
@@ -1983,6 +1994,17 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
     if (!length(time_index)) {
       return(NULL)
     }
+    ereefs_extraction_progress(
+      progress_callback,
+      stage = "file",
+      message = "Reading time steps from source file",
+      file = file_to_use,
+      file_index = file_idx,
+      file_count = length(resolved_files$opendap_url),
+      time_count = length(time_index),
+      time_start = min(timing[[2]][time_index]),
+      time_end = max(timing[[2]][time_index])
+    )
 
     result_tbl <- matched_points %>%
       dplyr::select(-row_id) %>%
@@ -2010,7 +2032,19 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
       }
     }
 
-    for (var_name in var_names) {
+    for (var_index in seq_along(var_names)) {
+      var_name <- var_names[[var_index]]
+      ereefs_extraction_progress(
+        progress_callback,
+        stage = "variable",
+        message = "Extracting variable values",
+        file = file_to_use,
+        file_index = file_idx,
+        file_count = length(resolved_files$opendap_url),
+        variable = var_name,
+        variable_index = var_index,
+        variable_count = length(var_names)
+      )
       dims <- ereefs_var_dims(file_to_use, var_name)
       if ("k" %in% dims$role) {
         if (length(layer_request) == 1L && is.na(layer_request)) {
@@ -2019,30 +2053,38 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
         if (is.character(layer_request)) {
           if (identical(layer_request, "surface")) {
             wet_surface_tbl <- ereefs_surface_bottom_k(wet_tbl, which_layer = "surface")
-            candidate_k <- seq.int(min(wet_surface_tbl$k, na.rm = TRUE), max(wet_surface_tbl$k, na.rm = TRUE))
-            surface_var_tbl <- ereefs_var_time_table(
-              file_to_use,
-              var_name,
-              matched_points,
-              time_index = time_index,
-              ds = timing[[2]],
-              raw_time = timing[[3]],
-              k_values = candidate_k
-            ) %>%
-              dplyr::select(i, j, time, k, !!var_name := .data[[var_name]]) %>%
-              dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = c("i", "j"))
+            candidate_surface_k <- sort(unique(stats::na.omit(wet_surface_tbl$k)))
+            if (!length(candidate_surface_k)) {
+              var_tbl <- result_tbl %>%
+                dplyr::select(i, j, time) %>%
+                dplyr::mutate(!!var_name := NA_real_) %>%
+                dplyr::distinct()
+            } else {
+              candidate_k <- seq.int(min(candidate_surface_k), max(candidate_surface_k))
+              surface_var_tbl <- ereefs_var_time_table(
+                file_to_use,
+                var_name,
+                matched_points,
+                time_index = time_index,
+                ds = timing[[2]],
+                raw_time = timing[[3]],
+                k_values = candidate_k
+              ) %>%
+                dplyr::select(i, j, time, k, !!var_name := .data[[var_name]]) %>%
+                dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = c("i", "j"))
 
-            target_k_tbl <- ereefs_surface_target_k(
-              wet_tbl,
-              var_tbl = surface_var_tbl %>% dplyr::select(row_id, time, k, !!var_name := .data[[var_name]]),
-              value_name = var_name
-            ) %>%
-              dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = "row_id") %>%
-              dplyr::select(i, j, time, k)
+              target_k_tbl <- ereefs_surface_target_k(
+                wet_tbl,
+                var_tbl = surface_var_tbl %>% dplyr::select(row_id, time, k, !!var_name := .data[[var_name]]),
+                value_name = var_name
+              ) %>%
+                dplyr::left_join(matched_points %>% dplyr::select(row_id, i, j), by = "row_id") %>%
+                dplyr::select(i, j, time, k)
 
-            var_tbl <- surface_var_tbl %>%
-              dplyr::inner_join(target_k_tbl, by = c("i", "j", "time", "k")) %>%
-              dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+              var_tbl <- surface_var_tbl %>%
+                dplyr::inner_join(target_k_tbl, by = c("i", "j", "time", "k")) %>%
+                dplyr::select(i, j, time, !!var_name := .data[[var_name]])
+            }
           } else {
             var_tbl <- ereefs_var_time_table(
               file_to_use,
@@ -2090,9 +2132,26 @@ get_ereefs_ts <- function(var_names = c("Chl_a_sum", "TN"),
     result_tbl
   })
 
-  dplyr::bind_rows(extracted) %>%
+  out <- dplyr::bind_rows(extracted) %>%
     dplyr::arrange(latitude, longitude, time) %>%
     ereefs_attach_variable_metadata(variable_metadata)
+  ereefs_extraction_progress(
+    progress_callback,
+    stage = "complete",
+    message = "Point time-series extraction complete",
+    file_count = length(resolved_files$opendap_url),
+    point_count = nrow(matched_points),
+    variable_count = length(var_names)
+  )
+  out
+}
+
+ereefs_extraction_progress <- function(progress_callback, ...) {
+  if (is.null(progress_callback) || !is.function(progress_callback)) {
+    return(invisible(NULL))
+  }
+  tryCatch(progress_callback(list(...)), error = function(e) NULL)
+  invisible(NULL)
 }
 
 get_ereefs_bottom_ts <- function(var_names = c("Chl_a_sum", "TN"),
@@ -2477,3 +2536,13 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
 # - time: 11:36
 # - date: 2026-06-29
 # - prompt_used: "Check GitHub issues #9 and #8, close #9 if addressed, and implement returned variable metadata for extracted eReefs data if #8 is still open."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:57
+# - date: 2026-07-06
+# - prompt_used: "Fix point time-series extraction so dry or unresolved surface-layer requests return NA values instead of failing with 'from' must be a finite number' and wet-layer max/min warnings."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 17:04
+# - date: 2026-07-06
+# - prompt_used: "Emit lightweight extraction progress callbacks for point time-series work, including current file, variable, and matched date span, without adding extra reads."

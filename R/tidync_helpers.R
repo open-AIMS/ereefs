@@ -248,7 +248,7 @@ ereefs_canonicalise_url <- function(input_file) {
 }
 
 ereefs_is_remote_file <- function(input_file) {
-  is.character(input_file) && length(input_file) == 1 && grepl("^https?://", input_file)
+  is.character(input_file) && length(input_file) == 1 && grepl("^(https?|dap[24])://", input_file)
 }
 
 .ereefs_py_cache <- new.env(parent = emptyenv())
@@ -285,9 +285,24 @@ ereefs_python_dataset <- function(input_file) {
 
   ereefs_python_configure()
   xr <- reticulate::import("xarray", delay_load = TRUE)
-  ds <- xr$open_dataset(input_file, engine = "pydap", decode_times = FALSE)
+  ds <- xr$open_dataset(ereefs_python_opendap_url(input_file), engine = "pydap", decode_times = FALSE)
   assign(cache_key, ds, envir = .ereefs_py_cache)
   ds
+}
+
+ereefs_python_opendap_url <- function(input_file) {
+  if (!is.character(input_file) || length(input_file) != 1L || is.na(input_file)) {
+    return(input_file)
+  }
+  if (grepl("^dap[24]://", input_file, ignore.case = TRUE)) {
+    return(input_file)
+  }
+  if (grepl("^https?://", input_file, ignore.case = TRUE)) {
+    # NCI THREDDS currently serves these eReefs OPeNDAP datasets through DAP2.
+    # Passing dap2:// explicitly avoids PyDAP's warning about guessing protocol.
+    return(sub("^https?://", "dap2://", input_file, ignore.case = TRUE))
+  }
+  input_file
 }
 
 ereefs_python_indexer <- function(values) {
@@ -671,11 +686,18 @@ ereefs_catalog_entries <- function(catalog_url, recurse = TRUE) {
 ereefs_resolve_time_files <- function(input_file, start_date, end_date) {
   start_date <- as.Date(start_date)
   end_date <- as.Date(end_date)
+  if (is.na(start_date) || is.na(end_date)) {
+    stop("start_date and end_date must be valid dates.")
+  }
 
   if (length(input_file) > 1L) {
     file_tbl <- dplyr::tibble(opendap_url = as.character(input_file)) %>%
-      dplyr::mutate(file_date = as.Date(unlist(lapply(basename(opendap_url), ereefs_extract_file_date)), origin = "1970-01-01")) %>%
-      dplyr::filter(!is.na(file_date), file_date >= start_date, file_date <= end_date)
+      dplyr::mutate(
+        file_date = as.Date(unlist(lapply(basename(opendap_url), ereefs_extract_file_date)), origin = "1970-01-01"),
+        date_precision = unlist(lapply(basename(opendap_url), ereefs_extract_file_date_precision))
+      ) %>%
+      ereefs_add_file_coverage() %>%
+      dplyr::filter(!is.na(file_date), .data$file_start <= end_date, .data$file_end >= start_date)
     if (!nrow(file_tbl)) {
       stop("None of the supplied files overlap the requested timeframe.")
     }
@@ -699,33 +721,24 @@ ereefs_resolve_time_files <- function(input_file, start_date, end_date) {
     stop("No dated NetCDF datasets were found in the supplied catalog.")
   }
 
-  month_floor <- function(x) as.Date(format(as.Date(x), "%Y-%m-01"))
-  requested_months <- seq.Date(month_floor(start_date), month_floor(end_date), by = "month")
-  daily_available <- any(entries$date_precision == "day", na.rm = TRUE)
-  monthly_available <- any(entries$date_precision == "month", na.rm = TRUE)
+  entries <- ereefs_add_file_coverage(entries)
+  selected <- entries %>%
+    dplyr::filter(.data$file_start <= end_date, .data$file_end >= start_date)
 
-  selected <- if (daily_available) {
-    entries %>%
-      dplyr::filter(.data$file_date >= start_date, .data$file_date <= end_date)
-  } else if (monthly_available) {
-    entries %>%
-      dplyr::filter(.data$file_date %in% requested_months)
-  } else {
-    entries %>%
-      dplyr::filter(.data$file_date >= month_floor(start_date), .data$file_date <= end_date)
-  }
-
-  if (daily_available && nrow(selected)) {
+  if (nrow(selected)) {
     requested_days <- seq.Date(start_date, end_date, by = "day")
-    missing_days <- setdiff(requested_days, selected$file_date)
+    covered <- vapply(requested_days, function(day) {
+      any(selected$file_start <= day & selected$file_end >= day)
+    }, logical(1))
+    missing_days <- requested_days[!covered]
     if (length(missing_days)) {
       warning(
         paste0(
-          "The supplied catalog does not fully cover the requested daily timeframe. ",
+          "The supplied catalog does not fully cover the requested timeframe. ",
           "Returning the available files between ",
-          min(selected$file_date),
+          max(start_date, min(selected$file_start, na.rm = TRUE)),
           " and ",
-          max(selected$file_date),
+          min(end_date, max(selected$file_end, na.rm = TRUE)),
           "."
         )
       )
@@ -740,6 +753,21 @@ ereefs_resolve_time_files <- function(input_file, start_date, end_date) {
     dplyr::arrange(file_date) %>%
     dplyr::select(file_date, opendap_url) %>%
     dplyr::distinct()
+}
+
+ereefs_add_file_coverage <- function(file_tbl) {
+  month_end <- function(x) {
+    next_month <- as.Date(format(as.Date(x) + 32, "%Y-%m-01"))
+    next_month - 1
+  }
+  file_tbl %>%
+    dplyr::mutate(
+      file_start = .data$file_date,
+      file_end = dplyr::case_when(
+        .data$date_precision == "month" ~ month_end(.data$file_date),
+        TRUE ~ .data$file_date
+      )
+    )
 }
 
 ereefs_pick_file_for_date <- function(file_table, target_date) {
@@ -1222,8 +1250,16 @@ ereefs_extract_target_k <- function(wet_tbl, depth) {
 
 ereefs_surface_bottom_k <- function(wet_tbl, which_layer = c("surface", "bottom")) {
   which_layer <- match.arg(which_layer)
+  wet_tbl <- wet_tbl %>%
+    dplyr::filter(dz > 0, is.finite(k))
+  if (!nrow(wet_tbl)) {
+    return(dplyr::tibble(
+      row_id = wet_tbl$row_id,
+      time = wet_tbl$time,
+      k = numeric()
+    ))
+  }
   wet_tbl %>%
-    dplyr::filter(dz > 0) %>%
     dplyr::group_by(row_id, time) %>%
     dplyr::summarise(
       k = if (which_layer == "surface") max(k) else min(k),
@@ -1315,6 +1351,21 @@ ereefs_towns <- function() {
 # - time: 15:37
 # - date: 2026-04-26
 # - prompt_used: "Refactor the eReefs R toolkit away from ncdf4 toward tidync, add regular-grid support alongside curvilinear grids, archive existing R files, and refresh docs/examples."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:28
+# - date: 2026-07-06
+# - prompt_used: "Point time-series extraction is failing with the error: 'from' must be a finite number'"
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 13:57
+# - date: 2026-07-06
+# - prompt_used: "Fix point time-series extraction so dry or unresolved surface-layer requests return NA values instead of failing with 'from' must be a finite number' and wet-layer max/min warnings."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 14:00
+# - date: 2026-07-06
+# - prompt_used: "Stop ereefs_surface_bottom_k() from warning on empty wet-layer tables by returning an explicit empty tibble before summarise()."
 # metadata:
 # - gpt_version: GPT-5 Codex
 # - time: 19:05
@@ -1420,3 +1471,13 @@ ereefs_towns <- function() {
 # - time: 13:50
 # - date: 2026-06-29
 # - prompt_used: "Cache missing-eta warnings by NetCDF family so catalog-backed profile requests warn once while assuming eta = 0."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 17:55
+# - date: 2026-07-05
+# - prompt_used: "Test whether NCI OPeNDAP works with dap4 and, because DAP4 failed, make the Python backend use explicit dap2 URLs instead of http URLs to avoid PyDAP protocol warnings."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 19:15
+# - date: 2026-07-05
+# - prompt_used: "Fix catalog timeframe coverage checks so mixed daily/monthly catalogs select all overlapping files rather than treating any daily files as proof that every requested day must have a daily file."

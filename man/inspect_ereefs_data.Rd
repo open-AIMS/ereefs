@@ -8,7 +8,8 @@ inspect_ereefs_data(
   input_file = "catalog",
   recurse_catalog = FALSE,
   include_files = TRUE,
-  max_files = 50
+  max_files = 50,
+  read_remote_metadata = TRUE
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ the returned object when available.}
 
 \item{max_files}{Maximum number of catalog/file rows to include in the
 returned `files` tibble. The summary still reports the full count.}
+
+\item{read_remote_metadata}{Logical; whether catalogue inspection should open
+a representative remote NetCDF/OPeNDAP file for variable, dimension, time,
+and spatial metadata. Set to `FALSE` for fast catalogue-only inspection.}
 }
 \value{
 An object of class `"ereefs_data_inspection"`, which is a named list
@@ -51,7 +56,8 @@ The function reads NetCDF metadata, coordinate variables, and time
 coordinates, but it does not read the full data arrays for model variables.
 When `input_file` is a THREDDS catalog, the catalog is used to summarize the
 available files and the first matching NetCDF file is used as a representative
-source for variable and dimension metadata.
+source for variable and dimension metadata unless `read_remote_metadata` is
+`FALSE`.
 }
 \examples{
 inspect_ereefs_data("notebooks/demo_data/regular_demo_2020-01.nc")
