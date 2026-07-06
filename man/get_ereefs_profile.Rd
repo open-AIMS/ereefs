@@ -13,7 +13,8 @@ get_ereefs_profile(
   input_grid = NA,
   eta_stem = NA,
   squeeze = TRUE,
-  override_positive = FALSE
+  override_positive = FALSE,
+  progress_callback = NULL
 )
 }
 \arguments{
@@ -44,6 +45,10 @@ array when there is only one variable and/or one time step.}
 
 \item{override_positive}{Reverse the `botz` sign convention when a file has
 an incorrect `positive` attribute. Normally not needed.}
+
+\item{progress_callback}{Optional function called with lightweight progress
+details such as the current stage, source file, variable, or matched date
+span while extraction is running.}
 }
 \value{
 A list containing the time vector, surface elevation (`eta`),

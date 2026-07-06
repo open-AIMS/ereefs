@@ -309,6 +309,9 @@ get_ereefs_slice <- function(var_names=c('Chl_a_sum', 'TN'),
 #'       array when there is only one variable and/or one time step.
 #' @param override_positive Reverse the `botz` sign convention when a file has
 #'   an incorrect `positive` attribute. Normally not needed.
+#' @param progress_callback Optional function called with lightweight progress
+#'   details such as the current stage, source file, variable, or matched date
+#'   span while extraction is running.
 #' @export
 get_ereefs_profile <- function(var_names=c('Chl_a_sum', 'TN'),
 			 geolocation=c(-23.39189, 150.88852),
@@ -1845,3 +1848,8 @@ find_intersections <- function(geolocation, x_grid, y_grid, latitude, longitude,
 # - time: 17:04
 # - date: 2026-07-06
 # - prompt_used: "Emit lightweight progress callbacks for profile and slice extraction so the GUI can show current file, variable, and point index without extra I/O."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:00
+# - date: 2026-07-07
+# - prompt_used: "Take tests/check_windows_bslib_stack.R out of the repository (ignore it). Make the other changes, commit and push."

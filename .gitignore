@@ -18,3 +18,10 @@ ToAnimate/
 ereefs.Rcheck/
 
 build-instructions.txt
+tests/check_windows_bslib_stack.R
+
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:00
+# - date: 2026-07-07
+# - prompt_used: "Take tests/check_windows_bslib_stack.R out of the repository (ignore it). Make the other changes, commit and push."

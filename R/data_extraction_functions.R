@@ -411,8 +411,8 @@ substitute_filename <- function(input_file = "catalog") {
                  "Archived 4km hydro (v 1.85, Sept 2010-pres.)",
                  "Archived 4km bgc (v926, Sept 2010 - Dec 2014)",
                  "Archived 4km bgc (v924, Sept 2010 - Sept 2017)",
-                 "Archived 1km hydro (v 1.71, Dec 2014 – Apr 2016)",
-                 "Archived 1km bgc (v924, Dec 2014 – Nov 2019)",
+                 "Archived 1km hydro (v 1.71, Dec 2014 - Apr 2016)",
+                 "Archived 1km bgc (v924, Dec 2014 - Nov 2019)",
                  "Archived 4km biogeochemical model hindcast v3.0 (Dec 2010 - Oct 2018)",
                  "Latest release 4km biogeochemical model v3.1 (Dec 2010 - Apr 2019)",
                  "CSIRO login required: GBR1 NRT BGC 3p0 3D (2018-09-02 to 2019-01-30)",
@@ -2546,3 +2546,8 @@ get_ereefs_depth_specified_ts <- function(var_names = c("Chl_a_sum", "TN"),
 # - time: 17:04
 # - date: 2026-07-06
 # - prompt_used: "Emit lightweight extraction progress callbacks for point time-series work, including current file, variable, and matched date span, without adding extra reads."
+# metadata:
+# - gpt_version: GPT-5 Codex
+# - time: 10:00
+# - date: 2026-07-07
+# - prompt_used: "Take tests/check_windows_bslib_stack.R out of the repository (ignore it). Make the other changes, commit and push."

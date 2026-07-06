@@ -74,6 +74,8 @@ Imports: ncdf4 (>= 1.16),
          xml2,
          jsonlite
 Suggests: magick,
+         bslib,
+         htmltools,
          shiny,
          testthat (>= 3.0.0)
 RoxygenNote: 7.3.2
@@ -86,3 +88,7 @@ Config/codex-smoke-tests-gpt-version: GPT-5 Codex
 Config/codex-smoke-tests-edit-time: 18:45
 Config/codex-smoke-tests-edit-date: 2026-07-05
 Config/codex-smoke-tests-edit-prompt: Add smoke tests for GUI helper regressions, click coordinate conversion, DAP URL handling, and local map animation progress callbacks.
+Config/codex-ci-fix-gpt-version: GPT-5 Codex
+Config/codex-ci-fix-edit-time: 10:00
+Config/codex-ci-fix-edit-date: 2026-07-07
+Config/codex-ci-fix-edit-prompt: Take tests/check_windows_bslib_stack.R out of the repository (ignore it). Make the other changes, commit and push.
